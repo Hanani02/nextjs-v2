@@ -39,10 +39,10 @@ export default function Navbar() {
                 <Logo />
 
                 {/* desktop nav */}
-                <ul className="hidden lg:flex items-center gap-1 py-2,5 px-2 rounded-full bg-surface/60 backdrop-blur-xl border border-border">
+                <ul className="hidden lg:flex items-center gap-1 py-2.5 px-2 rounded-full bg-surface/60 backdrop-blur-xl border border-border">
                     {navLinks.map((link,index) => (
                         <li key={index}>
-                            <Link href={link.href} className="px-4 py-1 rounded-full text-sm font-medium text-gray-300 transaition-all duration-300 hover:text-primary hover:bg-surface">
+                            <Link href={link.href} className="px-4 py-1 rounded-full text-sm font-medium text-gray-300 transition-all duration-300 hover:text-primary hover:bg-surface">
                                 {link.label}
                             </Link>
                         </li>
@@ -56,7 +56,7 @@ export default function Navbar() {
                         rounded 
                         variant="outline" 
                         text="Download CV" 
-                        href="/struktur_database_anggota.pdf" 
+                        href="/cv.png" 
                         download
                     />
                 </div>
