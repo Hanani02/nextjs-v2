@@ -1,6 +1,14 @@
 import { navLinks } from "./navbar";
 import Link from "next/link";
+import { Icon } from "@iconify/react";
 
+const navIcons = {
+  Home: "akar-icons:home-alt1",
+  About: "akar-icons:person",
+  Projects: "akar-icons:folder",
+  Experience : "lucide:chart-no-axes-combined",
+  Contact: "akar-icons:envelope",
+};
 
 interface MobileNavProps {
     navOpen:boolean
@@ -26,7 +34,9 @@ export default function mobileNavbar({navOpen}:MobileNavProps) {
                 <ul>
                     {navLinks.map((link,index) => (
                         <li key={index}>
-                            <Link href={link.href} className="block w-full text-center
+                            <Link href={link.href} className="w-full text-center
+                            flex items-center
+                            gap-5
                             py-4 px-6 rounded-lg
                             text-lg font-medium
                             text-text
@@ -37,6 +47,7 @@ export default function mobileNavbar({navOpen}:MobileNavProps) {
                             hover:bg-primary/10
                             hover:text-primary
                             hover:border-border">
+                            <Icon icon={navIcons[link.label as keyof typeof navIcons]} width="22" height="22"/>
                             {link.label}
                             </Link>
                         </li>

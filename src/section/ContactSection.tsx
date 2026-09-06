@@ -16,7 +16,7 @@ const contactInfo =[
     {
         icon:LuPhone,
         label:"Phone",
-        value:"+62 XXX XXXX XXX",
+        value:"+62 817 5204 440",
         href:""
     },
     {
@@ -130,7 +130,6 @@ export default function ContactSection() {
                 <div className="space-y-4">
                     {contactInfo.map((item,index) => (
                         <a 
-                            href={item.href} 
                             key={index} 
                             className="flex items-center gap-4 p-4 rounded-xl hover:bg-surface transition-colors group">
                             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-color">

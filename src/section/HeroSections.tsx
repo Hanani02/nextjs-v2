@@ -21,9 +21,9 @@ export default function HeroSections() {
             edgeFadeWidth={0}
             colorCycleSpeed={1}
             brightness={0.2}
-            color1="#0f1418"
-            color2="#242b32"
-            color3="#ffffff"
+            color1="#0F172A"
+            color2="#312E81"
+            color3="#A78BFA"
             enableMouseInteraction
             mouseInfluence={2}
             />
@@ -32,11 +32,14 @@ export default function HeroSections() {
         <div className="relative z-10 w-[90%] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
             {/* leftside */}
             <div className="space-y-6">
+                <h3 data-aos="fade-up" fade-aos-delay="100" className="text-3xl md:text-5xl lg:text-2xl font-bold leading-tight text-text/80">
+                    ── Hello I&apos; m  M. Akbar Hanani
+                </h3>
                 <span data-aos="fade-up" className="inline-block px-4 py-1.5 rounded-full bg-primary/10
                 text-primary text-sm border border-border">
                     Fullstack Developer | Web Developer | Mobile Developer
                 </span>
-                <h1 data-aos="fade-up" data-aos-delay="200" className="text-4xl md:text-5x; lg:text-6xl font-bold
+                <h1 data-aos="fade-up" data-aos-delay="200" className="text-4xl md:text-5xl lg:text-6xl font-bold
                 leading-tight text-text/70">
                     Building modern web experience with <span
                      className="text-primary/70">clean code</span>

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary:#20b2a6;
+  --color-primary:#3B82F6;
   --color-background:#0f1418;
   --color-card:#141a1f;
   --color-border:#242b32;
@@ -17,4 +17,18 @@ body {
 .line-waves-container {
   width: 100%;
   height: 100%;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 20s linear infinite;
 }

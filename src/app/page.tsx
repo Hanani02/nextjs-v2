@@ -6,12 +6,14 @@ import ContactSection from "@/section/ContactSection";
 import Footer from "@/section/Footer";
 import { Toaster } from "react-hot-toast";
 import AnimationLayout from "@/components/layouts/animationsLayout";
+import Marquee from "@/components/Hero/marquee";
 
 export default function Home () {
   return (
     
     <AnimationLayout>
       <HeroSections />
+      <Marquee />
       <AboutSection />
       <ProjectSection />
       <ExperienceSection />
