@@ -1,9 +1,9 @@
 import  Link  from "next/link";
 import Image from "next/image";
-import { LuExternalLink, LuGithub } from "react-icons/lu";
-
-
+import { LuExternalLink, LuEye, LuGithub } from "react-icons/lu";
+import LinkButton from "../ui/LinkButton";
 interface ProjectCardProps {
+    slug:string,
     title:string,
     description:string,
     liveUrl?:string,
@@ -13,6 +13,7 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({
+    slug,
     title,
     description,
     liveUrl,
@@ -54,6 +55,13 @@ export default function ProjectCard({
                 </div>
                 {/* Links */}
                 <div className="flex items-center gap-4 pt-3">
+                    {/* Button */}
+                <LinkButton
+                    text="Detail"
+                    href={`/Project/detail?slug=${slug}`}
+                    rounded
+                    icon={LuEye}
+                />
                     {liveUrl && (
                         <Link
                             href={liveUrl}

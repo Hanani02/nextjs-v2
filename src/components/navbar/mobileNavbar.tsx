@@ -18,15 +18,15 @@ export default function mobileNavbar({navOpen}:MobileNavProps) {
   return (
     <>
     {/* overlay */}
-    <div className={`fixed inset-0 z-40 lg:hidden bg-background/70
+    <div data-mobile-navbar className={`fixed inset-0 z-40 lg:hidden bg-background/70
         backdrop-blur-sm transition-all duration-500 
         ${navOpen ? "opacity-100 visible" : "opacity-0 invisible"}`} />
 
-        <aside className={`fixed top-0 right-0 z-50 h-full
+        <aside data-mobile-navbar className={`fixed top-0 right-0 z-50 h-full
             w-[80%] sm:w-[60%]
             lg:hidden
             bg-surface/95 backdrop-blur-md
-            border-1 border-border
+            border border-border
             flex flex-col items-center justify-center
             space-y-2 px-6
             transition-all duration-500 ${navOpen ? "translete-x-0" :

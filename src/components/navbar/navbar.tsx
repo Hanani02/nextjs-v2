@@ -8,11 +8,11 @@ import LinkButton from "../ui/LinkButton";
 import { LuDownload,LuX,LuMenu } from "react-icons/lu";
 
 export const navLinks = [
-    {href:"#home",label:"Home"},
-    {href:"#about",label:"About"},
-    {href:"#projects",label:"Projects"},
-    {href:"#experience",label:"Experience"},
-    {href:"#contact",label:"Contact"}
+    {href:"/#home",label:"Home"},
+    {href:"/#about",label:"About"},
+    {href:"/#projects",label:"Projects"},
+    {href:"/#experience",label:"Experience"},
+    {href:"/#contact",label:"Contact"}
 ]
 
 

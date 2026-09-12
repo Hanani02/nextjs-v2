@@ -14,6 +14,11 @@ body {
   color: var(--color-text);
 }
 
+body:has(.not-found-page) nav,
+body:has(.not-found-page) [data-mobile-navbar] {
+  display: none;
+}
+
 .line-waves-container {
   width: 100%;
   height: 100%;

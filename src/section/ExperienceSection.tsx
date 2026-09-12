@@ -1,42 +1,5 @@
 import SectionHeader from "@/components/ui/sectionHeader";
-
-const experiences = [
-    {
-        role:"Software Engineering Student",
-        company:"SMKN 1 Kota Pasuruan",
-        period: "2025 - present",
-        description:"Studying Software Engineering with a focus on web development, programming fundamentals, database management, and software development. Throughout my studies, I have worked on various school and personal projects while developing my skills in both frontend development and UI/UX design.",
-        technologies:["Python","HTML","CSS","MySQL","JavaScript"],
-    },
-    {
-        role:"Web Development & Programming",
-        company:"SMKN 1 & UBIG",
-        period: "2025 - present",
-        description:"Learning and applying web development technologies such as HTML, CSS, JavaScript, Next.js, Tailwind CSS, and TypeScript. Also developing a foundation in Python through basic programming concepts, including variables, conditions, loops, functions, and data structures.",
-        technologies:["Next.js","Tailwind CSS","TypeScript"],
-    },
-    {
-        role:"UI/UX Design Exploration",
-        company:"Personal Projects",
-        period: "2025 - present",
-        description:"Exploring UI/UX design through various personal projects and digital product concepts. Focused on creating clean interfaces, intuitive user flows, responsive layouts, and consistent visual systems while considering usability and user experience.",
-        technologies:["Figma"],
-    },
-    {
-        role:"Programming & Database Development",
-        company:"School & Personal Projects",
-        period: "2025 - present",
-        description:"Learned programming fundamentals and database management through school assignments and application development projects. Gained experience with basic programming logic, CRUD operations, database relationships, and connecting applications with databases.",
-        technologies:["JavaScript","MySQL","Supabase","XAMPP","Python"],
-    },
-    {
-        role:"Creative & Media Experience",
-        company:"School Activities & Organization",
-        period: "2025 - present",
-        description:"Participated in creative and digital media activities involving graphic design, visual communication, content creation, and digital projects. These experiences helped develop creativity, teamwork, communication, and problem-solving skills alongside technical abilities.",
-        technologies:["Canva","Figma"],
-    },
-]
+import { experiences } from "@/data/data"
 
 export default function ExperienceSection() {
   return (
@@ -65,6 +28,7 @@ export default function ExperienceSection() {
                             h-3 bg-primary rounded-full -translate-x-1/2 ring-4 ring-background z-10">
                                 <span className="absolute inset-0 rounded-full bg-primary animate-ping opacity-75" />
                             </div>
+                   
                             {/* content */}
                             <div className={`pl-8 md:pl-0 ${index % 2 === 0 ? "md:pr-16 md:text-right" : "md:col-start-2 md:pl-16"}`}>
                                 <div className="p-6 rounded-2xl border border-primary/30 hover:border-primary/50

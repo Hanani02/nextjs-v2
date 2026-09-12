@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import { Poppins, Noto_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/navbar/navbar";
-import { cn } from "@/lib/utils";
+import AppShell from "@/components/layouts/AppShell";
 
-const playfairDisplayHeading = Playfair_Display({subsets:['latin'],variable:'--font-heading'});
+const playfairDisplayHeading = Playfair_Display({ subsets: ["latin"], variable: "--font-heading" });
 
-const notoSans = Noto_Sans({subsets:['latin'],variable:'--font-sans'});
+const notoSans = Noto_Sans({ subsets: ["latin"], variable: "--font-sans" });
 
 const poppins = Poppins({
   variable:"--font-poppins",
@@ -21,15 +20,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${poppins.className} h-full antialiased`}
-    >
+    <html lang="en" className={`${poppins.className} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
-        <Navbar />
-        
-        {children}
-        </body>
+        <AppShell>{children}</AppShell>
+      </body>
     </html>
   );
 }
