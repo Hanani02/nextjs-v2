@@ -58,7 +58,7 @@ export default function ProjectCard({
                     {/* Button */}
                 <LinkButton
                     text="Detail"
-                    href={`/Project/detail?slug=${slug}`}
+                    href={`/Project/${slug}`}
                     rounded
                     icon={LuEye}
                 />

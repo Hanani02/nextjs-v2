@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/navbar/navbar";
 import SplashScreen from "@/components/SplashScreen/page";
 
@@ -9,12 +9,25 @@ type AppShellProps = {
 };
 
 export default function AppShell({ children }: AppShellProps) {
-  const [isSplashFinished, setIsSplashFinished] = useState(false);
+  const [isSplashFinished, setIsSplashFinished] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setIsSplashFinished(sessionStorage.getItem("splash-finished") === "true");
+  }, []);
+
+  const finishSplash = () => {
+    sessionStorage.setItem("splash-finished", "true");
+    setIsSplashFinished(true);
+  };
+
+  if (isSplashFinished === null) {
+    return null;
+  }
 
   return (
     <>
       {!isSplashFinished && (
-        <SplashScreen onFinish={() => setIsSplashFinished(true)} />
+        <SplashScreen onFinish={finishSplash} />
       )}
       {isSplashFinished && (
         <>

@@ -5,16 +5,11 @@ import { LuArrowLeft, LuExternalLink, LuGithub } from "react-icons/lu";
 import { detailProyek, projects } from "@/data/data";
 
 interface ProjectDetailPageProps {
-  searchParams: Promise<{ slug?: string }>;
+  params: Promise<{ slug: string }>;
 }
 
-export default async function ProjectDetailPage({ searchParams }: ProjectDetailPageProps) {
-  const { slug } = await searchParams;
-
-  if (!slug) {
-    notFound();
-  }
-
+export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+  const { slug } = await params;
   const project = projects.find((item) => item.slug === slug);
 
   if (!project) {
@@ -47,10 +42,7 @@ export default async function ProjectDetailPage({ searchParams }: ProjectDetailP
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Teknologi</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {technologies.map((technology) => (
-                  <span
-                    key={technology}
-                    className="rounded-md border border-border bg-primary/10 px-2.5 py-1.5 text-xs text-primary"
-                  >
+                  <span key={technology} className="rounded-md border border-border bg-primary/10 px-2.5 py-1.5 text-xs text-primary">
                     {technology}
                   </span>
                 ))}
@@ -74,9 +66,7 @@ export default async function ProjectDetailPage({ searchParams }: ProjectDetailP
               <span className="inline-block rounded-full border border-border bg-primary/10 px-4 py-1.5 text-sm text-primary">
                 {project.kategori}
               </span>
-              <h1 className="max-w-4xl text-4xl font-bold leading-tight text-text md:text-6xl">
-                {project.title}
-              </h1>
+              <h1 className="max-w-4xl text-4xl font-bold leading-tight text-text md:text-6xl">{project.title}</h1>
               <p className="max-w-3xl text-base leading-8 text-gray-400">
                 {extraDetail?.deskripsi ?? project.description}
               </p>
