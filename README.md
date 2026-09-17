@@ -2,7 +2,7 @@
 
 ## Ringkasan
 
-Website ini merupakan portofolio pribadi yang menampilkan profil, pengalaman, project, dan informasi kontak. Pada pengembangan versi ini, saya menambahkan fitur detail project, merapikan pengelolaan data, membuat splash screen, meningkatkan tampilan responsif, serta menyempurnakan antarmuka menggunakan Tailwind CSS.
+Website ini merupakan portofolio pribadi yang menampilkan profil, pengalaman, project, dan informasi kontak. Data project dan pengalaman sekarang tidak lagi bergantung pada data statis di dalam source code, tetapi sudah terhubung ke Supabase. Pada pengembangan versi ini, saya menambahkan fitur detail project, merapikan pengelolaan data, membuat splash screen, meningkatkan tampilan responsif, serta menyempurnakan antarmuka menggunakan Tailwind CSS.
 
 ## Fitur yang Ditambahkan
 
@@ -21,15 +21,17 @@ Halaman detail berada di `src/app/Project/[slug]/page.tsx` dan menampilkan:
 - Link menuju project online dan repository GitHub jika tersedia.
 - Tombol untuk kembali ke daftar project.
 
-Rute halaman detail menggunakan dynamic route `[slug]` yang berada langsung di dalam folder `Project`. Format URL yang digunakan adalah `/Project/nama-project`, contohnya `/Project/simmas`. Nilai `slug` dari URL dibaca melalui `params` dan digunakan untuk mencari project yang sesuai di dalam data `projects` pada `src/data/data.ts`.
+Rute halaman detail menggunakan dynamic route `[slug]` yang berada langsung di dalam folder `Project`. Format URL yang digunakan adalah `/Project/nama-project`, contohnya `/Project/simmas`. Nilai `slug` dari URL dibaca melalui `params` dan digunakan untuk mencari project secara langsung dari tabel `project` di Supabase. Jika slug berupa angka, halaman juga menyediakan fallback pencarian berdasarkan `id`.
 
 Jika `slug` tidak ditemukan atau project tidak tersedia, halaman akan memanggil `notFound()` sehingga pengguna diarahkan ke halaman 404.
 
-### 2. Pengelolaan Data Terpusat
+### 2. Integrasi Supabase dan Data Dinamis
 
-Data project, pengalaman, dan informasi tambahan project dipisahkan ke dalam `src/data/data.ts`. Pemisahan ini membuat data lebih rapi, mudah diperbarui, dan dapat digunakan oleh beberapa komponen tanpa menulis ulang data yang sama.
+Project list diambil dari tabel `project`, sedangkan informasi tambahan seperti role, fitur, dan teknologi diambil dari tabel `detail`. Halaman pengalaman mengambil data dari tabel `experience`. Setiap halaman melakukan query server-side menggunakan Supabase sehingga perubahan data di dashboard/database dapat tampil di website tanpa mengubah source code atau melakukan hardcode ulang.
 
-Data project menggunakan beberapa properti, seperti `slug`, `title`, `description`, `image`, `tags`, `kategori`, `liveUrl`, dan `githubUrl`.
+Koneksi Supabase menggunakan `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY` yang disimpan di file environment. Route detail project diberi konfigurasi `force-dynamic` agar Next.js selalu mengambil data terbaru dari Supabase ketika halaman diminta, bukan menyimpan hasil sebagai halaman statis saat build.
+
+Data lama di `src/data/data.ts` masih dapat digunakan sebagai referensi atau data lokal, tetapi tidak lagi menjadi sumber utama untuk daftar project dan pengalaman yang ditampilkan di website.
 
 ### 3. Splash Screen
 
@@ -58,9 +60,9 @@ Halaman 404 memiliki pesan kesalahan, tampilan visual khusus, serta tombol untuk
 - `src/components/SplashScreen/page.tsx`: menampilkan splash screen dengan animasi pembuka.
 - `src/components/layouts/AppShell.tsx`: mengatur splash screen, navbar, dan isi halaman.
 - `src/components/project/ProjectCard.tsx`: menampilkan kartu project beserta tombol Detail, Live, dan GitHub.
-- `src/app/Project/[slug]/page.tsx`: menampilkan informasi lengkap dari satu project berdasarkan dynamic route `slug`.
+- `src/app/Project/[slug]/page.tsx`: menampilkan informasi lengkap dari satu project berdasarkan dynamic route `slug` dan data Supabase.
 - `src/app/not-found.tsx`: menampilkan halaman 404 kustom.
-- `src/data/data.ts`: menyimpan data project, pengalaman, dan detail project secara terpusat.
+- `src/lib/supabase.ts`: membuat client Supabase yang digunakan untuk mengambil data dari database.
 
 ## Penerapan Tailwind CSS
 

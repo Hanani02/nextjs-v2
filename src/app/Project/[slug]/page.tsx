@@ -4,6 +4,8 @@ import { notFound } from "next/navigation";
 import { LuArrowLeft, LuExternalLink, LuGithub } from "react-icons/lu";
 import { supabase } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 interface ProjectDetailPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -46,11 +48,15 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
 
   const project = {
     slug: projectData.slug ?? String(projectData.id),
-    title: projectData.judul_project,
-    description: projectData.deskripsi_project,
-    image: projectData.image,
-    tags: Array.isArray(projectData.tags) ? projectData.tags : (typeof projectData.tags === 'string' ? projectData.tags.split(',').map((tag: string) => tag.trim()) : []),
-    kategori: projectData.kategori,
+    title: projectData.judul_project ?? "Project",
+    description: projectData.deskripsi_project ?? "",
+    image: projectData.image ?? "/cv.png",
+    tags: Array.isArray(projectData.tags)
+      ? projectData.tags.filter((tag): tag is string => typeof tag === "string")
+      : typeof projectData.tags === "string"
+        ? projectData.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean)
+        : [],
+    kategori: projectData.kategori ?? "Web",
     liveUrl: projectData.live_url ?? projectData.live_URL ?? '',
     githubUrl: projectData.github_url ?? '',
   };
@@ -60,7 +66,9 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         deskripsi: detailData.deskripsi,
         role: detailData.role,
         fitur: Array.isArray(detailData.fitur) ? detailData.fitur : [],
-        teknologi: Array.isArray(detailData.teknologi) ? detailData.teknologi : project.tags,
+        teknologi: Array.isArray(detailData.teknologi)
+          ? detailData.teknologi.filter((tech): tech is string => typeof tech === "string")
+          : project.tags,
       }
     : null;
 
