@@ -1,5 +1,5 @@
 import SectionHeader from "@/components/ui/sectionHeader";
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 
 type Experience = {
   role: string;
@@ -9,7 +9,7 @@ type Experience = {
 };
 
 export default async function ExperienceSection() {
-  const { data: experienceData, error } = await supabase
+  const { data: experienceData, error } = await getSupabase()
     .from('experience')
     .select('*')
     .order('id', { ascending: true });

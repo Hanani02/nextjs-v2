@@ -2,7 +2,9 @@ import Link from "next/link";
 import ProjectCard from "@/components/project/ProjectCard";
 import { LuArrowRight } from "react-icons/lu";
 import Footer from '@/section/Footer';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 interface ProjectPageProps {
     searchParams: Promise<{ category?: string }>;
@@ -11,7 +13,7 @@ interface ProjectPageProps {
 export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
     const { category } = await searchParams;
 
-    const { data: projectData, error } = await supabase
+    const { data: projectData, error } = await getSupabase()
         .from('project')
         .select('*')
         .order('id', { ascending: true });

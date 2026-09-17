@@ -2,10 +2,10 @@ import SectionHeader from "@/components/ui/sectionHeader";
 import ProjectCard from "@/components/project/ProjectCard";
 import Link from "next/link";
 import { LuArrowRight } from "react-icons/lu";
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 
 export default async function projectSection() {
-    const { data: daftarProyek, error } = await supabase
+    const { data: daftarProyek, error } = await getSupabase()
         .from('project')
         .select('*')
         .order('id', { ascending: true });

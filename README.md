@@ -33,6 +33,17 @@ Koneksi Supabase menggunakan `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABAS
 
 Data lama di `src/data/data.ts` masih dapat digunakan sebagai referensi atau data lokal, tetapi tidak lagi menjadi sumber utama untuk daftar project dan pengalaman yang ditampilkan di website.
 
+#### Konfigurasi deployment
+
+File `.env` lokal tidak ikut ter-upload ke Vercel. Karena itu, kedua environment variable berikut harus ditambahkan secara manual di **Vercel Project Settings → Environment Variables** untuk environment `Production` (dan `Preview` jika diperlukan):
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://nama-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Setelah menambahkan atau mengubah variable, lakukan redeploy agar konfigurasi baru digunakan. Client Supabase dibuat secara lazy melalui `src/lib/supabase.ts`, sehingga proses build tidak lagi gagal hanya karena module Supabase dievaluasi sebelum environment variable tersedia. Jika variable tetap tidak diatur pada deployment, halaman yang membutuhkan database akan menampilkan error konfigurasi saat runtime.
+
 ### 3. Splash Screen
 
 Saya menambahkan komponen `SplashScreen` yang muncul ketika website pertama kali dibuka. Splash screen menampilkan identitas Kanagara Studio, ikon kode, animasi logo, dan garis progress.

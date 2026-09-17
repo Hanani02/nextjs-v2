@@ -8,6 +8,8 @@ import { Toaster } from "react-hot-toast";
 import AnimationLayout from "@/components/layouts/animationsLayout";
 import Marquee from "@/components/Hero/marquee";
 
+export const dynamic = "force-dynamic";
+
 export default function Home () {
   return (
     

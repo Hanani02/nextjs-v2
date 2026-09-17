@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LuArrowLeft, LuExternalLink, LuGithub } from "react-icons/lu";
-import { supabase } from "@/lib/supabase";
+import { getSupabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   let projectData = null;
   let projectError = null;
 
-  const slugQuery = await supabase
+  const slugQuery = await getSupabase()
     .from("project")
     .select("*")
     .eq("slug", slug)
@@ -34,7 +34,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   projectError = slugQuery.error;
 
   if ((!projectData || projectError) && /^\d+$/.test(slug)) {
-    const idQuery = await supabase
+    const idQuery = await getSupabase()
       .from("project")
       .select("*")
       .eq("id", Number(slug))
@@ -48,7 +48,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     notFound();
   }
 
-  const { data: detailData } = await supabase
+  const { data: detailData } = await getSupabase()
     .from("detail")
     .select("*")
     .eq("id_project", projectData.id)
