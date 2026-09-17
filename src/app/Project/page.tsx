@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ProjectCard from "@/components/project/ProjectCard";
+import ProjectBrowser, { type BrowserProject } from "@/components/project/ProjectBrowser";
 import { LuArrowRight } from "react-icons/lu";
 import Footer from '@/section/Footer';
 import { getSupabase } from '@/lib/supabase';
@@ -7,11 +7,11 @@ import { getSupabase } from '@/lib/supabase';
 export const dynamic = 'force-dynamic';
 
 interface ProjectPageProps {
-    searchParams: Promise<{ category?: string }>;
+    searchParams: Promise<{ category?: string; search?: string }>;
 }
 
 export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
-    const { category } = await searchParams;
+    const { category, search } = await searchParams;
 
     const { data: projectData, error } = await getSupabase()
         .from('project')
@@ -27,7 +27,7 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
         return <p className="text-red-600">Data project kosong. Cek apakah tabel project ada dan policy RLS mengizinkan select.</p>;
     }
 
-    const projects = (projectData ?? []).map((project) => ({
+    const projects: BrowserProject[] = (projectData ?? []).map((project) => ({
         slug: project.slug ?? String(project.id),
         title: project.judul_project,
         description: project.deskripsi_project,
@@ -37,12 +37,6 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
         liveUrl: project.live_url ?? project.live_URL ?? '',
         githubUrl: project.github_url ?? '',
     }));
-
-    const filtered = category
-        ? projects.filter((p) => p.kategori.toLowerCase() === category.toLowerCase())
-        : projects;
-
-    const categories = ['Semua', 'Web', 'Mobile', 'IoT', 'UI/UX'];
 
     return (
         <div className="flex min-h-screen flex-col">
@@ -67,25 +61,7 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-4 border-b border-border pb-8 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex flex-wrap gap-2">
-                        {categories.map((cat) => {
-                            const isAll = cat === 'Semua';
-                            const href = isAll ? '/Project' : `/Project?category=${encodeURIComponent(cat.toLowerCase())}`;
-                            const isActive = isAll ? !category : category?.toLowerCase() === cat.toLowerCase();
-                            return (
-                                <Link
-                                    key={cat}
-                                    href={href}
-                                    className={`rounded-lg border px-4 py-1.5 text-xs font-semibold transition ${
-                                        isActive ? 'border-primary bg-primary text-background shadow-sm' : 'border-border bg-surface/70 text-gray-300 hover:border-primary hover:text-primary'
-                                    }`}
-                                >
-                                    {cat}
-                                </Link>
-                            );
-                        })}
-                    </div>
+                <div className="flex justify-end border-b border-border pb-8">
                     <Link
                         href="/#projects"
                         className="inline-flex items-center gap-2 self-start rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-text transition hover:border-primary hover:text-primary sm:self-auto"
@@ -94,18 +70,7 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
                     </Link>
                 </div>
 
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:gap-10">
-                    {filtered.map((project, index) => (
-                        <div
-                            key={project.slug}
-                            data-aos="fade-right"
-                            data-aos-delay={index * 100}
-                            data-aos-anchor-placement="top-center"
-                        >
-                            <ProjectCard {...project} />
-                        </div>
-                    ))}
-                </div>
+                <ProjectBrowser projects={projects} initialCategory={category} initialSearch={search} />
             </div>
         </main>
       <Footer />

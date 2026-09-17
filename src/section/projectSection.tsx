@@ -1,7 +1,5 @@
 import SectionHeader from "@/components/ui/sectionHeader";
-import ProjectCard from "@/components/project/ProjectCard";
-import Link from "next/link";
-import { LuArrowRight } from "react-icons/lu";
+import ProjectBrowser, { type BrowserProject } from "@/components/project/ProjectBrowser";
 import { getSupabase } from '@/lib/supabase';
 
 export default async function projectSection() {
@@ -19,12 +17,13 @@ export default async function projectSection() {
         return <p className="text-red-600">Data project kosong. Cek tabel project di Supabase dan policy RLS.</p>;
     }
 
-    const projects = (daftarProyek ?? []).map((project) => ({
+    const projects: BrowserProject[] = (daftarProyek ?? []).map((project) => ({
         slug: project.slug ?? String(project.id),
         title: project.judul_project,
         description: project.deskripsi_project,
         image: project.image,
         tags: Array.isArray(project.tags) ? project.tags : (typeof project.tags === 'string' ? project.tags.split(',').map((tag: string) => tag.trim()) : []),
+        kategori: project.kategori ?? 'web',
         liveUrl: project.live_url ?? project.live_URL ?? '',
         githubUrl: project.github_url ?? '',
     }));
@@ -42,27 +41,7 @@ export default async function projectSection() {
                     />
                 </div>
 
-                <div className="flex justify-end">
-                    <Link
-                        href="/Project/"
-                        className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-text transition hover:border-primary hover:text-primary"
-                    >
-                        Lihat lebih lengkap <LuArrowRight aria-hidden="true" className="h-4 w-4" />
-                    </Link>
-                </div>
-
-                <div className="grid grid-cols1 md:grid-cols-2 gap-8 lg:gap-10">
-                    {projects.slice(0, 4).map((project, index) => (
-                        <div
-                            key={project.slug}
-                            data-aos="fade-right"
-                            data-aos-delay={index * 100}
-                            data-aos-anchor-placement="top-center"
-                        >
-                            <ProjectCard {...project} />
-                        </div>
-                    ))}
-                </div>
+                <ProjectBrowser projects={projects} limit={4} showViewAll />
             </div>
         </section>
     );
