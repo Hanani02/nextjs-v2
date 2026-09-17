@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { LuArrowLeft, LuExternalLink, LuGithub } from "react-icons/lu";
-import { detailProyek, projects } from "@/data/data";
+import { supabase } from "@/lib/supabase";
 
 interface ProjectDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -10,13 +10,60 @@ interface ProjectDetailPageProps {
 
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const { slug } = await params;
-  const project = projects.find((item) => item.slug === slug);
 
-  if (!project) {
+  let projectData = null;
+  let projectError = null;
+
+  const slugQuery = await supabase
+    .from("project")
+    .select("*")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  projectData = slugQuery.data;
+  projectError = slugQuery.error;
+
+  if ((!projectData || projectError) && /^\d+$/.test(slug)) {
+    const idQuery = await supabase
+      .from("project")
+      .select("*")
+      .eq("id", Number(slug))
+      .maybeSingle();
+
+    projectData = idQuery.data;
+    projectError = idQuery.error;
+  }
+
+  if (projectError || !projectData) {
     notFound();
   }
 
-  const extraDetail = detailProyek[slug as keyof typeof detailProyek];
+  const { data: detailData } = await supabase
+    .from("detail")
+    .select("*")
+    .eq("id_project", projectData.id)
+    .maybeSingle();
+
+  const project = {
+    slug: projectData.slug ?? String(projectData.id),
+    title: projectData.judul_project,
+    description: projectData.deskripsi_project,
+    image: projectData.image,
+    tags: Array.isArray(projectData.tags) ? projectData.tags : (typeof projectData.tags === 'string' ? projectData.tags.split(',').map((tag: string) => tag.trim()) : []),
+    kategori: projectData.kategori,
+    liveUrl: projectData.live_url ?? projectData.live_URL ?? '',
+    githubUrl: projectData.github_url ?? '',
+  };
+
+  const extraDetail = detailData
+    ? {
+        deskripsi: detailData.deskripsi,
+        role: detailData.role,
+        fitur: Array.isArray(detailData.fitur) ? detailData.fitur : [],
+        teknologi: Array.isArray(detailData.teknologi) ? detailData.teknologi : project.tags,
+      }
+    : null;
+
   const role = extraDetail?.role ?? (project.kategori.toLowerCase() === "ui/ux" ? "UI/UX Designer" : "Developer");
   const technologies = extraDetail?.teknologi ?? project.tags;
 
@@ -41,20 +88,20 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             <div className="rounded-2xl border border-border bg-surface/80 p-6">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Teknologi</p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {technologies.map((technology) => (
-                  <span key={technology} className="rounded-md border border-border bg-primary/10 px-2.5 py-1.5 text-xs text-primary">
-                    {technology}
+                {(technologies ??[]).map((teknologi:string) => (
+                  <span key={teknologi} className="rounded-md border border-border bg-primary/10 px-2.5 py-1.5 text-xs text-primary">
+                    {teknologi}
                   </span>
                 ))}
               </div>
             </div>
 
-            {extraDetail?.fitur && (
+            {extraDetail?.fitur && extraDetail.fitur.length > 0 && (
               <div className="rounded-2xl border border-border bg-surface/80 p-6">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Fitur</p>
                 <ul className="mt-4 space-y-2 text-sm text-gray-400">
-                  {extraDetail.fitur.map((feature) => (
-                    <li key={feature}>- {feature}</li>
+                  {(extraDetail?.fitur ??[]).map((fitur:string) => (
+                    <li key={fitur}>- {fitur}</li>
                   ))}
                 </ul>
               </div>

@@ -14,14 +14,14 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  title: "NextDev",
-  description: "NextDev Portofolio",
+  title: "Kanagara Studio",
+  description: "Portofolio Hanan",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${poppins.className} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-screen bg-background text-text">
         <AppShell>{children}</AppShell>
       </body>
     </html>
