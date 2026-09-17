@@ -10,6 +10,14 @@ interface ProjectDetailPageProps {
   params: Promise<{ slug: string }>;
 }
 
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function toStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter(isString) : [];
+}
+
 export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const { slug } = await params;
 
@@ -52,7 +60,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     description: projectData.deskripsi_project ?? "",
     image: projectData.image ?? "/cv.png",
     tags: Array.isArray(projectData.tags)
-      ? projectData.tags.filter((tag): tag is string => typeof tag === "string")
+      ? toStringArray(projectData.tags)
       : typeof projectData.tags === "string"
         ? projectData.tags.split(",").map((tag: string) => tag.trim()).filter(Boolean)
         : [],
@@ -67,7 +75,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
         role: detailData.role,
         fitur: Array.isArray(detailData.fitur) ? detailData.fitur : [],
         teknologi: Array.isArray(detailData.teknologi)
-          ? detailData.teknologi.filter((tech): tech is string => typeof tech === "string")
+          ? toStringArray(detailData.teknologi)
           : project.tags,
       }
     : null;
