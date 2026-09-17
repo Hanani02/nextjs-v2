@@ -33,6 +33,47 @@ Koneksi Supabase menggunakan `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABAS
 
 Data lama di `src/data/data.ts` masih dapat digunakan sebagai referensi atau data lokal, tetapi tidak lagi menjadi sumber utama untuk daftar project dan pengalaman yang ditampilkan di website.
 
+#### Struktur tabel Supabase
+
+Berikut struktur data yang digunakan oleh query di project. Tipe di bawah adalah tipe PostgreSQL yang disarankan saat membuat tabel di Supabase. Kolom yang memiliki tanda `?` boleh bernilai `NULL`.
+
+**Tabel `project`**
+
+| Kolom | Tipe data | Keterangan |
+| --- | --- | --- |
+| `id` | `bigint` | Primary key dan identitas project |
+| `slug` | `text` | Slug unik untuk URL detail project |
+| `judul_project` | `text` | Judul project |
+| `deskripsi_project` | `text` | Deskripsi singkat project |
+| `image` | `text` | Path atau URL gambar project |
+| `tags` | `text[]` atau `jsonb` array | Daftar tag/teknologi project |
+| `kategori` | `text` | Kategori, misalnya `web`, `mobile`, `IoT`, atau `UI/UX` |
+| `live_url` | `text` | URL project yang dapat dibuka, boleh `NULL` |
+| `github_url` | `text` | URL repository GitHub, boleh `NULL` |
+
+**Tabel `detail`**
+
+| Kolom | Tipe data | Keterangan |
+| --- | --- | --- |
+| `id` | `bigint` | Primary key detail |
+| `id_project` | `bigint` | Foreign key ke `project.id` |
+| `deskripsi` | `text` | Deskripsi lengkap project |
+| `role` | `text` | Peran pada project |
+| `fitur` | `text[]` atau `jsonb` array | Daftar fitur project |
+| `teknologi` | `text[]` atau `jsonb` array | Daftar teknologi yang digunakan |
+
+**Tabel `experience`**
+
+| Kolom | Tipe data | Keterangan |
+| --- | --- | --- |
+| `id` | `bigint` | Primary key pengalaman |
+| `role` | `text` | Peran atau nama pengalaman |
+| `company` | `text` | Institusi atau perusahaan |
+| `descriptions` | `text` | Deskripsi pengalaman |
+| `technologies` | `text[]` atau `jsonb` array | Daftar teknologi terkait |
+
+Relasi utama adalah satu project memiliki satu baris tambahan pada `detail` melalui `detail.id_project`. Pastikan policy **Row Level Security (RLS)** mengizinkan operasi `SELECT` untuk tabel yang dibaca oleh website. Halaman `src/app/test-supabase/page.tsx` masih mencoba membaca tabel `proyek` untuk keperluan pengujian; tabel tersebut tidak digunakan oleh halaman utama dan dapat diabaikan atau dihapus setelah pengujian selesai.
+
 #### Konfigurasi deployment
 
 File `.env` lokal tidak ikut ter-upload ke Vercel. Karena itu, kedua environment variable berikut harus ditambahkan secara manual di **Vercel Project Settings → Environment Variables** untuk environment `Production` (dan `Preview` jika diperlukan):
