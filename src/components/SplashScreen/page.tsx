@@ -16,7 +16,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
     setIsMounted(true);
     const timeout = setTimeout(() => {
       setIsVisible(false);
-    }, 2500); // Durasi splash screen (2.5 detik)
+    }, 2500);
 
     return () => clearTimeout(timeout);
   }, []);

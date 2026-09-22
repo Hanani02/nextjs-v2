@@ -88,7 +88,7 @@ export default function ProjectBrowser({
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 border-y border-border py-6 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="w-full lg:max-w-sm">
           <div className="flex w-full items-center rounded-lg border border-border bg-surface/70 px-3 transition focus-within:border-primary">
             <LuSearch

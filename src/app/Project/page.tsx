@@ -61,7 +61,7 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
                     </div>
                 </div>
 
-                <div className="flex justify-end border-b border-border pb-8">
+                <div className="flex justify-end">
                     <Link
                         href="/#projects"
                         className="inline-flex items-center gap-2 self-start rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-text transition hover:border-primary hover:text-primary sm:self-auto"
