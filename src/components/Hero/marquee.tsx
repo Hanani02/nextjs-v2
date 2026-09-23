@@ -7,7 +7,10 @@ import {
   siTypescript,
   siTailwindcss,
   siJavascript,
-  siSupabase
+  siSupabase,
+  siPython,
+  siHtml5,
+  siCplusplus
 } from "simple-icons";
 
 const apps = [
@@ -17,6 +20,9 @@ const apps = [
     { name: "TypeScript", icon: siTypescript },
     { name: "Tailwind CSS", icon: siTailwindcss },
     { name: "JavaScript", icon: siJavascript },
+    { name: "Python", icon: siPython},
+    { name: "HTML", icon: siHtml5},
+    { name: "C++", icon: siCplusplus},
     { name: "Supabase", icon: siSupabase },
 ];
 
