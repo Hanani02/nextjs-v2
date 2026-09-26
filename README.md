@@ -81,7 +81,10 @@ File `.env` lokal tidak ikut ter-upload ke Vercel. Karena itu, kedua environment
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://nama-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+LOGIN_DOORPASS=your-private-login-code
 ```
+
+Halaman admin tidak ditampilkan melalui `/login` tanpa kode akses. Gunakan `/login?doorpase=your-private-login-code` untuk membuka form login. `LOGIN_DOORPASS` harus menjadi environment variable server-only, jadi jangan menggunakan prefix `NEXT_PUBLIC_` dan jangan menyimpan nilainya di source code. Kode pada URL dapat tercatat di browser atau server log, sehingga tetap gunakan HTTPS dan ganti kode jika pernah tersebar.
 
 Setelah menambahkan atau mengubah variable, lakukan redeploy agar konfigurasi baru digunakan. Client Supabase dibuat secara lazy melalui `src/lib/supabase.ts`, sehingga proses build tidak lagi gagal hanya karena module Supabase dievaluasi sebelum environment variable tersedia. Jika variable tetap tidak diatur pada deployment, halaman yang membutuhkan database akan menampilkan error konfigurasi saat runtime.
 

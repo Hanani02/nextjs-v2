@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary:#3B82F6;
-  --color-background:#0f1418;
-  --color-card:#141a1f;
-  --color-border:#242b32;
-  --color-surface:#1a2329;
-  --color-text:#f0f2f5;
+  --color-primary: #3B82F6;
+  --color-background: #0f1418;
+  --color-card: #141a1f;
+  --color-border: #242b32;
+  --color-surface: #1a2329;
+  --color-text: #f0f2f5;
 }
 
+html,
 body {
   background-color: var(--color-background);
   color: var(--color-text);
+  color-scheme: dark;
 }
 
 body:has(.not-found-page) nav,
@@ -36,4 +38,88 @@ body:has(.not-found-page) [data-mobile-navbar] {
 
 .animate-marquee {
   animation: marquee 20s linear infinite;
+}
+
+/* ========================================================
+   PROJECT DETAIL 2-COLUMN LAYOUT (LEFT: SIDEBAR, RIGHT: CONTENT)
+   ======================================================== */
+.project-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+@media (min-width: 868px) {
+  .project-detail-grid {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 2.25rem;
+  }
+
+  .project-detail-left {
+    width: 320px;
+    min-width: 320px;
+    max-width: 340px;
+    flex-shrink: 0;
+  }
+
+  .project-detail-right {
+    flex: 1;
+    min-width: 0;
+    /* Prevents flex children from overflowing */
+  }
+}
+
+@media (min-width: 1200px) {
+  .project-detail-left {
+    width: 360px;
+    min-width: 360px;
+    max-width: 380px;
+  }
+}
+
+/* ========================================================
+   CUSTOM SCROLLBAR (MATCHING DARK BLUE THEME)
+   Applies to root window and all scrollable containers/modals
+   ======================================================== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #242b32 #141a1f;
+}
+
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: #0f1418;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: #242b32;
+  border-radius: 9999px;
+  border: 2px solid #0f1418;
+  transition: background-color 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover,
+*::-webkit-scrollbar-thumb:hover {
+  background: #3B82F6;
+  border-color: #0f1418;
+}
+
+::-webkit-scrollbar-thumb:active,
+*::-webkit-scrollbar-thumb:active {
+  background: #2563EB;
+}
+
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
+  background: #0f1418;
 }

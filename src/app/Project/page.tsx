@@ -1,7 +1,7 @@
 import Link from "next/link";
 import ProjectBrowser, { type BrowserProject } from "@/components/project/ProjectBrowser";
 import { LuArrowRight } from "react-icons/lu";
-import Footer from '@/section/Footer';
+import Footer from '@/components/section/Footer';
 import { getSupabase } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';

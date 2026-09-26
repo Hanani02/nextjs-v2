@@ -48,16 +48,21 @@ export default function ProjectBrowser({
         !normalizedCategory ||
         normalizedCategory === "semua" ||
         project.kategori.toLowerCase() === normalizedCategory;
+
+      if (!matchesCategory) return false;
+
+      if (!normalizedSearch) return true;
+
       const searchableText = [
         project.title,
         project.description,
         project.kategori,
-        ...project.tags,
+        ...(Array.isArray(project.tags) ? project.tags : []),
       ]
         .join(" ")
         .toLowerCase();
 
-      return matchesCategory && (!normalizedSearch || searchableText.includes(normalizedSearch));
+      return searchableText.includes(normalizedSearch);
     });
   }, [category, projects, search]);
 
@@ -89,8 +94,9 @@ export default function ProjectBrowser({
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 py-6 lg:flex-row lg:items-center lg:justify-between">
-        <div className="w-full lg:max-w-sm">
-          <div className="flex w-full items-center rounded-lg border border-border bg-surface/70 px-3 transition focus-within:border-primary">
+        {/* Search Bar Langsung (Tanpa Kunci Website) */}
+        <div className="w-full lg:max-w-md">
+          <div className="flex w-full items-center rounded-xl border border-border bg-surface/70 px-3.5 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 shadow-sm">
             <LuSearch
               aria-hidden="true"
               className="h-4 w-4 shrink-0 text-gray-400"
@@ -100,9 +106,19 @@ export default function ProjectBrowser({
               aria-label="Cari project"
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
-              placeholder="Cari project..."
-              className="min-w-0 flex-1 bg-transparent py-2.5 pl-3 pr-1 text-sm text-text outline-none placeholder:text-gray-500"
+              placeholder="Cari project berdasarkan judul atau teknologi..."
+              className="min-w-0 flex-1 bg-transparent py-2.5 pl-3 pr-2 text-sm text-text outline-none placeholder:text-gray-500"
             />
+            {search && (
+              <button
+                type="button"
+                onClick={() => handleSearchChange("")}
+                className="text-xs text-gray-400 hover:text-gray-200 transition px-1 py-0.5 rounded cursor-pointer"
+                aria-label="Hapus pencarian"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
 

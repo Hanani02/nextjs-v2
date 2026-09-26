@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Navbar from "@/components/navbar/navbar";
 import SplashScreen from "@/components/SplashScreen/page";
 
@@ -10,10 +11,19 @@ type AppShellProps = {
 
 export default function AppShell({ children }: AppShellProps) {
   const [isSplashFinished, setIsSplashFinished] = useState<boolean | null>(null);
+  const pathname = usePathname();
+
+  const isAuthOrAdmin =
+    pathname?.toLowerCase().startsWith("/login") ||
+    pathname?.toLowerCase().startsWith("/admin");
 
   useEffect(() => {
-    setIsSplashFinished(sessionStorage.getItem("splash-finished") === "true");
-  }, []);
+    if (isAuthOrAdmin) {
+      setIsSplashFinished(true);
+    } else {
+      setIsSplashFinished(sessionStorage.getItem("splash-finished") === "true");
+    }
+  }, [isAuthOrAdmin]);
 
   const finishSplash = () => {
     sessionStorage.setItem("splash-finished", "true");
@@ -26,12 +36,12 @@ export default function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      {!isSplashFinished && (
+      {!isSplashFinished && !isAuthOrAdmin && (
         <SplashScreen onFinish={finishSplash} />
       )}
-      {isSplashFinished && (
+      {(isSplashFinished || isAuthOrAdmin) && (
         <>
-          <Navbar />
+          {!isAuthOrAdmin && <Navbar />}
           <div className="flex-1">{children}</div>
         </>
       )}
