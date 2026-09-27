@@ -14,11 +14,11 @@ export default async function LoginPage({
 }: LoginPageProps) {
   const { door } = await searchParams;
 
-  // Baca langsung dari env (tanpa hardcode)
-  const loginDoorPass = process.env.LOGIN_DOORPASS?.trim();
+  // Ambil dari env Vercel / server, dengan default 'kanagara-admin' jika env belum diisi di Vercel
+  const loginDoorPass = (process.env.LOGIN_DOORPASS || 'kanagara-admin').trim();
 
-  // Tidak ada Door Pass atau env belum diset
-  if (!door || !loginDoorPass) {
+  // Tidak ada Door Pass
+  if (!door) {
     notFound();
   }
 
