@@ -12,7 +12,7 @@ export default async function LoginPage({
 }: LoginPageProps) {
   const { door } = await searchParams;
 
-  const loginDoorPass = process.env.LOGIN_DOORPASS || 'kanagara-admin';
+  const loginDoorPass = process.env.LOGIN_DOORPASS
 
   // Tidak ada Door Pass
   if (!door) {
