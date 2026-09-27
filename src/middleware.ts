@@ -21,9 +21,10 @@ export function middleware(request: NextRequest) {
       }
     }
 
-    // Jika belum login atau bukan admin, redirect ke halaman login dengan door pass
+    // Jika belum login atau bukan admin, redirect ke halaman login dengan door pass dinamis dari env
     if (!isAuthenticated) {
-      const loginUrl = new URL('/Login?door=kanagara-admin', request.url);
+      const activeDoor = process.env.LOGIN_DOORPASS?.trim() || 'kanagara-admin';
+      const loginUrl = new URL(`/Login?door=${encodeURIComponent(activeDoor)}`, request.url);
       return NextResponse.redirect(loginUrl);
     }
   }

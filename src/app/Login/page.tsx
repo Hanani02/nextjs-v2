@@ -1,5 +1,7 @@
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
-import  LoginForm  from "@/app/Login/LoginForm"
+import LoginForm from "@/app/Login/LoginForm";
 
 interface LoginPageProps {
   searchParams: Promise<{
@@ -12,15 +14,16 @@ export default async function LoginPage({
 }: LoginPageProps) {
   const { door } = await searchParams;
 
-  const loginDoorPass = process.env.LOGIN_DOORPASS
+  // Baca langsung dari env (tanpa hardcode)
+  const loginDoorPass = process.env.LOGIN_DOORPASS?.trim();
 
-  // Tidak ada Door Pass
-  if (!door) {
+  // Tidak ada Door Pass atau env belum diset
+  if (!door || !loginDoorPass) {
     notFound();
   }
 
-  // Door Pass salah
-  if (door !== loginDoorPass) {
+  // Verifikasi kecocokan Door Pass (aman terhadap spasi)
+  if (door.trim() !== loginDoorPass) {
     notFound();
   }
 

@@ -133,7 +133,7 @@ export default function AdminPage() {
     localStorage.removeItem('user');
     document.cookie = 'admin_session=; path=/; max-age=0; SameSite=Lax';
     toast.success('Berhasil logout.');
-    router.push('/Login?door=kanagara-admin');
+    router.push('/');
   };
 
   // 4. Image Upload helper
