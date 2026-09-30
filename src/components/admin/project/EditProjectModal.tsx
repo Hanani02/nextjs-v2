@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { LuPencil, LuSave, LuX, LuUpload, LuLoader } from 'react-icons/lu';
 import type { ProjectItem, ProjectFormData } from '@/types/admin';
+import { resolveImageUrl } from '@/lib/utils';
 
 interface EditProjectModalProps {
   isOpen: boolean;
@@ -140,7 +141,7 @@ export default function EditProjectModal({
               <div className="relative w-24 h-16 rounded-lg border border-primary/40 overflow-hidden shrink-0 bg-background">
                 <Image
                   fill
-                  src={form.image || '/image/auroraweb.png'}
+                  src={resolveImageUrl(form.image, '/image/auroraweb.png')}
                   alt="Thumbnail Preview"
                   className="object-cover"
                   unoptimized

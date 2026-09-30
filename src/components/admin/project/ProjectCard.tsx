@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { LuPencil, LuTrash2, LuExternalLink, LuGithub, LuFileText } from 'react-icons/lu';
 import type { ProjectItem } from '@/types/admin';
+import { resolveImageUrl } from '@/lib/utils';
 
 interface ProjectCardProps {
   project: ProjectItem;
@@ -29,11 +30,12 @@ export default function ProjectCard({
       <div className="relative aspect-video w-full overflow-hidden bg-surface">
         <Image
           fill
-          src={project.image || '/image/auroraweb.png'}
+          src={resolveImageUrl(project.image, '/image/auroraweb.png')}
           alt={project.judul_project}
           className="object-cover transition-transform duration-500 group-hover:scale-105"
           unoptimized
         />
+
         <div className="absolute top-3 left-3">
           <span className="rounded-md border border-border bg-background/80 px-2.5 py-1 text-[11px] font-medium text-primary backdrop-blur-md">
             {project.kategori || 'web'}

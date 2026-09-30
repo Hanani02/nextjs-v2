@@ -8,7 +8,70 @@ interface SqlHelperModalProps {
   onClose: () => void;
 }
 
-const SQL_SCHEMA = `-- 1. TABEL PROJECT
+const SQL_SCHEMA = `-- ==========================================
+-- 1. TABEL HERO SECTION
+-- ==========================================
+CREATE TABLE IF NOT EXISTS hero (
+  id bigint PRIMARY KEY DEFAULT 1,
+  greeting varchar(500) NOT NULL DEFAULT '── Hello I''m M. Akbar Hanani',
+  roles varchar(500) NOT NULL DEFAULT 'Fullstack Developer | Web Developer | Mobile Developer',
+  headline varchar(500) NOT NULL DEFAULT 'Building modern web experience with',
+  headline_highlight varchar(500) NOT NULL DEFAULT 'clean code',
+  description text NOT NULL DEFAULT 'I design and build scalable fullstack applications using modern technologies like Next.js, TypeScript, and Supabase. Focused on performance, clean UI.',
+  profile_image varchar(500) NOT NULL DEFAULT '/image/profil.jpeg',
+  profile_image_position varchar(50) NOT NULL DEFAULT 'center',
+  profile_image_scale numeric NOT NULL DEFAULT 1.0,
+  profile_image_fit varchar(50) NOT NULL DEFAULT 'cover',
+  cta_contact_text varchar(100) NOT NULL DEFAULT 'get in touch',
+  cta_projects_text varchar(100) NOT NULL DEFAULT 'View projects',
+  updated_at timestamptz DEFAULT now(),
+  CONSTRAINT single_hero_row CHECK (id = 1)
+);
+
+-- Data Default Hero (Insert jika belum ada)
+INSERT INTO hero (id, greeting, roles, headline, headline_highlight, description, profile_image)
+VALUES (
+  1,
+  '── Hello I''m M. Akbar Hanani',
+  'Fullstack Developer | Web Developer | Mobile Developer',
+  'Building modern web experience with',
+  'clean code',
+  'I design and build scalable fullstack applications using modern technologies like Next.js, TypeScript, and Supabase. Focused on performance, clean UI.',
+  '/image/profil.jpeg'
+) ON CONFLICT (id) DO NOTHING;
+
+-- ==========================================
+-- 2. TABEL ABOUT ME SECTION
+-- ==========================================
+CREATE TABLE IF NOT EXISTS about (
+  id bigint PRIMARY KEY DEFAULT 1,
+  badge varchar(100) NOT NULL DEFAULT 'About Me',
+  title varchar(500) NOT NULL DEFAULT 'I build scalable and user-focused web applications',
+  description1 text NOT NULL,
+  description2 text NOT NULL,
+  about_image varchar(500) NOT NULL DEFAULT '/image/about.jpeg',
+  about_image_position varchar(50) NOT NULL DEFAULT 'center',
+  about_image_scale numeric NOT NULL DEFAULT 1.0,
+  about_image_fit varchar(50) NOT NULL DEFAULT 'cover',
+  highlights jsonb NOT NULL DEFAULT '[{"title": "Clean code", "icon": "code"}, {"title": "Fullstack Apps", "icon": "database"}, {"title": "Performance", "icon": "rocket"}]'::jsonb,
+  updated_at timestamptz DEFAULT now(),
+  CONSTRAINT single_about_row CHECK (id = 1)
+);
+
+-- Data Default About (Insert jika belum ada)
+INSERT INTO about (id, badge, title, description1, description2, about_image)
+VALUES (
+  1,
+  'About Me',
+  'I build scalable and user-focused web applications',
+  'I''m a Grade 11 Software Engineering (RPL) student at SMKN 1 Kota Pasuruan, passionate about building smooth, modern, and user-friendly web applications.',
+  'I frequently work with HTML, CSS, JavaScript, TypeScript, React, Next.js, and Tailwind CSS, along with MySQL and basic Python.',
+  '/image/about.jpeg'
+) ON CONFLICT (id) DO NOTHING;
+
+-- ==========================================
+-- 3. TABEL PROJECT
+-- ==========================================
 CREATE TABLE IF NOT EXISTS project (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   judul_project varchar(500) NOT NULL,
@@ -21,7 +84,9 @@ CREATE TABLE IF NOT EXISTS project (
   slug varchar(500) NOT NULL
 );
 
--- 2. TABEL EXPERIENCE
+-- ==========================================
+-- 4. TABEL EXPERIENCE
+-- ==========================================
 CREATE TABLE IF NOT EXISTS experience (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   role varchar(500) NOT NULL,
@@ -31,7 +96,9 @@ CREATE TABLE IF NOT EXISTS experience (
   technologies text[] NOT NULL
 );
 
--- 3. TABEL DETAIL PROJECT
+-- ==========================================
+-- 5. TABEL DETAIL PROJECT
+-- ==========================================
 CREATE TABLE IF NOT EXISTS detail (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   id_project bigint NOT NULL,
@@ -46,8 +113,11 @@ CREATE TABLE IF NOT EXISTS detail (
     ON DELETE restrict
 );
 
--- 4. KEAMANAN RLS (Row Level Security) SUPABASE
--- Jika menggunakan API Route atau client-side direct access:
+-- ==========================================
+-- 6. KEAMANAN RLS (Row Level Security) SUPABASE
+-- ==========================================
+ALTER TABLE hero DISABLE ROW LEVEL SECURITY;
+ALTER TABLE about DISABLE ROW LEVEL SECURITY;
 ALTER TABLE project DISABLE ROW LEVEL SECURITY;
 ALTER TABLE experience DISABLE ROW LEVEL SECURITY;
 ALTER TABLE detail DISABLE ROW LEVEL SECURITY;`;

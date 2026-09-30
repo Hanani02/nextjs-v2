@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { getSupabase } from '@/lib/supabase';
+import { getSupabase, getAdminSupabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Try uploading to Supabase Storage bucket "portfolio"
     try {
-      const supabase = getSupabase();
+      const supabase = getAdminSupabase();
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('portfolio')
         .upload(fileName, buffer, {
@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
             source: 'supabase_storage',
           });
         }
+      } else if (uploadError) {
+        console.warn('Supabase storage upload error:', uploadError.message);
       }
     } catch (storageErr) {
       console.warn('Supabase storage upload skipped/failed:', storageErr);

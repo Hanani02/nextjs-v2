@@ -7,18 +7,18 @@ import Footer from "@/components/section/Footer";
 import { Toaster } from "react-hot-toast";
 import AnimationLayout from "@/components/layouts/animationsLayout";
 import Marquee from "@/components/Hero/marquee";
-import { getSiteConfig } from "@/lib/site-config";
+import { getSiteConfigAsync } from "@/lib/site-config";
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const config = getSiteConfig();
+export default async function Home() {
+  const config = await getSiteConfigAsync();
 
   return (
     <AnimationLayout>
-      <HeroSections />
+      <HeroSections initialHero={config.hero} />
       <Marquee />
-      <AboutSection />
+      <AboutSection initialAbout={config.about} />
       <ProjectSection />
       <ExperienceSection />
       <ContactSection initialContact={config.contact} />

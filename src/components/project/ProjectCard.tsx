@@ -2,6 +2,8 @@ import  Link  from "next/link";
 import Image from "next/image";
 import { LuExternalLink, LuEye, LuGithub } from "react-icons/lu";
 import LinkButton from "../ui/LinkButton";
+import { resolveImageUrl } from "@/lib/utils";
+
 interface ProjectCardProps {
     slug: string,
     title: string,
@@ -30,9 +32,16 @@ export default function ProjectCard({
         transition-all duration-300
         hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg">
             <div className="relative h-60 md:h-64 overflow-hidden">
-                <Image src={image} alt={title} fill className="w-full h-full object-cover transition duration-500 group-hover:scale-105" />
+                <Image
+                  src={resolveImageUrl(image, '/image/auroraweb.png')}
+                  alt={title}
+                  fill
+                  className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                  unoptimized
+                />
                 <div className="absolute inset-0 bg-background/50 opacity-0 group-hover:opacity-100 transition"></div>
             </div>
+
 
             <div className="p-6 space-y-5">
                 <h3 className="text-xl font-semibold text-text group-hover:text-primary transition">

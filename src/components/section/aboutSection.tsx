@@ -1,10 +1,22 @@
 import Image from "next/image";
 import { LuCode, LuDatabase, LuRocket } from "react-icons/lu";
-import { getSiteConfig } from "@/lib/site-config";
+import { getDynamicAbout } from "@/lib/site-config";
+import type { SiteConfig } from "@/types/admin";
 
-export default function AboutSection() {
-  const config = getSiteConfig();
-  const about = config.about;
+interface AboutSectionProps {
+  initialAbout?: SiteConfig['about'];
+}
+
+export default async function AboutSection({ initialAbout }: AboutSectionProps = {}) {
+  const about = initialAbout ?? (await getDynamicAbout());
+
+  const highlights = (about.highlights && about.highlights.length > 0)
+    ? about.highlights
+    : [
+        { title: "Clean code", icon: "code" },
+        { title: "Fullstack Apps", icon: "database" },
+        { title: "Performance", icon: "rocket" },
+      ];
 
   return (
     <section id="about" className="py-24 overflow-hidden relative">
@@ -60,21 +72,24 @@ export default function AboutSection() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-            <div className="p-4 rounded-xl bg-surface border border-border text-center">
-              <LuCode className="mx-auto mb-2 text-primary w-6 h-6" />
-              <p className="text-text text-sm">Clean code</p>
-            </div>
-            <div className="p-4 rounded-xl bg-surface border border-border text-center">
-              <LuDatabase className="mx-auto mb-2 text-primary w-6 h-6" />
-              <p className="text-text text-sm">Fullstack Apps</p>
-            </div>
-            <div className="p-4 rounded-xl bg-surface border border-border text-center">
-              <LuRocket className="mx-auto mb-2 text-primary w-6 h-6" />
-              <p className="text-text text-sm">Performance</p>
-            </div>
+            {highlights.map((item, index) => {
+              const Icon = item.icon === 'database'
+                ? LuDatabase
+                : item.icon === 'rocket'
+                ? LuRocket
+                : LuCode;
+
+              return (
+                <div key={index} className="p-4 rounded-xl bg-surface border border-border text-center">
+                  <Icon className="mx-auto mb-2 text-primary w-6 h-6" />
+                  <p className="text-text text-sm">{item.title}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
     </section>
   );
 }
+

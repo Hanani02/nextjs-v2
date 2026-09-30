@@ -12,8 +12,10 @@ import {
   LuSparkles,
 } from "react-icons/lu";
 import { getSupabase } from "@/lib/supabase";
+import { resolveImageUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
 
 interface ProjectDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -75,7 +77,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
     slug: projectData.slug ?? String(projectData.id),
     title: projectData.judul_project ?? "Project",
     description: projectData.deskripsi_project ?? "",
-    image: projectData.image ?? "/image/auroraweb.png",
+    image: resolveImageUrl(projectData.image, "/image/auroraweb.png"),
     tags: Array.isArray(projectData.tags)
       ? toStringArray(projectData.tags)
       : typeof projectData.tags === "string"

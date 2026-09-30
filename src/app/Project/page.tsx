@@ -3,6 +3,7 @@ import ProjectBrowser, { type BrowserProject } from "@/components/project/Projec
 import { LuArrowRight } from "react-icons/lu";
 import Footer from '@/components/section/Footer';
 import { getSupabase } from '@/lib/supabase';
+import { resolveImageUrl } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,7 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
         slug: project.slug ?? String(project.id),
         title: project.judul_project,
         description: project.deskripsi_project,
-        image: project.image,
+        image: resolveImageUrl(project.image, '/image/auroraweb.png'),
         tags: Array.isArray(project.tags) ? project.tags : (typeof project.tags === 'string' ? project.tags.split(',').map((tag: string) => tag.trim()) : []),
         kategori: project.kategori ?? 'web',
         liveUrl: project.live_url ?? project.live_URL ?? '',

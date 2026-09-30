@@ -1,6 +1,7 @@
 import SectionHeader from "@/components/ui/sectionHeader";
 import ProjectBrowser, { type BrowserProject } from "@/components/project/ProjectBrowser";
 import { getSupabase } from '@/lib/supabase';
+import { resolveImageUrl } from '@/lib/utils';
 
 export default async function projectSection() {
     const { data: daftarProyek, error } = await getSupabase()
@@ -21,12 +22,13 @@ export default async function projectSection() {
         slug: project.slug ?? String(project.id),
         title: project.judul_project,
         description: project.deskripsi_project,
-        image: project.image,
+        image: resolveImageUrl(project.image, '/image/auroraweb.png'),
         tags: Array.isArray(project.tags) ? project.tags : (typeof project.tags === 'string' ? project.tags.split(',').map((tag: string) => tag.trim()) : []),
         kategori: project.kategori ?? 'web',
         liveUrl: project.live_url ?? project.live_URL ?? '',
         githubUrl: project.github_url ?? '',
     }));
+
 
     return (
         <section id="projects" className="py-24 relative">

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { LuLayers, LuSave, LuX, LuUpload, LuLoader } from 'react-icons/lu';
 import type { ProjectFormData } from '@/types/admin';
+import { resolveImageUrl } from '@/lib/utils';
 
 interface AddProjectModalProps {
   isOpen: boolean;
@@ -127,7 +128,7 @@ export default function AddProjectModal({
               <div className="relative w-24 h-16 rounded-lg border border-primary/40 overflow-hidden shrink-0 bg-background">
                 <Image
                   fill
-                  src={form.image || '/image/auroraweb.png'}
+                  src={resolveImageUrl(form.image, '/image/auroraweb.png')}
                   alt="Thumbnail Preview"
                   className="object-cover"
                   unoptimized

@@ -2,11 +2,16 @@ import LineWaves from "@/components/Hero/background";
 import LinkButton from "@/components/ui/LinkButton";
 import { LuArrowRight } from "react-icons/lu";
 import Image from "next/image";
-import { getSiteConfig } from "@/lib/site-config";
+import { getDynamicHero } from "@/lib/site-config";
+import type { SiteConfig } from "@/types/admin";
 
-export default function HeroSections() {
-  const config = getSiteConfig();
-  const hero = config.hero;
+interface HeroSectionsProps {
+  initialHero?: SiteConfig['hero'];
+}
+
+export default async function HeroSections({ initialHero }: HeroSectionsProps = {}) {
+  const hero = initialHero ?? (await getDynamicHero());
+
 
   return (
     <section id="home" className="relative min-h-screen overflow-hidden flex items-center pt-30 py-10">
