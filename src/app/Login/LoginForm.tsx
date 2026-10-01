@@ -11,7 +11,6 @@ export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -33,14 +32,10 @@ export default function LoginForm() {
         .from('users')
         .select('email,password,role,email_verified');
 
-        console.log('USERS:', users);
-
-        const data = users?.find(
-          (user) =>
+      const data = users?.find(
+        (user) =>
           user.email.trim().toLowerCase() === email.trim().toLowerCase()
-        );
-
-        console.log('MATCHED USER:', data);
+      );
 
       if (error) {
         setError('Terjadi masalah saat mengakses database.');
@@ -72,7 +67,7 @@ export default function LoginForm() {
         return;
       }
 
-      setSuccess(isRegister ? 'Admin berhasil didaftarkan!' : 'Login berhasil!');
+      setSuccess('Login berhasil!');
       const sessionUser = { email: data.email, role: data.role };
       localStorage.setItem('user', JSON.stringify(sessionUser));
       document.cookie = `admin_session=${encodeURIComponent(JSON.stringify(sessionUser))}; path=/; max-age=604800; SameSite=Lax`;
@@ -80,7 +75,7 @@ export default function LoginForm() {
         router.push('/Admin');
         router.refresh();
       }, 600);
-    } catch (e) {
+    } catch {
       setError('Terjadi kesalahan koneksi. Silakan coba lagi.');
     } finally {
       setLoading(false);
@@ -104,10 +99,10 @@ export default function LoginForm() {
 
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight text-text">
-            {isRegister ? 'Buat Akun Admin' : 'Login Admin'}
+            Login Admin
           </h1>
           <p className="text-sm text-gray-400">
-            {isRegister ? 'Daftarkan admin untuk mengelola portofolio.' : 'Masuk untuk mengelola portofolio Anda.'}
+            Masuk untuk mengelola portofolio Anda.
           </p>
         </div>
 
@@ -173,24 +168,10 @@ export default function LoginForm() {
                 Memproses...
               </>
             ) : (
-              isRegister ? 'Daftarkan Admin' : 'Masuk'
+              'Masuk'
             )}
           </button>
         </form>
-
-        <div className="text-center pt-2">
-          <button
-            type="button"
-            onClick={() => {
-              setIsRegister(!isRegister);
-              setError('');
-              setSuccess('');
-            }}
-            className="text-xs text-gray-400 hover:text-primary transition cursor-pointer"
-          >
-            {isRegister ? 'Sudah punya akun? Masuk di sini' : 'Inisialisasi akun admin pertama'}
-          </button>
-        </div>
       </div>
     </div>
   );

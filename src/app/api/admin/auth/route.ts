@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { action, email, password } = body;
+    const { email, password } = body;
     const supabase = getSupabase();
 
     const trimmedEmail = email?.trim().toLowerCase();
@@ -48,80 +48,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Action: Inisialisasi Admin Pertama
-    if (action === 'register_first') {
-      const { count } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true });
-
-      if (count && count > 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Akun admin sudah ada. Silakan login dengan akun yang terdaftar.',
-          },
-          { status: 400 }
-        );
-      }
-
-      // Try inserting with email_verified, fallback if column doesn't exist yet
-      let insertResult = await supabase
-        .from('users')
-        .insert({
-          email: trimmedEmail,
-          password: trimmedPassword,
-          role: 'admin',
-          email_verified: true,
-        })
-        .select()
-        .single();
-
-      if (insertResult.error && insertResult.error.message.includes('email_verified')) {
-        insertResult = await supabase
-          .from('users')
-          .insert({
-            email: trimmedEmail,
-            password: trimmedPassword,
-            role: 'admin',
-          })
-          .select()
-          .single();
-      }
-
-      if (insertResult.error) {
-        return NextResponse.json(
-          {
-            success: false,
-            error:
-              insertResult.error.message ||
-              'Gagal mendaftarkan admin. Pastikan RLS di Supabase mengizinkan insert atau gunakan SUPABASE_SERVICE_ROLE_KEY.',
-          },
-          { status: 500 }
-        );
-      }
-
-      const adminUser = {
-        email: insertResult.data.email,
-        role: insertResult.data.role,
-      };
-
-      const res = NextResponse.json({
-        success: true,
-        message: 'Admin pertama berhasil dibuat!',
-        user: adminUser,
-      });
-
-      res.cookies.set('admin_session', JSON.stringify(adminUser), {
-        path: '/',
-        httpOnly: false,
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
-      });
-
-      return res;
-    }
-
-    // Normal Login Action
+    // Login Action
     const { data: users, error: selectError } = await supabase
       .from('users')
       .select('*')
