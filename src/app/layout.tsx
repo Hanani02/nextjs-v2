@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
-import { Poppins, Noto_Sans, Playfair_Display } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layouts/AppShell";
 
-const playfairDisplayHeading = Playfair_Display({ subsets: ["latin"], variable: "--font-heading" });
-
-const notoSans = Noto_Sans({ subsets: ["latin"], variable: "--font-sans" });
-
 const poppins = Poppins({
-  variable:"--font-poppins",
-  subsets:["latin"],
-  weight:["300","400","500","600","700","800"]
-})
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 const siteUrl = "https://portofolio-hanann.vercel.app";
 
@@ -97,7 +94,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="id"
-      className={`${poppins.className} ${playfairDisplayHeading.variable} ${notoSans.variable} h-full antialiased`}
+      className={`${poppins.className} ${poppins.variable} h-full antialiased`}
     >
       <body className="min-h-screen bg-background text-text">
         <AppShell>{children}</AppShell>

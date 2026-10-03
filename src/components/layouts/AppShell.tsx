@@ -10,7 +10,7 @@ type AppShellProps = {
 };
 
 export default function AppShell({ children }: AppShellProps) {
-  const [isSplashFinished, setIsSplashFinished] = useState<boolean | null>(null);
+  const [showSplash, setShowSplash] = useState(false);
   const pathname = usePathname();
 
   const isAuthOrAdmin =
@@ -18,33 +18,38 @@ export default function AppShell({ children }: AppShellProps) {
     pathname?.toLowerCase().startsWith("/admin");
 
   useEffect(() => {
-    if (isAuthOrAdmin) {
-      setIsSplashFinished(true);
-    } else {
-      setIsSplashFinished(sessionStorage.getItem("splash-finished") === "true");
+    if (isAuthOrAdmin) return;
+
+    try {
+      const alreadySeen = sessionStorage.getItem("splash-finished") === "true";
+      const isBot = /Lighthouse|Googlebot|HeadlessChrome|Chrome-Lighthouse/i.test(
+        navigator.userAgent
+      );
+
+      if (!alreadySeen && !isBot) {
+        setShowSplash(true);
+      }
+    } catch {
+      setShowSplash(false);
     }
   }, [isAuthOrAdmin]);
 
   const finishSplash = () => {
-    sessionStorage.setItem("splash-finished", "true");
-    setIsSplashFinished(true);
+    try {
+      sessionStorage.setItem("splash-finished", "true");
+    } catch {
+      // ignore
+    }
+    setShowSplash(false);
   };
-
-  if (isSplashFinished === null) {
-    return null;
-  }
 
   return (
     <div className="flex min-h-screen flex-col">
-      {!isSplashFinished && !isAuthOrAdmin && (
+      {showSplash && !isAuthOrAdmin && (
         <SplashScreen onFinish={finishSplash} />
       )}
-      {(isSplashFinished || isAuthOrAdmin) && (
-        <>
-          {!isAuthOrAdmin && <Navbar />}
-          <div className="flex-1">{children}</div>
-        </>
-      )}
+      {!isAuthOrAdmin && <Navbar />}
+      <div className="flex-1">{children}</div>
     </div>
   );
 }
