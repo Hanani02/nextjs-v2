@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: ProyekDetailPageProps): Promi
     project.deskripsi_project ||
     `Detail proyek ${title} yang dikembangkan oleh Muhammad Akbar Hanani.`;
   const image = resolveImageUrl(project.image, "/image/auroraweb.png");
-  const canonicalUrl = `https://portofolio-hanan.vercel.app/proyek/${project.id}`;
+  const canonicalUrl = `https://portofolio-hanann.vercel.app/proyek/${project.id}`;
 
   return {
     title,

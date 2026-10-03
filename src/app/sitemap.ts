@@ -4,7 +4,7 @@ import { getSupabase } from "@/lib/supabase";
 export const revalidate = 3600; // Revalidate every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://portofolio-hanan.vercel.app";
+  const baseUrl = "https://portofolio-hanann.vercel.app";
   const now = new Date();
 
   // Static pages

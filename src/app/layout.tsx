@@ -13,7 +13,7 @@ const poppins = Poppins({
   weight:["300","400","500","600","700","800"]
 })
 
-const siteUrl = "https://portofolio-hanan.vercel.app";
+const siteUrl = "https://portofolio-hanann.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -56,12 +56,22 @@ export const metadata: Metadata = {
     title: "Muhammad Akbar Hanani | Portfolio",
     description:
       "Software Developer & UI/UX Designer. Showcase proyek web development modern dan solusi fullstack engineering.",
+    images: [
+      {
+        url: `${siteUrl}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: "Muhammad Akbar Hanani - Software Developer & UI/UX Designer",
+        type: "image/png",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Muhammad Akbar Hanani | Portfolio",
     description:
       "Software Developer & UI/UX Designer. Showcase proyek web development modern dan solusi fullstack engineering.",
+    images: [`${siteUrl}/opengraph-image`],
     creator: "@akbarhanani02",
   },
   robots: {
