@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080" fill="none">
+  <!-- Background -->
+  <rect width="1080" height="1080" fill="#0A0A0C"/>
+  <circle cx="850" cy="250" r="380" fill="#3B82F6" fill-opacity="0.18" filter="blur(90px)"/>
+
+  <!-- Badge Status -->
+  <rect x="90" y="90" width="260" height="50" rx="25" fill="#16161A" stroke="#27272A" stroke-width="1.5"/>
+  <circle cx="120" cy="115" r="6" fill="#22C55E"/>
+  <text x="142" y="122" fill="#A1A1AA" font-family="system-ui, sans-serif" font-size="16" font-weight="600" letter-spacing="1.5">PORTFOLIO &amp; PROFILE</text>
+
+  <!-- Title & Subtitle -->
+  <text x="90" y="520" fill="#F4F4F5" font-family="system-ui, sans-serif" font-size="76" font-weight="800" letter-spacing="-1">Muhammad</text>
+  <text x="90" y="605" fill="#F4F4F5" font-family="system-ui, sans-serif" font-size="76" font-weight="800" letter-spacing="-1">Akbar Hanani</text>
+  <text x="90" y="675" fill="#94A3B8" font-family="system-ui, sans-serif" font-size="32" font-weight="400">Software Developer &amp; UI/UX Designer</text>
+
+  <!-- Divider & Footer -->
+  <line x1="90" y1="920" x2="990" y2="920" stroke="#27272A" stroke-width="1.5"/>
+  <text x="90" y="975" fill="#71717A" font-family="system-ui, sans-serif" font-size="24">Next.js  •  TypeScript  •  Tailwind</text>
+  <text x="815" y="975" fill="#60A5FA" font-family="system-ui, sans-serif" font-size="24" font-weight="600">akbarhanani.dev</text>
+</svg>

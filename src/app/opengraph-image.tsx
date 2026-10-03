@@ -1,6 +1,8 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-export const alt = "Muhammad Akbar Hanani - Fullstack & Web Developer Portfolio";
+export const alt = "Muhammad Akbar Hanani - Software Developer & UI/UX Designer";
 export const size = {
   width: 1200,
   height: 630,
@@ -8,6 +10,16 @@ export const size = {
 export const contentType = "image/png";
 
 export default async function Image() {
+  let geminiBase64 = "";
+
+  try {
+    const imagePath = join(process.cwd(), "public/image/gemini.png");
+    const fileBuffer = await readFile(imagePath);
+    geminiBase64 = `data:image/png;base64,${fileBuffer.toString("base64")}`;
+  } catch (error) {
+    console.error("Error reading gemini.png:", error);
+  }
+
   return new ImageResponse(
     (
       <div
@@ -15,10 +27,11 @@ export default async function Image() {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
+          flexDirection: "row",
+          alignItems: "center",
           justifyContent: "space-between",
-          padding: "60px 80px",
-          background: "linear-gradient(135deg, #0b0f19 0%, #0f172a 40%, #1e1b4b 100%)",
+          padding: "50px 60px",
+          background: "linear-gradient(135deg, #090a0f 0%, #0d111a 50%, #111827 100%)",
           color: "#ffffff",
           fontFamily: "sans-serif",
           position: "relative",
@@ -29,145 +42,189 @@ export default async function Image() {
         <div
           style={{
             position: "absolute",
-            top: "-150px",
-            right: "-100px",
-            width: "500px",
-            height: "500px",
+            top: "-120px",
+            right: "-80px",
+            width: "550px",
+            height: "550px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(167, 139, 250, 0.25) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(59, 130, 246, 0.22) 0%, transparent 70%)",
           }}
         />
         <div
           style={{
             position: "absolute",
-            bottom: "-150px",
+            bottom: "-140px",
             left: "-100px",
-            width: "500px",
-            height: "500px",
+            width: "550px",
+            height: "550px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(99, 102, 241, 0.2) 0%, transparent 70%)",
           }}
         />
 
-        {/* Top Header Badge */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "100%",
-            zIndex: 10,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              padding: "10px 22px",
-              borderRadius: "999px",
-              background: "rgba(255, 255, 255, 0.08)",
-              border: "1px solid rgba(255, 255, 255, 0.15)",
-              fontSize: "18px",
-              color: "#c4b5fd",
-              fontWeight: 600,
-            }}
-          >
-            <div
-              style={{
-                width: "10px",
-                height: "10px",
-                borderRadius: "50%",
-                background: "#10b981",
-              }}
-            />
-            Available for Projects
-          </div>
-
-          <div
-            style={{
-              fontSize: "20px",
-              color: "rgba(255, 255, 255, 0.6)",
-              fontWeight: 500,
-            }}
-          >
-            portofolio-hanan.vercel.app
-          </div>
-        </div>
-
-        {/* Center Main Content */}
+        {/* Left Section: Info & Small Description */}
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: "18px",
-            zIndex: 10,
-            maxWidth: "960px",
+            justifyContent: "space-between",
+            height: "100%",
+            maxWidth: "630px",
           }}
         >
+          {/* Top Badge */}
           <div
             style={{
-              fontSize: "64px",
-              fontWeight: 800,
-              lineHeight: 1.15,
-              letterSpacing: "-0.02em",
-              background: "linear-gradient(to right, #ffffff, #e0e7ff, #a78bfa)",
-              backgroundClip: "text",
-              color: "transparent",
+              display: "flex",
+              alignItems: "center",
+              alignSelf: "flex-start",
+              gap: "10px",
+              padding: "8px 18px",
+              borderRadius: "999px",
+              background: "rgba(255, 255, 255, 0.07)",
+              border: "1px solid rgba(255, 255, 255, 0.15)",
             }}
           >
-            Muhammad Akbar Hanani
-          </div>
-
-          <div
-            style={{
-              fontSize: "30px",
-              color: "#93c5fd",
-              fontWeight: 600,
-              letterSpacing: "0.01em",
-            }}
-          >
-            Fullstack Developer & Web Developer
-          </div>
-
-          <div
-            style={{
-              fontSize: "22px",
-              color: "rgba(255, 255, 255, 0.75)",
-              lineHeight: 1.5,
-              maxWidth: "800px",
-            }}
-          >
-            Building modern, high-performance web applications with clean code, seamless user experiences, and scalable architecture.
-          </div>
-        </div>
-
-        {/* Bottom Tech Pills */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "14px",
-            zIndex: 10,
-          }}
-        >
-          {["Next.js", "React", "TypeScript", "Tailwind CSS", "Supabase", "Node.js"].map((tech) => (
             <div
-              key={tech}
               style={{
-                padding: "8px 18px",
-                borderRadius: "12px",
-                background: "rgba(255, 255, 255, 0.06)",
-                border: "1px solid rgba(255, 255, 255, 0.12)",
-                fontSize: "18px",
+                width: 10,
+                height: 10,
+                borderRadius: "50%",
+                background: "#22c55e",
+              }}
+            />
+            <span
+              style={{
+                fontSize: "15px",
+                fontWeight: 600,
                 color: "#e2e8f0",
-                fontWeight: 500,
+                letterSpacing: "0.08em",
               }}
             >
-              {tech}
+              PORTFOLIO &amp; PROFILE
+            </span>
+          </div>
+
+          {/* Center Titles & Description */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              margin: "20px 0",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "50px",
+                fontWeight: 800,
+                lineHeight: 1.15,
+                letterSpacing: "-0.02em",
+                color: "#f8fafc",
+              }}
+            >
+              Muhammad Akbar Hanani
             </div>
-          ))}
+
+            <div
+              style={{
+                fontSize: "23px",
+                fontWeight: 600,
+                color: "#60a5fa",
+                letterSpacing: "0.01em",
+              }}
+            >
+              Software Developer &amp; UI/UX Designer
+            </div>
+
+            {/* Small description requested by user */}
+            <div
+              style={{
+                fontSize: "18px",
+                color: "#94a3b8",
+                lineHeight: 1.5,
+                marginTop: "4px",
+              }}
+            >
+              Showcase proyek web development modern, desain UI/UX responsif, dan solusi fullstack engineering.
+            </div>
+          </div>
+
+          {/* Bottom Tags & URL */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingTop: "20px",
+              borderTop: "1px solid rgba(255, 255, 255, 0.12)",
+              width: "100%",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                gap: "10px",
+              }}
+            >
+              {["Next.js", "TypeScript", "Tailwind", "Supabase"].map((tag) => (
+                <div
+                  key={tag}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    background: "rgba(255, 255, 255, 0.06)",
+                    border: "1px solid rgba(255, 255, 255, 0.1)",
+                    fontSize: "14px",
+                    color: "#cbd5e1",
+                    fontWeight: 500,
+                  }}
+                >
+                  {tag}
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                fontSize: "16px",
+                color: "#60a5fa",
+                fontWeight: 600,
+              }}
+            >
+              portofolio-hanan.vercel.app
+            </div>
+          </div>
         </div>
+
+        {/* Right Section: The Photo from public/image/gemini.png */}
+        {geminiBase64 ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "430px",
+              height: "430px",
+              borderRadius: "28px",
+              padding: "10px",
+              background: "linear-gradient(135deg, rgba(59, 130, 246, 0.28) 0%, rgba(99, 102, 241, 0.15) 100%)",
+              border: "1px solid rgba(255, 255, 255, 0.16)",
+            }}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={geminiBase64}
+              alt="Muhammad Akbar Hanani"
+              width={410}
+              height={410}
+              style={{
+                borderRadius: "22px",
+                objectFit: "cover",
+              }}
+            />
+          </div>
+        ) : null}
       </div>
     ),
     {

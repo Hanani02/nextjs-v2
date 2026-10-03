@@ -53,15 +53,15 @@ export const metadata: Metadata = {
     locale: "id_ID",
     url: siteUrl,
     siteName: "Muhammad Akbar Hanani Portfolio",
-    title: "Muhammad Akbar Hanani | Fullstack & Web Developer Portfolio",
+    title: "Muhammad Akbar Hanani | Portfolio",
     description:
-      "Portofolio modern Muhammad Akbar Hanani - Showcase proyek web development, desain UI/UX, dan solusi fullstack engineering menggunakan Next.js dan Supabase.",
+      "Software Developer & UI/UX Designer. Showcase proyek web development modern dan solusi fullstack engineering.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Muhammad Akbar Hanani | Fullstack & Web Developer Portfolio",
+    title: "Muhammad Akbar Hanani | Portfolio",
     description:
-      "Portofolio modern Muhammad Akbar Hanani - Showcase proyek web development dan fullstack engineering.",
+      "Software Developer & UI/UX Designer. Showcase proyek web development modern dan solusi fullstack engineering.",
     creator: "@akbarhanani02",
   },
   robots: {
