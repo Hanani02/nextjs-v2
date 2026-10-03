@@ -34,10 +34,10 @@ export default function ProjectCard({
             <div className="relative h-60 md:h-64 overflow-hidden">
                 <Image
                   src={resolveImageUrl(image, '/image/auroraweb.png')}
-                  alt={title}
+                  alt={`Screenshot antarmuka dan preview proyek ${title}`}
                   fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
-                  unoptimized
                 />
                 <div className="absolute inset-0 bg-background/50 opacity-0 group-hover:opacity-100 transition"></div>
             </div>

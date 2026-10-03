@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,9 +17,76 @@ import { resolveImageUrl } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
-
 interface ProjectDetailPageProps {
   params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: ProjectDetailPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  if (!slug) {
+    return {
+      title: "Project Tidak Ditemukan",
+    };
+  }
+
+  // 1. Query by slug
+  let { data: project } = await getSupabase()
+    .from("project")
+    .select("id, slug, judul_project, deskripsi_project, image, kategori, tags")
+    .eq("slug", slug)
+    .maybeSingle();
+
+  // 2. Fallback query by ID
+  if (!project && /^\d+$/.test(slug)) {
+    const { data: projectById } = await getSupabase()
+      .from("project")
+      .select("id, slug, judul_project, deskripsi_project, image, kategori, tags")
+      .eq("id", Number(slug))
+      .maybeSingle();
+    project = projectById;
+  }
+
+  if (!project) {
+    return {
+      title: "Project Tidak Ditemukan | Muhammad Akbar Hanani",
+      description: "Project yang Anda cari tidak dapat ditemukan.",
+    };
+  }
+
+  const title = project.judul_project || "Detail Project";
+  const description =
+    project.deskripsi_project ||
+    `Detail project ${title} yang dikembangkan oleh Muhammad Akbar Hanani.`;
+  const image = resolveImageUrl(project.image, "/image/auroraweb.png");
+  const canonicalUrl = `https://portofolio-hanan.vercel.app/Project/${project.slug || slug}`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: `${title} | Muhammad Akbar Hanani`,
+      description,
+      url: canonicalUrl,
+      type: "article",
+      images: [
+        {
+          url: image,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | Muhammad Akbar Hanani`,
+      description,
+      images: [image],
+    },
+  };
 }
 
 function isString(value: unknown): value is string {
@@ -235,11 +303,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
             <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl group">
               <Image
                 src={project.image || "/image/auroraweb.png"}
-                alt={project.title}
+                alt={`Tangkapan layar antarmuka dan visualisasi proyek ${project.title}`}
                 fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1000px"
                 className="object-cover transition-transform duration-700 group-hover:scale-105"
                 priority
-                unoptimized
               />
               <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent pointer-events-none" />
             </div>

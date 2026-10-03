@@ -36,14 +36,14 @@ export default async function AboutSection({ initialAbout }: AboutSectionProps =
               <Image
                 fill
                 src={about.aboutImage || "/image/about.jpeg"}
-                alt="About Me"
+                alt="Foto Muhammad Akbar Hanani - Tentang Pengalaman dan Keahlian Web Development"
+                sizes="(max-width: 768px) 300px, 480px"
                 className="z-10 rounded-xl transition-transform duration-300"
                 style={{
                   objectFit: about.aboutImageFit || 'cover',
                   objectPosition: about.aboutImagePosition || 'center',
                   transform: `scale(${about.aboutImageScale || 1})`,
                 }}
-                unoptimized
               />
             </div>
           </div>

@@ -88,7 +88,8 @@ export default async function HeroSections({ initialHero }: HeroSectionsProps = 
             <Image
               fill
               src={hero.profileImage || "/image/profil.jpeg"}
-              alt="profil"
+              alt="Foto Profil Muhammad Akbar Hanani - Fullstack & Web Developer"
+              sizes="(max-width: 768px) 340px, 440px"
               className="z-10 rounded-full transition-transform duration-300"
               style={{
                 objectFit: hero.profileImageFit || 'cover',
@@ -96,7 +97,6 @@ export default async function HeroSections({ initialHero }: HeroSectionsProps = 
                 transform: `scale(${hero.profileImageScale || 1})`,
               }}
               priority
-              unoptimized
             />
           </div>
         </div>
