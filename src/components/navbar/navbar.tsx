@@ -62,6 +62,7 @@ export default function Navbar() {
                 </div>
                 <button
                 onClick={() => setNavOpen(!navOpen)}
+                aria-label={navOpen ? "Close navigation menu" : "Open navigation menu"}
                 className="z-50 lg:hidden w-10 h-10 rounded-lg flex items-center justify-center border border-border bg-surface/60 text-text hover:border-primary hover:text-primary transition">
                     {navOpen ? <LuX size={22}/> : <LuMenu size={22}/>}
                 </button>

@@ -46,8 +46,8 @@ export default function ContactSection({ initialContact }: ContactSectionProps) 
     {
       icon: LuMapPin,
       label: "Location",
-      value: contactData.location || "Indonesia",
-      href: "",
+      value: contactData.location || "Pasuruan, Jawa Timur, Indonesia",
+      href: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contactData.location || "Pasuruan, Jawa Timur, Indonesia")}`,
     },
   ];
 
@@ -163,7 +163,8 @@ export default function ContactSection({ initialContact }: ContactSectionProps) 
               {contactInfo.map((item, index) => (
                 <a
                   key={index}
-                  href={item.href || undefined}
+                  href={item.href}
+                  {...(item.href.startsWith("http") ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="flex items-center gap-4 p-4 rounded-xl hover:bg-surface transition-colors group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
