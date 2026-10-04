@@ -40,32 +40,21 @@ export default async function HeroSections({ initialHero }: HeroSectionsProps = 
       <div className="relative z-10 w-[90%] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
         {/* leftside */}
         <div className="space-y-6">
-          <h3
-            data-aos="fade-up"
-            fade-aos-delay="100"
-            className="text-3xl md:text-5xl lg:text-2xl font-bold leading-tight text-text/80"
-          >
+          <h3 className="text-3xl md:text-5xl lg:text-2xl font-bold leading-tight text-text/80">
             {hero.greeting}
           </h3>
-          <span
-            data-aos="fade-up"
-            className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm border border-border"
-          >
+          <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm border border-border">
             {hero.roles}
           </span>
-          <h1
-            data-aos="fade-up"
-            data-aos-delay="200"
-            className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-text/70"
-          >
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-text/70">
             {hero.headline} <span className="text-primary/70">{hero.headlineHighlight}</span>
           </h1>
 
-          <p data-aos="fade-up" data-aos-delay="400" className="text-gray-400 max-w-lg tracking-wide">
+          <p className="text-gray-400 max-w-lg tracking-wide">
             {hero.description}
           </p>
 
-          <div className="flex items-center gap-4 pt-2" data-aos="fade-up" data-aos-delay="600">
+          <div className="flex items-center gap-4 pt-2">
             <LinkButton
               text={hero.ctaContactText || "get in touch"}
               href="#contact"
@@ -81,7 +70,7 @@ export default async function HeroSections({ initialHero }: HeroSectionsProps = 
           </div>
         </div>
         {/* rightside */}
-        <div className="flex justify-center lg:justify-end" data-aos="fade-left">
+        <div className="flex justify-center lg:justify-end">
           <div className="relative w-85 h-85 md:w-110 md:h-110 rounded-full bg-surface/80 backdrop-blur-md border border-border flex items-center justify-center overflow-hidden">
             {/* Image glow */}
             <div className="absolute inset-0 rounded-full bg-primary/20 blur-3xl pointer-events-none" />

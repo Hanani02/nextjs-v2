@@ -236,6 +236,12 @@ export default function LineWaves({
     if (!containerRef.current) return;
     const container = containerRef.current;
 
+    // On mobile screens (<768px) or hidden containers, use the lightweight SVG fallback to save CPU and maximize performance
+    if (window.innerWidth < 768 || container.offsetWidth === 0) {
+      setWebglSupported(false);
+      return;
+    }
+
     // Check if WebGL is supported safely without triggering uncaught errors
     const webglInfo = detectWebGL();
     if (!webglInfo.supported || !webglInfo.canvas) {
