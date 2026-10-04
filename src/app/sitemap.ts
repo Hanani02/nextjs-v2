@@ -27,29 +27,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const { data: projects, error } = await getSupabase()
       .from("project")
-      .select("id, slug, created_at")
+      .select("id, slug")
       .order("id", { ascending: false });
 
     if (!error && projects) {
       for (const p of projects) {
         const identifier = p.slug || String(p.id);
-        const lastMod = p.created_at ? new Date(p.created_at) : now;
 
         routes.push({
           url: `${baseUrl}/Project/${identifier}`,
-          lastModified: lastMod,
+          lastModified: now,
           changeFrequency: "weekly",
           priority: 0.8,
         });
-
-        // Also map /proyek/:id for Indonesian alias
-        routes.push({
-          url: `${baseUrl}/proyek/${p.id}`,
-          lastModified: lastMod,
-          changeFrequency: "weekly",
-          priority: 0.7,
-        });
       }
+    } else if (error) {
+      console.error("Supabase sitemap query error:", error.message);
     }
   } catch (err) {
     console.error("Error generating dynamic sitemap:", err);
