@@ -27,7 +27,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.4, ease: "easeInOut" }}
           onClick={() => setIsVisible(false)}
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 text-white cursor-pointer select-none"
+          className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 text-white cursor-pointer select-none"
           title="Klik untuk melewati"
         >
           {/* Logo Animasi */}

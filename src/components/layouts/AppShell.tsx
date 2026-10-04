@@ -48,7 +48,7 @@ export default function AppShell({ children }: AppShellProps) {
       {showSplash && !isAuthOrAdmin && (
         <SplashScreen onFinish={finishSplash} />
       )}
-      {!isAuthOrAdmin && <Navbar />}
+      {!isAuthOrAdmin && !showSplash && <Navbar />}
       <div className="flex-1">{children}</div>
     </div>
   );
