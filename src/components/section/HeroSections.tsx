@@ -86,6 +86,8 @@ export default async function HeroSections({ initialHero }: HeroSectionsProps = 
                 transform: `scale(${hero.profileImageScale || 1})`,
               }}
               priority
+              fetchPriority="high"
+              loading="eager"
             />
           </div>
         </div>
