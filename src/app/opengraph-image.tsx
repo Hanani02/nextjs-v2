@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { SITE_DOMAIN } from "@/lib/site-url";
 
 export const alt =
   "Muhammad Akbar Hanani - Software Developer & UI/UX Designer";
@@ -207,7 +208,7 @@ export default async function Image() {
                 fontWeight: 600,
               }}
             >
-              portofolio-hanann.vercel.app
+              {SITE_DOMAIN}
             </div>
           </div>
         </div>

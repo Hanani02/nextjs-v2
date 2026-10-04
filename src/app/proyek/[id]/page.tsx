@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getSupabase } from "@/lib/supabase";
 import { resolveImageUrl } from "@/lib/utils";
+import { SITE_URL } from "@/lib/site-url";
 import ProjectDetailPage from "@/app/Project/[slug]/page";
 
 export const dynamic = "force-dynamic";
@@ -50,7 +51,7 @@ export async function generateMetadata({ params }: ProyekDetailPageProps): Promi
     project.deskripsi_project ||
     `Detail proyek ${title} yang dikembangkan oleh Muhammad Akbar Hanani.`;
   const image = resolveImageUrl(project.image, "/image/auroraweb.png");
-  const canonicalUrl = `https://portofolio-hanann.vercel.app/proyek/${project.id}`;
+  const canonicalUrl = `${SITE_URL}/proyek/${project.id}`;
 
   return {
     title,

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import AppShell from "@/components/layouts/AppShell";
+import { SITE_URL } from "@/lib/site-url";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -10,7 +11,7 @@ const poppins = Poppins({
   display: "swap",
 });
 
-const siteUrl = "https://portofolio-hanann.vercel.app";
+const siteUrl = SITE_URL;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
