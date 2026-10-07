@@ -49,10 +49,10 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
                             Projects
                         </span>
                         <h1 className="max-w-2xl text-4xl font-bold leading-tight text-text md:text-6xl">
-                            Kumpulan karya yang pernah saya buat.
+                            A collection of works that I&apos;ve made.
                         </h1>
                         <p className="max-w-2xl text-sm leading-7 text-gray-400 md:text-base">
-                            Jelajahi semua project yang saya bangun untuk belajar, bereksperimen, dan menciptakan pengalaman digital yang lebih baik.
+                            Explore all the projects I&apos;ve built to learn, experiment, and create better digital experiences.
                         </p>
                     </div>
 
@@ -67,7 +67,7 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
                         href="/#projects"
                         className="inline-flex items-center gap-2 self-start rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-text transition hover:border-primary hover:text-primary sm:self-auto"
                     >
-                        Kembali ke home <LuArrowRight aria-hidden="true" className="h-4 w-4" />
+                        Back to Home <LuArrowRight aria-hidden="true" className="h-4 w-4" />
                     </Link>
                 </div>
 

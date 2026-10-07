@@ -11,11 +11,11 @@ export default async function projectSection() {
 
     if (error) {
         console.error('Supabase projectSection error:', error);
-        return <p className="text-red-600">Gagal memuat data project: {error.message}</p>;
+        return <p className="text-red-600">Failed to load project data: {error.message}</p>;
     }
 
     if (!daftarProyek || daftarProyek.length === 0) {
-        return <p className="text-red-600">Data project kosong. Cek tabel project di Supabase dan policy RLS.</p>;
+        return <p className="text-red-600">Project data is empty. Check the project table in Supabase and RLS policy.</p>;
     }
 
     const projects: BrowserProject[] = (daftarProyek ?? []).map((project) => ({

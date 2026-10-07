@@ -144,7 +144,7 @@ export default function ProjectBrowser({
       </div>
 
       <p className="text-sm text-gray-400">
-        Menampilkan {visibleProjects.length} dari {filteredProjects.length} project yang cocok.
+        Showing {visibleProjects.length} of {filteredProjects.length} matching projects.
       </p>
 
       {visibleProjects.length > 0 ? (
@@ -162,7 +162,7 @@ export default function ProjectBrowser({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-border px-6 py-12 text-center text-gray-400">
-          Project tidak ditemukan. Coba kata kunci atau kategori lain.
+          Project not found. Try another keyword or category.
         </div>
       )}
 
@@ -172,7 +172,7 @@ export default function ProjectBrowser({
             href="/Project"
             className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-text transition hover:border-primary hover:text-primary"
           >
-            Lihat lebih lengkap <LuArrowRight aria-hidden="true" className="h-4 w-4" />
+            See more details <LuArrowRight aria-hidden="true" className="h-4 w-4" />
           </Link>
         </div>
       )}
