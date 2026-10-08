@@ -135,7 +135,7 @@ export default function ContactSection({ initialContact }: ContactSectionProps) 
             <button
               disabled={loading}
               type="submit"
-              className="w-full py-3 rounded-full bg-primary text-gray-200 font-medium hover:opacity-90 transition flex items-center justify-center gap-2 cursor-pointer"
+              className="w-full py-3 rounded-full bg-primary text-white font-medium hover:opacity-90 shadow-md shadow-primary/20 transition flex items-center justify-center gap-2 cursor-pointer"
             >
               {loading ? (
                 <>

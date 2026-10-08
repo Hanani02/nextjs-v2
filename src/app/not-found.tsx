@@ -12,27 +12,27 @@ export default function notFound() {
             <span className="absolute left-6 top-9 h-2.5 w-2.5 rounded-full bg-text" />
             <span className="absolute right-6 top-9 h-2.5 w-2.5 rounded-full bg-text" />
             <span className="absolute bottom-5 h-2 w-7 rounded-b-full border-b-2 border-primary" />
-            <span className="absolute -right-5 -top-4 rotate-12 rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-background">404!</span>
+            <span className="absolute -right-5 -top-4 rotate-12 rounded-lg bg-primary px-2.5 py-1 text-xs font-bold text-white shadow">404!</span>
           </div>
         </div>
 
         <p className="mb-3 font-mono text-sm font-semibold uppercase tracking-[0.28em] text-primary">Oops, route nyasar</p>
         <h1 className="text-8xl font-extrabold leading-none tracking-tight text-text sm:text-9xl">404</h1>
         <h2 className="mt-5 text-2xl font-bold text-text sm:text-3xl">Halaman ini sedang main petak umpet.</h2>
-        <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-white/60 sm:text-base">
+        <p className="mx-auto mt-4 max-w-lg text-sm leading-7 text-text/70 sm:text-base">
           Sepertinya alamat yang kamu cari tersesat di internet. Tenang, proyek-proyek keren masih menunggu di tempatnya.
         </p>
 
-        <div className="mx-auto mt-8 max-w-md rounded-xl border border-border bg-card/80 p-4 text-left font-mono text-xs text-white/50 shadow-xl">
+        <div className="mx-auto mt-8 max-w-md rounded-xl border border-border bg-card/80 p-4 text-left font-mono text-xs text-text/70 shadow-xl">
           <p><span className="text-primary">guest@portfolio</span>:~$ find halaman</p>
-          <p className="mt-2 text-red-300">find: halaman: No such file or directory</p>
-          <p className="mt-2 text-white/70">Tip: coba jalur yang lebih masuk akal.</p>
+          <p className="mt-2 text-red-400">find: halaman: No such file or directory</p>
+          <p className="mt-2 text-text/80">Tip: coba jalur yang lebih masuk akal.</p>
         </div>
 
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/#projects"
-            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-background transition hover:-translate-y-0.5 hover:bg-blue-400"
+            className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-600 shadow-md shadow-primary/20"
           >
             Lihat Projects <span className="ml-2" aria-hidden="true">-&gt;</span>
           </Link>

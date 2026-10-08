@@ -130,10 +130,10 @@ export default function ProjectBrowser({
                 key={item}
                 type="button"
                 onClick={() => handleCategoryChange(item)}
-                className={`rounded-lg border px-4 py-1.5 text-xs font-semibold transition ${
+                className={`rounded-lg border px-4 py-1.5 text-xs font-semibold transition cursor-pointer ${
                   isActive
-                    ? "border-primary bg-primary text-background shadow-sm"
-                    : "border-border bg-surface/70 text-gray-300 hover:border-primary hover:text-primary"
+                    ? "border-primary bg-primary text-white shadow-sm"
+                    : "border-border bg-surface/70 text-text/80 hover:border-primary hover:text-primary"
                 }`}
               >
                 {item}

@@ -1,5 +1,6 @@
 'use client';
 
+import ThemeToggle from '@/components/theme/ThemeToggle';
 import Link from 'next/link';
 import {
   LuShieldCheck,
@@ -83,6 +84,9 @@ export default function AdminHeader({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2">
+          {/* Theme Switcher */}
+          <ThemeToggle size="sm" />
+
           {/* SQL Helper Button */}
           <button
             type="button"
