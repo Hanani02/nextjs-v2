@@ -27,14 +27,14 @@ export default function Footer() {
             <div className="flex justify-center md:justify-start">
               <Logo />
             </div>
-            <p className="text-sm text-gray-300">
+            <p className="text-sm text-text/75">
               Crafting modern, scalable web experiences with clean code and thoughtful design.
             </p>
           </div>
 
           <div className="space-y-4">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Navigasi</p>
-            <div className="flex flex-col gap-2 text-sm text-gray-300">
+            <div className="flex flex-col gap-2 text-sm text-text/75">
               {quickLinks.map((link) => (
                 <Link key={link.label} href={link.href} className="transition hover:text-primary">
                   {link.label}
@@ -53,7 +53,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label={label}
-                  className="w-10 h-10 rounded-full flex items-center justify-center border border-border text-gray-300 hover:text-primary hover:border-primary hover:shadow-[0_0_20px_rgba(32,178,166,0.2)] transition-all duration-300"
+                  className="w-10 h-10 rounded-full flex items-center justify-center border border-border text-text/75 hover:text-primary hover:border-primary hover:shadow-[0_0_20px_rgba(32,178,166,0.2)] transition-all duration-300"
                 >
                   <Icon className="w-5 h-5" />
                 </Link>
@@ -64,7 +64,7 @@ export default function Footer() {
 
         <div className="h-px bg-border" />
 
-        <p className="text-center text-gray-400 text-sm">
+        <p className="text-center text-text/60 text-sm">
           &copy; {new Date().getFullYear()} Kanagara Studio. All rights reserved.
         </p>
       </div>

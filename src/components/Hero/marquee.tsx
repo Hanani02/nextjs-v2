@@ -43,7 +43,7 @@ const apps = [
 
 export default function Marquee() {
   return (
-    <div className="w-full overflow-hidden border-y border-white/10 bg-black/30 py-4 backdrop-blur-sm">
+    <div className="w-full overflow-hidden border-y border-border bg-surface/50 py-4 backdrop-blur-sm transition-colors">
       <div className="flex w-max animate-marquee">
         <div className="flex items-center gap-12 pr-12">
           {apps.map((app) => (
@@ -53,12 +53,12 @@ export default function Marquee() {
             >
               <svg
                 viewBox="0 0 24 24"
-                className="h-6 w-6 fill-current text-blue-500"
+                className="h-6 w-6 fill-current text-primary transition-colors"
               >
                 <path d={app.path} />
               </svg>
 
-              <span className="text-white">
+              <span className="text-text font-medium transition-colors">
                 {app.name}
               </span>
             </div>
@@ -74,12 +74,12 @@ export default function Marquee() {
             >
               <svg
                 viewBox="0 0 24 24"
-                className="h-6 w-6 fill-current text-blue-500"
+                className="h-6 w-6 fill-current text-primary transition-colors"
               >
                 <path d={app.path} />
               </svg>
 
-              <span className="text-white">
+              <span className="text-text font-medium transition-colors">
                 {app.name}
               </span>
             </div>

@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { LuPencil, LuSparkles, LuArrowRight, LuUpload } from 'react-icons/lu';
-import LineWaves from '@/components/Hero/background';
+import HeroBackground from '@/components/Hero/HeroBackground';
 import type { SiteConfig } from '@/types/admin';
 
 interface HeroPreviewProps {
@@ -17,25 +17,7 @@ export default function HeroPreview({ hero, onEdit }: HeroPreviewProps) {
       className="relative min-h-[90vh] flex items-center pt-20 pb-16 overflow-hidden border-b border-border/50"
     >
       {/* Background glow and LineWaves */}
-      <div className="absolute top-1/4 left-1/3 -translate-x-1/2 w-80 h-80 rounded-full blur-3xl bg-primary/10 pointer-events-none" />
-
-      <div className="inset-0 absolute pointer-events-none opacity-40">
-        <LineWaves
-          speed={0.3}
-          innerLineCount={32}
-          outerLineCount={36}
-          warpIntensity={1}
-          rotation={-45}
-          edgeFadeWidth={0}
-          colorCycleSpeed={1}
-          brightness={0.2}
-          color1="#0F172A"
-          color2="#312E81"
-          color3="#A78BFA"
-          enableMouseInteraction
-          mouseInfluence={2}
-        />
-      </div>
+      <HeroBackground />
 
       <div className="relative z-10 w-[90%] max-w-6xl mx-auto space-y-8">
         {/* Header & Edit Button */}

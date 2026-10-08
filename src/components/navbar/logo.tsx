@@ -8,7 +8,7 @@ export default function Logo() {
                 <LuCodeXml className="w-5 h-5"/>
             </div>
 
-            <p className="hidden sm:block font-semibold text-lg md:text-xl tracking-wide text-gray-300 group-hover:text-primary transition-colors duration-300">
+            <p className="hidden sm:block font-semibold text-lg md:text-xl tracking-wide text-text group-hover:text-primary transition-colors duration-300">
                 Kanagara Studio
             </p>
         </Link>

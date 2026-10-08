@@ -21,21 +21,20 @@ export default function LinkButton({
     download = false,
     variant = "primary"
 }: LinkButtonProps) {
-    const baseStyles =`
+    const baseStyles = `
     relative px-6 py-3
     font-medium ${rounded ? "rounded-full" : "rounded-lg"}
     inline-flex items-center justify-center gap-2
     overflow-hidden text-text
     border
-    tansition-all duration-300
+    transition-all duration-300
     hover:scale-[1.02]
     active:scale-[0.98]
     `
 
-
     const variants = {
-        primary:`bg-primary text-background border-none`,
-        outline:`bg-transparent text-text border-border hover:text-primary hover:border-primary hover:bg-primary/10`
+        primary: `bg-primary text-white border-none shadow-md shadow-primary/20 hover:opacity-95`,
+        outline: `bg-transparent text-text border-border hover:text-primary hover:border-primary hover:bg-primary/10`
     }
     return (
         <Link download={download} className={`${baseStyles} ${variants[variant]}`} href={href}>

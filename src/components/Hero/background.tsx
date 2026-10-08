@@ -160,8 +160,8 @@ void main() {
     chroma = max(chroma - vec3(neutral * 0.92), vec3(0.0));
     float peak = max(chroma.r, max(chroma.g, chroma.b));
     chroma = pow(clamp(chroma / max(peak, 0.0001), 0.0, 1.0), vec3(1.08));
-    float ink = clamp(max(rChannel, max(gChannel, bChannel)) * uBrightness * 1.15, 0.0, 0.92);
-    gl_FragColor = vec4(mix(vec3(1.0), chroma, ink), 1.0);
+    float ink = clamp(max(rChannel, max(gChannel, bChannel)) * uBrightness * 0.75, 0.0, 0.42);
+    gl_FragColor = vec4(chroma, ink);
   } else {
     gl_FragColor = vec4(col, alpha);
   }
@@ -231,6 +231,40 @@ export default function LineWaves({
   const containerRef = useRef<HTMLDivElement>(null);
   const [webglSupported, setWebglSupported] = useState<boolean | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0.5, y: 0.5 });
+
+  const propsRef = useRef({
+    speed,
+    innerLineCount,
+    outerLineCount,
+    warpIntensity,
+    rotation,
+    edgeFadeWidth,
+    colorCycleSpeed,
+    brightness,
+    color1,
+    color2,
+    color3,
+    enableMouseInteraction,
+    mouseInfluence,
+    lightMode
+  });
+
+  propsRef.current = {
+    speed,
+    innerLineCount,
+    outerLineCount,
+    warpIntensity,
+    rotation,
+    edgeFadeWidth,
+    colorCycleSpeed,
+    brightness,
+    color1,
+    color2,
+    color3,
+    enableMouseInteraction,
+    mouseInfluence,
+    lightMode
+  };
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -358,6 +392,12 @@ export default function LineWaves({
         animationFrameId = requestAnimationFrame(update);
         if (!program || !renderer) return;
         program.uniforms.uTime.value = time * 0.001;
+        program.uniforms.uLightMode.value = propsRef.current.lightMode ? 1.0 : 0.0;
+        program.uniforms.uBrightness.value = propsRef.current.brightness;
+        program.uniforms.uSpeed.value = propsRef.current.speed;
+        program.uniforms.uColor1.value = hexToVec3(propsRef.current.color1);
+        program.uniforms.uColor2.value = hexToVec3(propsRef.current.color2);
+        program.uniforms.uColor3.value = hexToVec3(propsRef.current.color3);
 
         if (enableMouseInteraction) {
           currentMouse[0] += 0.05 * (targetMouse[0] - currentMouse[0]);
@@ -439,11 +479,11 @@ export default function LineWaves({
         <div className="absolute inset-0 w-full h-full overflow-hidden pointer-events-none">
           {/* Ambient Glowing Radial Mesh */}
           <div
-            className="absolute inset-0 transition-all duration-300 ease-out"
+            className="absolute inset-0 transition-all duration-500 ease-out"
             style={{
-              background: `radial-gradient(circle 600px at ${mousePos.x * 100}% ${mousePos.y * 100}%, ${color3}30, transparent 70%),
-                           radial-gradient(ellipse 80% 50% at 75% 25%, ${color2}40, transparent 65%),
-                           radial-gradient(ellipse 60% 60% at 25% 75%, ${color1}55, transparent 60%)`,
+              background: `radial-gradient(circle 600px at ${mousePos.x * 100}% ${mousePos.y * 100}%, ${color3}${lightMode ? '25' : '30'}, transparent 70%),
+                           radial-gradient(ellipse 80% 50% at 75% 25%, ${color2}${lightMode ? '30' : '40'}, transparent 65%),
+                           radial-gradient(ellipse 60% 60% at 25% 75%, ${color1}${lightMode ? '35' : '55'}, transparent 60%)`,
               filter: 'blur(30px)'
             }}
           />
@@ -457,7 +497,7 @@ export default function LineWaves({
             }}
           >
             <svg
-              className="w-full h-full opacity-40"
+              className={`w-full h-full ${lightMode ? 'opacity-35' : 'opacity-40'}`}
               viewBox="0 0 1440 900"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -465,14 +505,14 @@ export default function LineWaves({
             >
               <defs>
                 <linearGradient id="fallbackGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor={color1} stopOpacity={brightness * 1.8} />
-                  <stop offset="50%" stopColor={color2} stopOpacity={brightness * 3.5} />
-                  <stop offset="100%" stopColor={color3} stopOpacity={brightness * 2.8} />
+                  <stop offset="0%" stopColor={color1} stopOpacity={lightMode ? Math.min(brightness * 1.5, 0.35) : brightness * 1.8} />
+                  <stop offset="50%" stopColor={color2} stopOpacity={lightMode ? Math.min(brightness * 2.0, 0.45) : brightness * 3.5} />
+                  <stop offset="100%" stopColor={color3} stopOpacity={lightMode ? Math.min(brightness * 1.8, 0.4) : brightness * 2.8} />
                 </linearGradient>
                 <linearGradient id="fallbackGrad2" x1="100%" y1="0%" x2="0%" y2="0%">
-                  <stop offset="0%" stopColor={color3} stopOpacity={brightness * 2.8} />
-                  <stop offset="50%" stopColor={color2} stopOpacity={brightness * 3.2} />
-                  <stop offset="100%" stopColor={color1} stopOpacity={brightness * 1.8} />
+                  <stop offset="0%" stopColor={color3} stopOpacity={lightMode ? Math.min(brightness * 1.8, 0.4) : brightness * 2.8} />
+                  <stop offset="50%" stopColor={color2} stopOpacity={lightMode ? Math.min(brightness * 2.0, 0.45) : brightness * 3.2} />
+                  <stop offset="100%" stopColor={color1} stopOpacity={lightMode ? Math.min(brightness * 1.5, 0.35) : brightness * 1.8} />
                 </linearGradient>
               </defs>
               {/* Primary flowing contour waves */}

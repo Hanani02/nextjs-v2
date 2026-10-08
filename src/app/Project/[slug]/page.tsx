@@ -320,7 +320,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                   href={project.liveUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs md:text-sm font-semibold text-background transition hover:bg-blue-400 shadow-lg shadow-primary/25 cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs md:text-sm font-semibold text-white transition hover:bg-blue-600 shadow-lg shadow-primary/25 cursor-pointer"
                 >
                   <LuExternalLink className="h-4 w-4" />
                   <span>Kunjungi Live Website</span>

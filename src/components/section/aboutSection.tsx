@@ -80,7 +80,7 @@ export default async function AboutSection({ initialAbout }: AboutSectionProps =
                 : LuCode;
 
               return (
-                <div key={index} className="p-4 rounded-xl bg-surface border border-border text-center">
+                <div key={index} className="p-4 rounded-xl bg-surface border border-border text-center hover:border-primary/50 hover:shadow-md transition-all duration-300">
                   <Icon className="mx-auto mb-2 text-primary w-6 h-6" />
                   <p className="text-text text-sm">{item.title}</p>
                 </div>
