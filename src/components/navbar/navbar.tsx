@@ -32,18 +32,26 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 w-full z-60 transition-all duration-300 ${
+        className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
           scrolled
-            ? "backdrop-blur-2xl bg-background/80 border-b border-border/60 shadow-sm"
-            : "bg-transparent"
+            ? "backdrop-blur-2xl bg-background/80 border-b border-border/60 shadow-sm py-0"
+            : "bg-transparent py-1 pointer-events-none"
         }`}
       >
         <div className="w-[95%] lg:w-[90%] mx-auto h-16 flex items-center justify-between">
-          {/* Logo */}
-          <Logo />
+          {/* Logo (Always visible) */}
+          <div className="pointer-events-auto">
+            <Logo />
+          </div>
 
-          {/* Desktop navigation */}
-          <ul className="hidden lg:flex items-center gap-1 py-2 px-2.5 rounded-full bg-surface/70 backdrop-blur-xl border border-border shadow-sm">
+          {/* Desktop navigation (Hidden on initial scroll=0, fades in on scroll) */}
+          <ul
+            className={`hidden lg:flex items-center gap-1 py-2 px-2.5 rounded-full bg-surface/70 backdrop-blur-xl border border-border shadow-sm transition-all duration-500 ease-out ${
+              scrolled
+                ? "opacity-100 translate-y-0 pointer-events-auto"
+                : "opacity-0 -translate-y-4 pointer-events-none"
+            }`}
+          >
             {navLinks.map((link, index) => (
               <li key={index}>
                 <Link
@@ -56,30 +64,50 @@ export default function Navbar() {
             ))}
           </ul>
 
-          {/* Desktop actions: Theme Toggle & Download CV */}
+          {/* Desktop actions: Theme Toggle (Always visible) & Download CV (Hidden initially, appears on scroll) */}
           <div className="hidden lg:flex items-center gap-3">
-            <ThemeToggle size="md" />
-            <LinkButton
-              iconPosition="Left"
-              icon={LuDownload}
-              rounded
-              variant="outline"
-              text="Download CV"
-              href="/cv.png"
-              download
-            />
+            <div
+              className={`transition-all duration-500 ease-out ${
+                scrolled
+                  ? "opacity-100 translate-y-0 pointer-events-auto"
+                  : "opacity-0 -translate-y-4 pointer-events-none"
+              }`}
+            >
+              <LinkButton
+                iconPosition="Left"
+                icon={LuDownload}
+                rounded
+                variant="outline"
+                text="Download CV"
+                href="/cv.png"
+                download
+              />
+            </div>
+            <div className="pointer-events-auto">
+              <ThemeToggle size="md" />
+            </div>
           </div>
 
-          {/* Mobile actions: Theme Toggle & Hamburger menu */}
+          {/* Mobile actions: Theme Toggle (Always visible) & Hamburger menu (Appears on scroll) */}
           <div className="flex items-center gap-2 lg:hidden">
-            <ThemeToggle size="sm" />
-            <button
-              onClick={() => setNavOpen(!navOpen)}
-              aria-label={navOpen ? "Close navigation menu" : "Open navigation menu"}
-              className="z-50 w-10 h-10 rounded-xl flex items-center justify-center border border-border bg-surface/70 text-text hover:border-primary hover:text-primary transition shadow-sm cursor-pointer"
+            <div className="pointer-events-auto">
+              <ThemeToggle size="sm" />
+            </div>
+            <div
+              className={`transition-all duration-500 ease-out ${
+                scrolled
+                  ? "opacity-100 translate-y-0 pointer-events-auto"
+                  : "opacity-0 -translate-y-4 pointer-events-none"
+              }`}
             >
-              {navOpen ? <LuX size={22} /> : <LuMenu size={22} />}
-            </button>
+              <button
+                onClick={() => setNavOpen(!navOpen)}
+                aria-label={navOpen ? "Close navigation menu" : "Open navigation menu"}
+                className="w-10 h-10 rounded-xl flex items-center justify-center border border-border bg-surface/70 text-text hover:border-primary hover:text-primary transition shadow-sm cursor-pointer"
+              >
+                {navOpen ? <LuX size={22} /> : <LuMenu size={22} />}
+              </button>
+            </div>
           </div>
         </div>
       </nav>
