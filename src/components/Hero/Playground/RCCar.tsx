@@ -29,7 +29,19 @@ interface RCCarProps {
     steerAngle: number;
     isDrifting: boolean;
     isBraking: boolean;
+    currentLap?: number;
+    checkpointIndex?: number;
+    currentLapTime?: number;
+    bestLapTime?: number;
+    isFinished?: boolean;
   }) => void;
+  raceTelemetry?: {
+    currentLap?: number;
+    checkpointIndex?: number;
+    currentLapTime?: number;
+    bestLapTime?: number;
+    isFinished?: boolean;
+  };
   parkingPosition?: [number, number, number];
   parkingAngle?: number;
   boundsX?: number;
@@ -44,16 +56,17 @@ export default function RCCar({
   username = 'Pilot_01',
   onPositionUpdate,
   onPhysicsBroadcast,
-  parkingPosition = [0, 0.08, 0],
-  parkingAngle = 0,
-  boundsX = 24,
-  boundsZ = 16,
+  raceTelemetry,
+  parkingPosition = [12.5, 0.08, -4.5],
+  parkingAngle = -Math.PI / 2,
+  boundsX = 22.2,
+  boundsZ = 14.0,
 }: RCCarProps) {
   const carGroup = useRef<THREE.Group>(null!);
   const carBody = useRef<THREE.Group>(null!);
 
   // Physics simulation state stored in mutable ref
-  const physics = useRef<CarPhysicsState>(createInitialPhysicsState([0, 0.08, 0]));
+  const physics = useRef<CarPhysicsState>(createInitialPhysicsState([0, 0.08, -9.2]));
 
   // Drift and exhaust particle system
   const maxParticles = 32;
@@ -70,22 +83,22 @@ export default function RCCar({
   }, [maxParticles]);
   const dummyMatrix = useMemo(() => new THREE.Matrix4(), []);
 
-  // Handle manual reset signal from HUD or Key R
+  // Handle manual reset signal from HUD or Key R (teleport to Start/Finish line facing East)
   useEffect(() => {
     if (controls.reset) {
       const p = physics.current;
-      p.position.set(0, 0.08, 0);
+      p.position.set(0, 0.08, -9.2);
       p.vx = 0;
       p.vz = 0;
       p.speed = 0;
-      p.heading = 0;
+      p.heading = Math.PI / 2;
       p.steerAngle = 0;
       p.pitch = 0;
       p.roll = 0;
       p.isDrifting = false;
       if (carGroup.current) {
-        carGroup.current.position.set(0, 0.08, 0);
-        carGroup.current.rotation.y = 0;
+        carGroup.current.position.set(0, 0.08, -9.2);
+        carGroup.current.rotation.y = Math.PI / 2;
       }
     }
   }, [controls.reset]);
@@ -149,6 +162,11 @@ export default function RCCar({
         steerAngle: p.steerAngle,
         isDrifting: p.isDrifting,
         isBraking: p.isBraking,
+        currentLap: raceTelemetry?.currentLap,
+        checkpointIndex: raceTelemetry?.checkpointIndex,
+        currentLapTime: raceTelemetry?.currentLapTime,
+        bestLapTime: raceTelemetry?.bestLapTime,
+        isFinished: raceTelemetry?.isFinished,
       });
     }
 
@@ -208,7 +226,7 @@ export default function RCCar({
 
   return (
     <>
-      <group ref={carGroup} position={[0, 0.08, 0]}>
+      <group ref={carGroup} position={[0, 0.08, -9.2]} rotation={[0, Math.PI / 2, 0]}>
         {/* Floating Username & Status Badge */}
         <CarUsernameBadge
           username={username}

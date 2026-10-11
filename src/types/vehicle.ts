@@ -29,6 +29,12 @@ export interface PlayerVehicleState {
   isBraking: boolean;
   role: 'driver' | 'spectator';
   lastUpdated: number;
+  // Racing circuit & lap telemetry
+  currentLap?: number;
+  checkpointIndex?: number;
+  currentLapTime?: number;
+  bestLapTime?: number;
+  isFinished?: boolean;
 }
 
 export interface MultiplayerRoomState {
@@ -37,4 +43,25 @@ export interface MultiplayerRoomState {
   maxPlayers: number;
   isSpectator: boolean;
   players: Record<string, PlayerVehicleState>;
+}
+
+export interface LeaderboardEntry {
+  id: string;
+  username: string;
+  isSelf: boolean;
+  color: string;
+  model: CarModelType;
+  currentLap: number;
+  checkpointIndex: number;
+  bestLapTime: number;
+  currentLapTime: number;
+  isFinished: boolean;
+}
+
+export interface RaceCheckpoint {
+  id: number;
+  name: string;
+  center: [number, number]; // [x, z]
+  width: number;
+  depth: number;
 }

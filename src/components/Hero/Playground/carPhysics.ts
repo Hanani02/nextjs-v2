@@ -31,10 +31,10 @@ export interface PhysicsConstants {
 
 export const DEFAULT_PHYSICS_CONSTANTS: PhysicsConstants = {
   acceleration: 28.0,
-  maxSpeed: 20.0,
+  maxSpeed: 21.0,
   reverseAccel: 14.0,
   maxReverse: -9.0,
-  turnSpeed: 3.8,
+  turnSpeed: 3.9,
   driftTurnMultiplier: 1.65,
   normalGrip: 0.93,
   driftGrip: 0.48,
@@ -43,14 +43,14 @@ export const DEFAULT_PHYSICS_CONSTANTS: PhysicsConstants = {
 };
 
 export function createInitialPhysicsState(
-  initialPosition: [number, number, number] = [0, 0.08, 0]
+  initialPosition: [number, number, number] = [0, 0.08, -9.5]
 ): CarPhysicsState {
   return {
     position: new THREE.Vector3(...initialPosition),
     vx: 0,
     vz: 0,
     speed: 0,
-    heading: 0,
+    heading: Math.PI / 2, // Facing East (+X) towards Turn 1 at Start line
     steerAngle: 0,
     wheelSpin: 0,
     pitch: 0,
@@ -62,6 +62,113 @@ export function createInitialPhysicsState(
 }
 
 /**
+ * Handle closed-circuit wall collision response with elastic bounce and barrier scrape friction.
+ */
+function resolveCircuitWallCollisions(
+  p: CarPhysicsState,
+  boundsX: number = 22.2,
+  boundsZ: number = 14.0
+): void {
+  const CAR_RADIUS = 0.65;
+  const RESTITUTION = 0.42; // Bounciness
+  const SCRAPE_FRICTION = 0.88; // Speed retention along wall
+
+  // 1. Outer Perimeter Walls
+  if (p.position.x + CAR_RADIUS > boundsX) {
+    p.position.x = boundsX - CAR_RADIUS;
+    p.vx = -Math.abs(p.vx) * RESTITUTION;
+    p.vz *= SCRAPE_FRICTION;
+  } else if (p.position.x - CAR_RADIUS < -boundsX) {
+    p.position.x = -boundsX + CAR_RADIUS;
+    p.vx = Math.abs(p.vx) * RESTITUTION;
+    p.vz *= SCRAPE_FRICTION;
+  }
+
+  if (p.position.z + CAR_RADIUS > boundsZ) {
+    p.position.z = boundsZ - CAR_RADIUS;
+    p.vz = -Math.abs(p.vz) * RESTITUTION;
+    p.vx *= SCRAPE_FRICTION;
+  } else if (p.position.z - CAR_RADIUS < -boundsZ) {
+    p.position.z = -boundsZ + CAR_RADIUS;
+    p.vz = Math.abs(p.vz) * RESTITUTION;
+    p.vx *= SCRAPE_FRICTION;
+  }
+
+  // 2. Infield Island Barrier Box (Center island separating straightaway from back straight)
+  const islandMinX = -11.0;
+  const islandMaxX = 11.0;
+  const islandMinZ = -4.2;
+  const islandMaxZ = 4.2;
+
+  if (
+    p.position.x + CAR_RADIUS > islandMinX &&
+    p.position.x - CAR_RADIUS < islandMaxX &&
+    p.position.z + CAR_RADIUS > islandMinZ &&
+    p.position.z - CAR_RADIUS < islandMaxZ
+  ) {
+    // Find axis of minimum penetration
+    const overlapLeft = (p.position.x + CAR_RADIUS) - islandMinX;
+    const overlapRight = islandMaxX - (p.position.x - CAR_RADIUS);
+    const overlapBottom = (p.position.z + CAR_RADIUS) - islandMinZ;
+    const overlapTop = islandMaxZ - (p.position.z - CAR_RADIUS);
+
+    const minOverlap = Math.min(overlapLeft, overlapRight, overlapBottom, overlapTop);
+
+    if (minOverlap === overlapLeft) {
+      p.position.x = islandMinX - CAR_RADIUS;
+      p.vx = -Math.abs(p.vx) * RESTITUTION;
+      p.vz *= SCRAPE_FRICTION;
+    } else if (minOverlap === overlapRight) {
+      p.position.x = islandMaxX + CAR_RADIUS;
+      p.vx = Math.abs(p.vx) * RESTITUTION;
+      p.vz *= SCRAPE_FRICTION;
+    } else if (minOverlap === overlapBottom) {
+      p.position.z = islandMinZ - CAR_RADIUS;
+      p.vz = -Math.abs(p.vz) * RESTITUTION;
+      p.vx *= SCRAPE_FRICTION;
+    } else {
+      p.position.z = islandMaxZ + CAR_RADIUS;
+      p.vz = Math.abs(p.vz) * RESTITUTION;
+      p.vx *= SCRAPE_FRICTION;
+    }
+  }
+
+  // 3. Chicane Deflector Barrier (Creates S-curve chicane drift challenge along back straight)
+  const chicaneMinX = -2.8;
+  const chicaneMaxX = 2.8;
+  const chicaneMinZ = 7.6;
+  const chicaneMaxZ = 11.4;
+
+  if (
+    p.position.x + CAR_RADIUS > chicaneMinX &&
+    p.position.x - CAR_RADIUS < chicaneMaxX &&
+    p.position.z + CAR_RADIUS > chicaneMinZ &&
+    p.position.z - CAR_RADIUS < chicaneMaxZ
+  ) {
+    const oL = (p.position.x + CAR_RADIUS) - chicaneMinX;
+    const oR = chicaneMaxX - (p.position.x - CAR_RADIUS);
+    const oB = (p.position.z + CAR_RADIUS) - chicaneMinZ;
+    const oT = chicaneMaxZ - (p.position.z - CAR_RADIUS);
+
+    const minO = Math.min(oL, oR, oB, oT);
+
+    if (minO === oL) {
+      p.position.x = chicaneMinX - CAR_RADIUS;
+      p.vx = -Math.abs(p.vx) * RESTITUTION;
+    } else if (minO === oR) {
+      p.position.x = chicaneMaxX + CAR_RADIUS;
+      p.vx = Math.abs(p.vx) * RESTITUTION;
+    } else if (minO === oB) {
+      p.position.z = chicaneMinZ - CAR_RADIUS;
+      p.vz = -Math.abs(p.vz) * RESTITUTION;
+    } else {
+      p.position.z = chicaneMaxZ + CAR_RADIUS;
+      p.vz = Math.abs(p.vz) * RESTITUTION;
+    }
+  }
+}
+
+/**
  * Step the car physics simulation using discrete integration.
  * Decouples car heading from velocity vector to produce authentic drift (ngepot) mechanics.
  */
@@ -69,8 +176,8 @@ export function stepCarPhysics(
   p: CarPhysicsState,
   controls: CarControls,
   dt: number,
-  boundsX: number = 24,
-  boundsZ: number = 16,
+  boundsX: number = 22.2,
+  boundsZ: number = 14.0,
   constants: PhysicsConstants = DEFAULT_PHYSICS_CONSTANTS
 ): void {
   // 1. Steering Input & Smoothing
@@ -92,7 +199,7 @@ export function stepCarPhysics(
   const isHandbrake = Boolean(controls.brake);
   const isReverseBraking = controls.backward && forwardVelocity > 1.0;
   const isHardSteerAtSpeed =
-    Math.abs(p.steerAngle) > 0.35 && currentSpeed > 9.0 && (controls.forward || isHandbrake);
+    Math.abs(p.steerAngle) > 0.35 && currentSpeed > 8.0 && (controls.forward || isHandbrake);
 
   p.isBraking = isHandbrake || isReverseBraking;
 
@@ -129,7 +236,6 @@ export function stepCarPhysics(
   p.vz += forwardZ * engineThrust * dt;
 
   // 5. Tire Traction & Lateral Drift Friction
-  // Decompose velocity into longitudinal (along heading) and lateral (sideways) components
   const rightX = Math.cos(p.heading);
   const rightZ = -Math.sin(p.heading);
 
@@ -182,36 +288,13 @@ export function stepCarPhysics(
   p.position.x += p.vx * dt;
   p.position.z += p.vz * dt;
 
-  // 7. Screen Wrap (Pac-Man Teleportation)
-  p.wrapCooldown -= dt;
-  let didWrap = false;
-
-  if (p.position.x > boundsX) {
-    p.position.x = -boundsX + 0.4;
-    didWrap = true;
-  } else if (p.position.x < -boundsX) {
-    p.position.x = boundsX - 0.4;
-    didWrap = true;
-  }
-
-  if (p.position.z > boundsZ) {
-    p.position.z = -boundsZ + 0.4;
-    didWrap = true;
-  } else if (p.position.z < -boundsZ) {
-    p.position.z = boundsZ - 0.4;
-    didWrap = true;
-  }
-
-  if (didWrap && p.wrapCooldown <= 0) {
-    p.wrapCooldown = 0.2;
-  }
+  // 7. Closed Circuit Collision Barrier Resolution (No wrapping: real enclosed race circuit)
+  resolveCircuitWallCollisions(p, boundsX, boundsZ);
 
   // 8. Dynamic Suspension Body Roll & Pitch
-  // Pitch: squat on acceleration, dive on braking
   const targetPitch = (engineThrust / constants.acceleration) * -0.06;
   p.pitch = THREE.MathUtils.lerp(p.pitch, targetPitch, dt * 8);
 
-  // Roll: centrifugal tilt outwards in turn + drift chassis roll
   const driftRollBonus = p.isDrifting ? Math.sign(p.steerAngle) * 0.12 : 0;
   const targetRoll = (p.steerAngle * (p.speed / constants.maxSpeed)) * 0.18 + driftRollBonus;
   p.roll = THREE.MathUtils.lerp(p.roll, targetRoll, dt * 9);

@@ -1,27 +1,54 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { CarControls } from './useKeyboardControls';
-import { LuRotateCcw, LuSparkles, LuGamepad2, LuFlame } from 'react-icons/lu';
+import {
+  LuRotateCcw,
+  LuSparkles,
+  LuGamepad2,
+  LuFlame,
+  LuMinimize2,
+} from 'react-icons/lu';
 
 interface PlaygroundHUDProps {
   controls: CarControls;
-  collectedCount: number;
-  totalCoins: number;
+  collectedCount?: number;
+  totalCoins?: number;
   onResetCar: () => void;
-  onRespawnCoins: () => void;
+  onRespawnCoins?: () => void;
   onSetControl: (key: keyof CarControls, val: boolean) => void;
   visible: boolean;
 }
 
 export default function PlaygroundHUD({
   controls,
-  collectedCount,
-  totalCoins,
   onResetCar,
-  onRespawnCoins,
   onSetControl,
   visible,
 }: PlaygroundHUDProps) {
+  // Drive instruction badge can be minimized into a compact icon button
+  const [driveGuideMinimized, setDriveGuideMinimized] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('drive_guide_minimized');
+      if (saved !== null) {
+        setDriveGuideMinimized(saved === 'true');
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const toggleDriveGuide = (val: boolean) => {
+    setDriveGuideMinimized(val);
+    try {
+      sessionStorage.setItem('drive_guide_minimized', String(val));
+    } catch {
+      // ignore
+    }
+  };
+
   /**
    * Helper to bind touch and mouse events safely with multi-touch support
    * and prevent default browser zooming/scrolling behavior.
@@ -56,74 +83,84 @@ export default function PlaygroundHUD({
           1. TOP HUD BAR: Responsive Header on both mobile and desktop
       ───────────────────────────────────────────────────────────── */}
       <div className="w-full flex items-center justify-between gap-2 pt-16 sm:pt-18 select-none">
-        {/* Left: Minimalist driving & drift instruction badge */}
-        <div className="flex items-center gap-1.5 sm:gap-3 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-2xl bg-neutral-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-lg pointer-events-auto">
-          <div className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-cyan-500/20 text-cyan-400">
-            <LuGamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-pulse" />
-          </div>
-          <div>
-            {/* Desktop prompt */}
-            <div className="hidden sm:flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-white tracking-wide">
-              <span>Drive:</span>
-              <span className="font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30 text-xs">
-                WASD / Arrows
-              </span>
-              <span className="mx-0.5 text-gray-500">•</span>
-              <span>Drift:</span>
-              <span className="font-mono text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-500/30 text-xs">
-                SPACEBAR
-              </span>
-            </div>
-            {/* Mobile compact prompt */}
-            <div className="flex sm:hidden items-center gap-1 text-[11px] font-bold text-cyan-300">
-              <span>RC Car Multiplayer Arena</span>
-            </div>
-            <p className="text-[10px] sm:text-[11px] text-gray-400 hidden sm:block">
-              Screen wrap aktif • Scroll ke bawah untuk masuk ke portofolio
-            </p>
-          </div>
-        </div>
+        {/* Left: Minimizable driving & drift instruction badge + Reset button */}
+        <div className="flex items-center gap-2 pointer-events-auto">
+          {driveGuideMinimized ? (
+            /* Minimized Icon Button */
+            <button
+              onClick={() => toggleDriveGuide(false)}
+              title="Tampilkan Panduan Kontrol"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-neutral-950/85 hover:bg-neutral-900 border border-cyan-500/40 hover:border-cyan-400 text-cyan-400 hover:text-white backdrop-blur-xl shadow-lg transition-all hover:scale-105 active:scale-95 cursor-pointer select-none"
+            >
+              <div className="flex items-center justify-center w-6 h-6 rounded-xl bg-cyan-500/20 text-cyan-400">
+                <LuGamepad2 className="w-3.5 h-3.5 animate-pulse" />
+              </div>
+              <span className="text-xs font-semibold text-gray-300">Controls</span>
+            </button>
+          ) : (
+            /* Expanded Instruction Card with Minimize button */
+            <div className="flex items-center gap-2 sm:gap-3 px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-neutral-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-lg animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-cyan-500/20 text-cyan-400 shrink-0">
+                <LuGamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-pulse" />
+              </div>
+              <div>
+                {/* Desktop prompt */}
+                <div className="hidden sm:flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-white tracking-wide">
+                  <span>Drive:</span>
+                  <span className="font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30 text-xs">
+                    WASD / Arrows
+                  </span>
+                  <span className="mx-0.5 text-gray-500">•</span>
+                  <span>Drift:</span>
+                  <span className="font-mono text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-500/30 text-xs">
+                    SPACEBAR
+                  </span>
+                </div>
+                {/* Mobile compact prompt */}
+                <div className="flex sm:hidden items-center gap-1 text-[11px] font-bold text-cyan-300">
+                  <span>Neon Circuit • RC Drift</span>
+                </div>
+                <p className="text-[10px] sm:text-[11px] text-gray-400 hidden sm:block">
+                  Mini Circuit • 3 Laps • Scroll ke bawah untuk pit stop & masuk ke portofolio
+                </p>
+              </div>
 
-        {/* Right: Gem counter & Reset car button */}
-        <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto">
-          {/* Tech Gems Counter */}
-          <div className="flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl bg-neutral-950/85 border border-purple-500/30 backdrop-blur-xl shadow-lg">
-            <LuSparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 animate-spin duration-3000" />
-            <span className="text-[11px] sm:text-xs md:text-sm font-bold text-white tracking-tight whitespace-nowrap">
-              Gems: <span className="text-cyan-400">{collectedCount}</span>/{totalCoins}
-            </span>
-            {collectedCount === totalCoins && (
+              {/* Minimize button */}
               <button
-                onClick={onRespawnCoins}
-                title="Respawn all gems"
-                className="ml-0.5 sm:ml-1 px-1.5 sm:px-2 py-0.5 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-[10px] sm:text-[11px] font-semibold border border-purple-500/40 transition cursor-pointer"
+                onClick={() => toggleDriveGuide(true)}
+                title="Minimize panduan kontrol"
+                className="ml-1 sm:ml-2 p-1 rounded-lg text-gray-400 hover:text-cyan-300 hover:bg-neutral-800 transition cursor-pointer"
               >
-                Respawn
+                <LuMinimize2 className="w-3.5 h-3.5" />
               </button>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Reset Car Position */}
           <button
             onClick={onResetCar}
-            title="Reset posisi mobil"
+            title="Reset posisi mobil ke garis Start/Finish"
             className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-2xl bg-neutral-950/85 hover:bg-neutral-900 border border-border/80 hover:border-cyan-400 text-gray-300 hover:text-cyan-400 text-[11px] sm:text-xs font-semibold backdrop-blur-xl shadow-lg transition active:scale-95 cursor-pointer"
           >
             <LuRotateCcw className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Reset</span>
           </button>
         </div>
+
+        {/* Right side is reserved for the live transparent Race Leaderboard */}
+        <div className="w-1" />
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. DESKTOP KEYBOARD VISUALIZER (Hidden on mobile)
+          2. DESKTOP KEYBOARD VISUALIZER (Positioned Bottom-Left on desktop)
+             Leaves the center of the screen clean and unobstructed!
       ───────────────────────────────────────────────────────────── */}
-      <div className="hidden md:flex w-full justify-center pb-12 pointer-events-none">
-        <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-neutral-950/70 border border-border/40 backdrop-blur-md">
+      <div className="hidden md:flex absolute bottom-6 left-6 pointer-events-none select-none z-30">
+        <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-neutral-950/80 border border-border/50 backdrop-blur-xl shadow-2xl pointer-events-auto">
           {/* W / Up */}
           <div className="flex flex-col items-center gap-1">
             <span
-              className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs border transition-all ${
+              className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold text-xs border transition-all ${
                 controls.forward
                   ? 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.8)] scale-95'
                   : 'bg-neutral-900 text-gray-300 border-border/60'
@@ -133,7 +170,7 @@ export default function PlaygroundHUD({
             </span>
             <div className="flex items-center gap-1">
               <span
-                className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs border transition-all ${
+                className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold text-xs border transition-all ${
                   controls.left
                     ? 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.8)] scale-95'
                     : 'bg-neutral-900 text-gray-300 border-border/60'
@@ -142,7 +179,7 @@ export default function PlaygroundHUD({
                 A
               </span>
               <span
-                className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs border transition-all ${
+                className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold text-xs border transition-all ${
                   controls.backward
                     ? 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.8)] scale-95'
                     : 'bg-neutral-900 text-gray-300 border-border/60'
@@ -151,7 +188,7 @@ export default function PlaygroundHUD({
                 S
               </span>
               <span
-                className={`w-8 h-8 rounded-lg flex items-center justify-center font-mono font-bold text-xs border transition-all ${
+                className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold text-xs border transition-all ${
                   controls.right
                     ? 'bg-cyan-500 text-black border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.8)] scale-95'
                     : 'bg-neutral-900 text-gray-300 border-border/60'
@@ -162,17 +199,17 @@ export default function PlaygroundHUD({
             </div>
           </div>
 
-          <div className="w-[1px] h-10 bg-border/40 mx-2" />
+          <div className="w-[1px] h-9 bg-border/40 mx-1.5" />
 
           {/* Space / Drift Handbrake */}
           <span
-            className={`px-3.5 h-8 rounded-lg flex items-center justify-center font-mono font-semibold text-xs border transition-all ${
+            className={`px-3 h-7 rounded-lg flex items-center justify-center font-mono font-semibold text-[11px] border transition-all whitespace-nowrap ${
               controls.brake
                 ? 'bg-rose-500 text-white border-rose-400 shadow-[0_0_14px_rgba(244,63,94,0.9)] scale-95'
                 : 'bg-neutral-900 text-gray-300 border-border/60'
             }`}
           >
-            SPACE [Drift Handbrake]
+            SPACE [Drift]
           </span>
         </div>
       </div>

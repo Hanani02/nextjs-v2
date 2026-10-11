@@ -3,7 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getSupabase } from '@/lib/supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import type { CarModelType, PlayerVehicleState, MultiplayerRoomState } from '@/types/vehicle';
+import type {
+  CarModelType,
+  PlayerVehicleState,
+  MultiplayerRoomState,
+  LeaderboardEntry,
+} from '@/types/vehicle';
 
 const MAX_ROOM_PLAYERS = 5;
 const BROADCAST_INTERVAL_MS = 38; // ~26 updates/sec throttle
@@ -158,6 +163,11 @@ export function useMultiplayer({
           isDrifting: Boolean(payload.isDrifting),
           isBraking: Boolean(payload.isBraking),
           role: payload.role || 'driver',
+          currentLap: typeof payload.currentLap === 'number' ? payload.currentLap : 1,
+          checkpointIndex: typeof payload.checkpointIndex === 'number' ? payload.checkpointIndex : 0,
+          currentLapTime: typeof payload.currentLapTime === 'number' ? payload.currentLapTime : 0,
+          bestLapTime: typeof payload.bestLapTime === 'number' ? payload.bestLapTime : 0,
+          isFinished: Boolean(payload.isFinished),
           lastUpdated: Date.now(),
         };
 
@@ -233,6 +243,11 @@ export function useMultiplayer({
       steerAngle: number;
       isDrifting: boolean;
       isBraking: boolean;
+      currentLap?: number;
+      checkpointIndex?: number;
+      currentLapTime?: number;
+      bestLapTime?: number;
+      isFinished?: boolean;
     }) => {
       // Spectators do not broadcast their car
       if (isSpectatorRef.current || !channelRef.current || !playerId) return;
@@ -258,6 +273,11 @@ export function useMultiplayer({
           steerAngle: Math.round(state.steerAngle * 100) / 100,
           isDrifting: state.isDrifting,
           isBraking: state.isBraking,
+          currentLap: state.currentLap ?? 1,
+          checkpointIndex: state.checkpointIndex ?? 0,
+          currentLapTime: state.currentLapTime ? Math.round(state.currentLapTime * 10) / 10 : 0,
+          bestLapTime: state.bestLapTime ? Math.round(state.bestLapTime * 10) / 10 : 0,
+          isFinished: Boolean(state.isFinished),
           role: 'driver',
           timestamp: Date.now(),
         },
@@ -325,6 +345,71 @@ export function useMultiplayer({
     [playerId, username, carModel]
   );
 
+  // 5. Compute real-time leaderboard sorted by finish status, lap, checkpoint & best lap time
+  const getLeaderboard = useCallback(
+    (selfTelemetry: {
+      currentLap: number;
+      checkpointIndex: number;
+      currentLapTime: number;
+      bestLapTime: number;
+      isFinished: boolean;
+    }): LeaderboardEntry[] => {
+      const entries: LeaderboardEntry[] = [
+        {
+          id: playerId || 'self',
+          username,
+          isSelf: true,
+          color: carColor,
+          model: carModel,
+          currentLap: selfTelemetry.currentLap,
+          checkpointIndex: selfTelemetry.checkpointIndex,
+          bestLapTime: selfTelemetry.bestLapTime,
+          currentLapTime: selfTelemetry.currentLapTime,
+          isFinished: selfTelemetry.isFinished,
+        },
+      ];
+
+      Object.values(remotePlayersRef.current).forEach((p) => {
+        entries.push({
+          id: p.id,
+          username: p.username || 'Pilot',
+          isSelf: false,
+          color: p.color || '#06b6d4',
+          model: p.model || 'sport',
+          currentLap: p.currentLap ?? 1,
+          checkpointIndex: p.checkpointIndex ?? 0,
+          bestLapTime: p.bestLapTime ?? 0,
+          currentLapTime: p.currentLapTime ?? 0,
+          isFinished: Boolean(p.isFinished),
+        });
+      });
+
+      return entries.sort((a, b) => {
+        // 1. Finished players come first
+        if (a.isFinished && !b.isFinished) return -1;
+        if (!a.isFinished && b.isFinished) return 1;
+        if (a.isFinished && b.isFinished) {
+          if (a.bestLapTime > 0 && b.bestLapTime > 0) return a.bestLapTime - b.bestLapTime;
+          return 0;
+        }
+        // 2. Higher lap comes first
+        if (a.currentLap !== b.currentLap) {
+          return b.currentLap - a.currentLap;
+        }
+        // 3. Higher checkpoint on same lap comes first
+        if (a.checkpointIndex !== b.checkpointIndex) {
+          return b.checkpointIndex - a.checkpointIndex;
+        }
+        // 4. If same checkpoint, compare bestLapTime if available
+        if (a.bestLapTime > 0 && b.bestLapTime > 0) {
+          return a.bestLapTime - b.bestLapTime;
+        }
+        return 0;
+      });
+    },
+    [playerId, username, carColor, carModel]
+  );
+
   return {
     playerId,
     username,
@@ -337,5 +422,6 @@ export function useMultiplayer({
     activePlayerIds,
     remotePlayersRef,
     broadcastCarState,
+    getLeaderboard,
   };
 }

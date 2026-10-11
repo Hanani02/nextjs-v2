@@ -5,14 +5,15 @@ import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import toast from 'react-hot-toast';
 import { LuChevronDown, LuSparkles } from 'react-icons/lu';
-import PlaygroundArena from './PlaygroundArena';
+import NeonCircuitArena, { RACE_CHECKPOINTS } from './NeonCircuitArena';
 import RCCar from './RCCar';
 import OtherPlayers from './OtherPlayers';
-import TechCoins, { INITIAL_TECH_COINS, type TechCoinItem } from './TechCoins';
+import RaceLeaderboard from './RaceLeaderboard';
 import { useKeyboardControls } from './useKeyboardControls';
 import PlaygroundHUD from './PlaygroundHUD';
 import GarageMenu from './GarageMenu';
 import { useMultiplayer } from './useMultiplayer';
+import type { LeaderboardEntry } from '@/types/vehicle';
 
 /**
  * Responsive Camera Controller for the Expansive Arcade Playground:
@@ -70,13 +71,106 @@ function WidePlaygroundCamera({
   return null;
 }
 
+/**
+ * Real-time Lap & Checkpoint collision tracker running inside the R3F render loop.
+ * Detects checkpoint passes (0 -> 1 -> 2 -> 3 -> 0) and accumulates lap timer.
+ */
+function CircuitRaceTracker({
+  carPosRef,
+  isAtPlayground,
+  resetTrigger,
+  onLapUpdate,
+  onCheckpointTrigger,
+  onTimerTick,
+  isFinished,
+}: {
+  carPosRef: React.RefObject<THREE.Vector3>;
+  isAtPlayground: boolean;
+  resetTrigger: number;
+  onLapUpdate: (lap: number, lapTime: number, isFinalLap: boolean) => void;
+  onCheckpointTrigger: (nextCp: number) => void;
+  onTimerTick: (time: number) => void;
+  isFinished: boolean;
+}) {
+  const currentLapRef = useRef(1);
+  const targetCheckpointRef = useRef(1); // 0: Start/Finish, 1: Turn 1, 2: Chicane, 3: Hairpin
+  const lapTimeRef = useRef(0);
+  const lastTickTime = useRef(0);
+
+  useEffect(() => {
+    currentLapRef.current = 1;
+    targetCheckpointRef.current = 1;
+    lapTimeRef.current = 0;
+  }, [resetTrigger]);
+
+  useFrame((_, delta) => {
+    if (isFinished || !isAtPlayground) return;
+    const dt = Math.min(delta, 0.05);
+    const carPos = carPosRef.current;
+    if (!carPos) return;
+
+    // Accumulate lap timer
+    lapTimeRef.current += dt;
+
+    // Throttle React timer state update to ~15 FPS to keep UI buttery smooth
+    const now = performance.now();
+    if (now - lastTickTime.current > 65) {
+      lastTickTime.current = now;
+      onTimerTick(lapTimeRef.current);
+    }
+
+    const currentTarget = targetCheckpointRef.current;
+    const cp = RACE_CHECKPOINTS[currentTarget];
+    if (!cp) return;
+
+    // Check hit radius against target checkpoint gate
+    const dx = Math.abs(carPos.x - cp.center[0]);
+    const dz = Math.abs(carPos.z - cp.center[1]);
+
+    const hit = dx <= cp.width * 0.9 && dz <= cp.depth * 0.85;
+
+    if (hit) {
+      if (currentTarget === 0) {
+        // Lap Completed!
+        const finishedLap = currentLapRef.current;
+        const lapTime = lapTimeRef.current;
+        lapTimeRef.current = 0;
+
+        if (finishedLap >= 3) {
+          onLapUpdate(finishedLap, lapTime, true);
+        } else {
+          currentLapRef.current += 1;
+          targetCheckpointRef.current = 1;
+          onLapUpdate(finishedLap, lapTime, false);
+          onCheckpointTrigger(1);
+        }
+      } else {
+        // Advance to next checkpoint: 1 -> 2, 2 -> 3, 3 -> 0
+        const nextCp = (currentTarget + 1) % 4;
+        targetCheckpointRef.current = nextCp;
+        onCheckpointTrigger(nextCp);
+      }
+    }
+  });
+
+  return null;
+}
+
 export default function LandingPlayground() {
   const [mounted, setMounted] = useState(false);
   const [isAtPlayground, setIsAtPlayground] = useState(true);
-  const [collectedCount, setCollectedCount] = useState(0);
-  const [resetCoinsTrigger, setResetCoinsTrigger] = useState(0);
 
-  const carPositionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.08, 0));
+  // Mini Racing Circuit & Lap System State
+  const [currentLap, setCurrentLap] = useState(1);
+  const [activeCheckpoint, setActiveCheckpoint] = useState(1);
+  const [currentLapTime, setCurrentLapTime] = useState(0);
+  const [bestLapTime, setBestLapTime] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [resetRaceTrigger, setResetRaceTrigger] = useState(0);
+
+  // Start/Finish grid position: [0, 0.08, -9.2]
+  const carPositionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.08, -9.2));
   const { controls, setControlState, triggerReset } = useKeyboardControls(true);
 
   // Real-time multiplayer hook (Supabase Realtime Broadcast & Presence)
@@ -91,6 +185,7 @@ export default function LandingPlayground() {
     activePlayerIds,
     remotePlayersRef,
     broadcastCarState,
+    getLeaderboard,
   } = useMultiplayer();
 
   useEffect(() => {
@@ -107,16 +202,66 @@ export default function LandingPlayground() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleCoinCollected = useCallback((coin: TechCoinItem, total: number) => {
-    setCollectedCount(total);
-    toast.success(`Dapat ${coin.name}! 💎`, { id: `gem-${coin.id}` });
+  // Lap progression and finish logic
+  const handleLapUpdate = useCallback(
+    (finishedLap: number, lapTime: number, isFinalLap: boolean) => {
+      setBestLapTime((prevBest) => {
+        const newBest = prevBest === 0 || lapTime < prevBest ? lapTime : prevBest;
+        return newBest;
+      });
+
+      if (isFinalLap) {
+        setIsFinished(true);
+        toast.success(
+          `🎉 FINISH! 3 Lap Selesai! Waktu: ${lapTime.toFixed(2)}s 🏆`,
+          { id: 'race-complete', duration: 4500 }
+        );
+      } else {
+        setCurrentLap((prev) => Math.min(prev + 1, 3));
+        toast.success(
+          `Lap ${finishedLap}/3 Selesai! (${lapTime.toFixed(2)}s) ⏱️`,
+          { id: 'lap-completed', duration: 2500 }
+        );
+      }
+    },
+    []
+  );
+
+  const handleCheckpointTrigger = useCallback((nextCp: number) => {
+    setActiveCheckpoint(nextCp);
   }, []);
 
-  const handleRespawnCoins = useCallback(() => {
-    setCollectedCount(0);
-    setResetCoinsTrigger((prev) => prev + 1);
-    toast.success('Semua Tech Gems di-respawn! ✨', { id: 'gems-respawn' });
+  const handleTimerTick = useCallback((time: number) => {
+    setCurrentLapTime(time);
   }, []);
+
+  const handleRestartRace = useCallback(() => {
+    setCurrentLap(1);
+    setActiveCheckpoint(1);
+    setCurrentLapTime(0);
+    setIsFinished(false);
+    setResetRaceTrigger((prev) => prev + 1);
+    triggerReset();
+    toast('Balapan di-reset ke garis Start! 🚦', { id: 'race-reset' });
+  }, [triggerReset]);
+
+  // Real-time synchronization of leaderboard with multiplayer room peers
+  useEffect(() => {
+    const updateLeaderboard = () => {
+      const liveList = getLeaderboard({
+        currentLap,
+        checkpointIndex: activeCheckpoint,
+        currentLapTime,
+        bestLapTime,
+        isFinished,
+      });
+      setLeaderboard(liveList);
+    };
+
+    updateLeaderboard();
+    const interval = setInterval(updateLeaderboard, 250);
+    return () => clearInterval(interval);
+  }, [getLeaderboard, currentLap, activeCheckpoint, currentLapTime, bestLapTime, isFinished]);
 
   const handleScrollToHome = () => {
     const homeEl = document.getElementById('home');
@@ -195,14 +340,22 @@ export default function LandingPlayground() {
             <pointLight position={[16, 8, 10]} color="#a855f7" intensity={2.5} distance={30} />
             <pointLight position={[0, 8, 0]} color="#38bdf8" intensity={1.5} distance={20} />
 
-            {/* Expansive 48x32 Cyber Arena */}
-            <PlaygroundArena boundsX={24} boundsZ={16} />
+            {/* Enclosed Neon Circuit Racetrack with Hologram Gantry & Barriers */}
+            <NeonCircuitArena
+              boundsX={22.2}
+              boundsZ={14.0}
+              activeCheckpoint={activeCheckpoint}
+            />
 
-            {/* Collectible Tech Gems Mini-Game */}
-            <TechCoins
-              carPositionRef={carPositionRef}
-              onCoinCollected={handleCoinCollected}
-              resetTrigger={resetCoinsTrigger}
+            {/* Checkpoint & Lap Progress Tracker */}
+            <CircuitRaceTracker
+              carPosRef={carPositionRef}
+              isAtPlayground={isAtPlayground}
+              resetTrigger={resetRaceTrigger}
+              onLapUpdate={handleLapUpdate}
+              onCheckpointTrigger={handleCheckpointTrigger}
+              onTimerTick={handleTimerTick}
+              isFinished={isFinished}
             />
 
             {/* Other Remote Multiplayer Players */}
@@ -220,8 +373,17 @@ export default function LandingPlayground() {
               username={username}
               onPositionUpdate={(pos) => carPositionRef.current.copy(pos)}
               onPhysicsBroadcast={broadcastCarState}
-              boundsX={24}
-              boundsZ={16}
+              raceTelemetry={{
+                currentLap,
+                checkpointIndex: activeCheckpoint,
+                currentLapTime,
+                bestLapTime,
+                isFinished,
+              }}
+              parkingPosition={[12.5, 0.08, -4.5]}
+              parkingAngle={-Math.PI / 2}
+              boundsX={22.2}
+              boundsZ={14.0}
             />
           </Suspense>
         </Canvas>
@@ -232,11 +394,22 @@ export default function LandingPlayground() {
       ───────────────────────────────────────────────────────────── */}
       <PlaygroundHUD
         controls={controls}
-        collectedCount={collectedCount}
-        totalCoins={INITIAL_TECH_COINS.length}
-        onResetCar={triggerReset}
-        onRespawnCoins={handleRespawnCoins}
+        onResetCar={handleRestartRace}
         onSetControl={setControlState}
+        visible={isAtPlayground}
+      />
+
+      {/* ─────────────────────────────────────────────────────────────
+          3. REAL-TIME MINI-LEADERBOARD & LAP TELEMETRY (Top Right)
+      ───────────────────────────────────────────────────────────── */}
+      <RaceLeaderboard
+        currentLap={currentLap}
+        maxLaps={3}
+        currentLapTime={currentLapTime}
+        bestLapTime={bestLapTime}
+        leaderboard={leaderboard}
+        isFinished={isFinished}
+        onRestartRace={handleRestartRace}
         visible={isAtPlayground}
       />
 
