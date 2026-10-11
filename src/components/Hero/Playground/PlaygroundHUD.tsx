@@ -182,9 +182,9 @@ export default function PlaygroundHUD({
              - Right Thumb: Pedal GAS (Maju) & Pedal MUNDUR / REM
              - Multi-touch enabled, no input lag, zero page gesture conflict
       ───────────────────────────────────────────────────────────── */}
-      <div className="flex md:hidden w-full items-end justify-between px-2 pb-14 sm:pb-16 pointer-events-auto touch-none select-none">
+      <div className="flex md:hidden w-full items-end justify-between px-2 pb-14 sm:pb-16 pointer-events-none select-none">
         {/* Left Thumb Cluster: Steering Rocker */}
-        <div className="flex items-center gap-2.5 p-1.5 rounded-3xl bg-neutral-950/70 border border-cyan-500/30 backdrop-blur-md shadow-2xl">
+        <div className="flex items-center gap-2.5 p-1.5 rounded-3xl bg-neutral-950/70 border border-cyan-500/30 backdrop-blur-md shadow-2xl pointer-events-auto touch-none">
           {/* Turn Left Button */}
           <button
             {...bindTouchHandlers('left')}
@@ -215,7 +215,7 @@ export default function PlaygroundHUD({
         </div>
 
         {/* Right Thumb Cluster: Accelerator & Brake/Reverse */}
-        <div className="flex items-center gap-2.5 p-1.5 rounded-3xl bg-neutral-950/70 border border-purple-500/30 backdrop-blur-md shadow-2xl">
+        <div className="flex items-center gap-2.5 p-1.5 rounded-3xl bg-neutral-950/70 border border-purple-500/30 backdrop-blur-md shadow-2xl pointer-events-auto touch-none">
           {/* Brake / Reverse Button */}
           <button
             {...bindTouchHandlers('backward')}

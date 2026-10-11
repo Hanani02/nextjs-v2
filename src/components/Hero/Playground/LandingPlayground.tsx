@@ -112,13 +112,14 @@ export default function LandingPlayground() {
   return (
     <section
       id="landing"
-      className="relative w-full h-[100dvh] min-h-[100dvh] bg-black overflow-hidden select-none touch-none overscroll-none"
+      className="relative w-full h-[100dvh] min-h-[100dvh] bg-black overflow-hidden select-none"
     >
       {/* ─────────────────────────────────────────────────────────────
           1. 3D RC CAR PLAYGROUND CANVAS (Full Black Backdrop)
       ───────────────────────────────────────────────────────────── */}
-      <div className="absolute inset-0 z-0 touch-none">
+      <div className="absolute inset-0 z-0 pointer-events-none">
         <Canvas
+          style={{ pointerEvents: 'none' }}
           shadows
           camera={{
             position: [0, 18, 19],
