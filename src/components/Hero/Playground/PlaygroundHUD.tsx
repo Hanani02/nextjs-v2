@@ -20,7 +20,7 @@ export default function PlaygroundHUD({
   onResetCar,
   onRespawnCoins,
   onSetControl,
-  visible
+  visible,
 }: PlaygroundHUDProps) {
   /**
    * Helper to bind touch and mouse events safely with multi-touch support
@@ -41,7 +41,7 @@ export default function PlaygroundHUD({
     },
     onMouseDown: () => onSetControl(key, true),
     onMouseUp: () => onSetControl(key, false),
-    onMouseLeave: () => onSetControl(key, false)
+    onMouseLeave: () => onSetControl(key, false),
   });
 
   return (
@@ -56,7 +56,7 @@ export default function PlaygroundHUD({
           1. TOP HUD BAR: Responsive Header on both mobile and desktop
       ───────────────────────────────────────────────────────────── */}
       <div className="w-full flex items-center justify-between gap-2 pt-16 sm:pt-18 select-none">
-        {/* Left: Minimalist driving instruction badge */}
+        {/* Left: Minimalist driving & drift instruction badge */}
         <div className="flex items-center gap-1.5 sm:gap-3 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-2xl bg-neutral-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-lg pointer-events-auto">
           <div className="flex items-center justify-center w-6 h-6 sm:w-7 sm:h-7 rounded-xl bg-cyan-500/20 text-cyan-400">
             <LuGamepad2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-pulse" />
@@ -64,21 +64,22 @@ export default function PlaygroundHUD({
           <div>
             {/* Desktop prompt */}
             <div className="hidden sm:flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-white tracking-wide">
-              <span>Drive with</span>
+              <span>Drive:</span>
               <span className="font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30 text-xs">
-                WASD
+                WASD / Arrows
               </span>
-              <span>or</span>
-              <span className="font-mono text-cyan-400 bg-cyan-950/60 px-1.5 py-0.5 rounded border border-cyan-500/30 text-xs">
-                Arrows
+              <span className="mx-0.5 text-gray-500">•</span>
+              <span>Drift:</span>
+              <span className="font-mono text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-500/30 text-xs">
+                SPACEBAR
               </span>
             </div>
             {/* Mobile compact prompt */}
             <div className="flex sm:hidden items-center gap-1 text-[11px] font-bold text-cyan-300">
-              <span>RC Car Arena</span>
+              <span>RC Car Multiplayer Arena</span>
             </div>
             <p className="text-[10px] sm:text-[11px] text-gray-400 hidden sm:block">
-              Screen wrap active • Scroll down to enter portfolio
+              Screen wrap aktif • Scroll ke bawah untuk masuk ke portofolio
             </p>
           </div>
         </div>
@@ -163,15 +164,15 @@ export default function PlaygroundHUD({
 
           <div className="w-[1px] h-10 bg-border/40 mx-2" />
 
-          {/* Space / Brake */}
+          {/* Space / Drift Handbrake */}
           <span
             className={`px-3.5 h-8 rounded-lg flex items-center justify-center font-mono font-semibold text-xs border transition-all ${
               controls.brake
-                ? 'bg-red-500 text-white border-red-400 shadow-[0_0_12px_rgba(239,68,68,0.8)] scale-95'
+                ? 'bg-rose-500 text-white border-rose-400 shadow-[0_0_14px_rgba(244,63,94,0.9)] scale-95'
                 : 'bg-neutral-900 text-gray-300 border-border/60'
             }`}
           >
-            SPACE [Brake]
+            SPACE [Drift Handbrake]
           </span>
         </div>
       </div>
@@ -179,17 +180,16 @@ export default function PlaygroundHUD({
       {/* ─────────────────────────────────────────────────────────────
           3. ERGONOMIC MOBILE DUAL-THUMB GAMEPAD CONTROLLER
              - Left Thumb: Kemudi Belok Kiri & Belok Kanan
-             - Right Thumb: Pedal GAS (Maju) & Pedal MUNDUR / REM
-             - Multi-touch enabled, no input lag, zero page gesture conflict
+             - Right Thumb: Pedal GAS (Maju), Pedal MUNDUR / REM, & Pedal HANDBRAKE DRIFT
       ───────────────────────────────────────────────────────────── */}
       <div className="flex md:hidden w-full items-end justify-between px-2 pb-14 sm:pb-16 pointer-events-none select-none">
         {/* Left Thumb Cluster: Steering Rocker */}
-        <div className="flex items-center gap-2.5 p-1.5 rounded-3xl bg-neutral-950/70 border border-cyan-500/30 backdrop-blur-md shadow-2xl pointer-events-auto touch-none">
+        <div className="flex items-center gap-2 p-1.5 rounded-3xl bg-neutral-950/70 border border-cyan-500/30 backdrop-blur-md shadow-2xl pointer-events-auto touch-none">
           {/* Turn Left Button */}
           <button
             {...bindTouchHandlers('left')}
             aria-label="Kemudi Kiri"
-            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl font-black text-xl flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+            className={`w-13 h-14 sm:w-15 sm:h-16 rounded-2xl font-black text-xl flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
               controls.left
                 ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.9)] scale-95'
                 : 'bg-neutral-900/90 text-cyan-400 border border-cyan-500/40 active:bg-cyan-400 active:text-black'
@@ -203,7 +203,7 @@ export default function PlaygroundHUD({
           <button
             {...bindTouchHandlers('right')}
             aria-label="Kemudi Kanan"
-            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl font-black text-xl flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+            className={`w-13 h-14 sm:w-15 sm:h-16 rounded-2xl font-black text-xl flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
               controls.right
                 ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.9)] scale-95'
                 : 'bg-neutral-900/90 text-cyan-400 border border-cyan-500/40 active:bg-cyan-400 active:text-black'
@@ -214,13 +214,27 @@ export default function PlaygroundHUD({
           </button>
         </div>
 
-        {/* Right Thumb Cluster: Accelerator & Brake/Reverse */}
-        <div className="flex items-center gap-2.5 p-1.5 rounded-3xl bg-neutral-950/70 border border-purple-500/30 backdrop-blur-md shadow-2xl pointer-events-auto touch-none">
+        {/* Right Thumb Cluster: Handbrake Drift + Accelerator + Brake/Reverse */}
+        <div className="flex items-center gap-1.5 p-1.5 rounded-3xl bg-neutral-950/70 border border-purple-500/30 backdrop-blur-md shadow-2xl pointer-events-auto touch-none">
+          {/* Handbrake Drift Button */}
+          <button
+            {...bindTouchHandlers('brake')}
+            aria-label="Handbrake Drift"
+            className={`w-11 h-14 sm:w-13 sm:h-16 rounded-2xl font-black text-xs flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+              controls.brake
+                ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.9)] scale-95'
+                : 'bg-neutral-900/90 text-rose-400 border border-rose-500/40 active:bg-rose-500 active:text-white'
+            }`}
+          >
+            <span>🔥</span>
+            <span className="text-[7px] uppercase tracking-wider font-extrabold">Drift</span>
+          </button>
+
           {/* Brake / Reverse Button */}
           <button
             {...bindTouchHandlers('backward')}
             aria-label="Rem dan Mundur"
-            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl font-black text-lg flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+            className={`w-12 h-14 sm:w-14 sm:h-16 rounded-2xl font-black text-lg flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
               controls.backward
                 ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.9)] scale-95'
                 : 'bg-neutral-900/90 text-rose-400 border border-rose-500/40 active:bg-rose-500 active:text-white'
@@ -234,7 +248,7 @@ export default function PlaygroundHUD({
           <button
             {...bindTouchHandlers('forward')}
             aria-label="Pedal Gas Maju"
-            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl font-black text-xl flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+            className={`w-13 h-14 sm:w-15 sm:h-16 rounded-2xl font-black text-xl flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
               controls.forward
                 ? 'bg-cyan-400 text-black shadow-[0_0_24px_rgba(6,182,212,1.0)] scale-95'
                 : 'bg-gradient-to-br from-cyan-500/90 to-blue-600/90 text-white border border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)] active:bg-cyan-400 active:text-black'

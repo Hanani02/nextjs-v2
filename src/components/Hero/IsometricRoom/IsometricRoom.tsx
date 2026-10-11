@@ -6,6 +6,7 @@ import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import RoomMeshes from './RoomMeshes';
 import Hotspots, { type HotspotType } from './Hotspots';
+import ParkedHeroCar from './ParkedHeroCar';
 
 interface IsometricRoomProps {
   onSelectHotspot: (type: HotspotType) => void;
@@ -115,6 +116,7 @@ export default function IsometricRoom({
 
           <RoomMeshes profileImage={profileImage} onSelectHotspot={onSelectHotspot} />
           <Hotspots onSelect={onSelectHotspot} />
+          <ParkedHeroCar position={[2.0, -1.12, 0.9]} rotationY={-0.75} />
         </Suspense>
       </Canvas>
     </div>

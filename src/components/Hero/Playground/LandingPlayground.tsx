@@ -7,9 +7,12 @@ import toast from 'react-hot-toast';
 import { LuChevronDown, LuSparkles } from 'react-icons/lu';
 import PlaygroundArena from './PlaygroundArena';
 import RCCar from './RCCar';
+import OtherPlayers from './OtherPlayers';
 import TechCoins, { INITIAL_TECH_COINS, type TechCoinItem } from './TechCoins';
 import { useKeyboardControls } from './useKeyboardControls';
 import PlaygroundHUD from './PlaygroundHUD';
+import GarageMenu from './GarageMenu';
+import { useMultiplayer } from './useMultiplayer';
 
 /**
  * Responsive Camera Controller for the Expansive Arcade Playground:
@@ -18,7 +21,7 @@ import PlaygroundHUD from './PlaygroundHUD';
  * comfortable view without clipping the arena or the car.
  */
 function WidePlaygroundCamera({
-  carPosRef
+  carPosRef,
 }: {
   carPosRef: React.RefObject<THREE.Vector3>;
 }) {
@@ -35,7 +38,6 @@ function WidePlaygroundCamera({
     const isPortrait = aspect < 1;
 
     // Responsive FOV: on portrait screens, widen vertical FOV to 68deg
-    // so the horizontal framing captures the full breadth of the arena
     const targetFov = isPortrait ? 68 : 46;
     if (camera instanceof THREE.PerspectiveCamera) {
       if (Math.abs(camera.fov - targetFov) > 0.4) {
@@ -70,14 +72,39 @@ function WidePlaygroundCamera({
 
 export default function LandingPlayground() {
   const [mounted, setMounted] = useState(false);
+  const [isAtPlayground, setIsAtPlayground] = useState(true);
   const [collectedCount, setCollectedCount] = useState(0);
   const [resetCoinsTrigger, setResetCoinsTrigger] = useState(0);
 
   const carPositionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.08, 0));
   const { controls, setControlState, triggerReset } = useKeyboardControls(true);
 
+  // Real-time multiplayer hook (Supabase Realtime Broadcast & Presence)
+  const {
+    username,
+    setUsername,
+    carModel,
+    setCarModel,
+    carColor,
+    setCarColor,
+    roomState,
+    activePlayerIds,
+    remotePlayersRef,
+    broadcastCarState,
+  } = useMultiplayer();
+
   useEffect(() => {
     setMounted(true);
+
+    const handleScroll = () => {
+      // Playground HUD & Garage UI only visible at Scroll = 0 (Pre-hero phase)
+      setIsAtPlayground(window.scrollY < 80);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const handleCoinCollected = useCallback((coin: TechCoinItem, total: number) => {
@@ -115,7 +142,7 @@ export default function LandingPlayground() {
       className="relative w-full h-[100dvh] min-h-[100dvh] bg-black overflow-hidden select-none"
     >
       {/* ─────────────────────────────────────────────────────────────
-          1. 3D RC CAR PLAYGROUND CANVAS (Full Black Backdrop)
+          1. 3D MULTIPLAYER RC CAR PLAYGROUND CANVAS
       ───────────────────────────────────────────────────────────── */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <Canvas
@@ -125,7 +152,7 @@ export default function LandingPlayground() {
             position: [0, 18, 19],
             fov: 46,
             near: 0.1,
-            far: 140
+            far: 140,
           }}
           dpr={[1, typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1.5]}
           gl={{
@@ -133,7 +160,7 @@ export default function LandingPlayground() {
             alpha: false,
             powerPreference: 'high-performance',
             toneMapping: THREE.ACESFilmicToneMapping,
-            toneMappingExposure: 1.3
+            toneMappingExposure: 1.3,
           }}
           onCreated={({ gl }) => {
             gl.setClearColor(new THREE.Color(0x000000), 1);
@@ -171,18 +198,28 @@ export default function LandingPlayground() {
             {/* Expansive 48x32 Cyber Arena */}
             <PlaygroundArena boundsX={24} boundsZ={16} />
 
-            {/* 6 Randomly Spawned Collectible Tech Gems */}
+            {/* Collectible Tech Gems Mini-Game */}
             <TechCoins
               carPositionRef={carPositionRef}
               onCoinCollected={handleCoinCollected}
               resetTrigger={resetCoinsTrigger}
             />
 
-            {/* The Stylized 3D RC Car */}
+            {/* Other Remote Multiplayer Players */}
+            <OtherPlayers
+              activePlayerIds={activePlayerIds}
+              remotePlayersRef={remotePlayersRef}
+            />
+
+            {/* The User's Customizable Stylized 3D RC Car with Drift Physics */}
             <RCCar
               controls={controls}
-              isAutoParking={false}
+              isAutoParking={!isAtPlayground}
+              model={carModel}
+              color={carColor}
+              username={username}
               onPositionUpdate={(pos) => carPositionRef.current.copy(pos)}
+              onPhysicsBroadcast={broadcastCarState}
               boundsX={24}
               boundsZ={16}
             />
@@ -200,13 +237,35 @@ export default function LandingPlayground() {
         onResetCar={triggerReset}
         onRespawnCoins={handleRespawnCoins}
         onSetControl={setControlState}
-        visible={true}
+        visible={isAtPlayground}
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          3. SCROLL DOWN TO HOME CTA BUTTON
+          3. GARAGE MENU UI (Vehicle Model, Neon Palette, Username)
+             Only visible in Pre-Hero phase (Scroll = 0)
       ───────────────────────────────────────────────────────────── */}
-      <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+      <GarageMenu
+        currentModel={carModel}
+        currentColor={carColor}
+        username={username}
+        playerCount={roomState.playerCount}
+        maxPlayers={roomState.maxPlayers}
+        isSpectator={roomState.isSpectator}
+        roomStatus={roomState.status}
+        onSelectModel={setCarModel}
+        onSelectColor={setCarColor}
+        onUpdateUsername={setUsername}
+        visible={isAtPlayground}
+      />
+
+      {/* ─────────────────────────────────────────────────────────────
+          4. SCROLL DOWN TO HOME CTA BUTTON
+      ───────────────────────────────────────────────────────────── */}
+      <div
+        className={`absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto transition-all duration-500 ${
+          isAtPlayground ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'
+        }`}
+      >
         <button
           onClick={handleScrollToHome}
           className="group flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-neutral-950/90 hover:bg-neutral-900 border border-cyan-500/50 hover:border-cyan-400 text-white text-[11px] sm:text-xs md:text-sm font-semibold shadow-[0_0_20px_rgba(6,182,212,0.35)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
