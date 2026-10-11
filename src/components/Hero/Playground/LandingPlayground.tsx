@@ -315,14 +315,14 @@ export default function LandingPlayground() {
             {/* Adaptive camera tracking car in wide arena */}
             <WidePlaygroundCamera carPosRef={carPositionRef} />
 
-            {/* Ambient Lighting */}
-            <ambientLight intensity={0.8} color="#1b1736" />
+            {/* Ambient Lighting - bright enough to see track and barriers clearly */}
+            <ambientLight intensity={1.1} color="#334155" />
 
-            {/* Sun Key Light */}
+            {/* Stadium Key Floodlight */}
             <directionalLight
-              position={[15, 25, 15]}
-              intensity={1.8}
-              color="#f8fafc"
+              position={[15, 28, 15]}
+              intensity={2.2}
+              color="#ffffff"
               castShadow
               shadow-mapSize-width={1024}
               shadow-mapSize-height={1024}
@@ -335,10 +335,12 @@ export default function LandingPlayground() {
               shadow-bias={-0.0005}
             />
 
-            {/* Neon Cyan & Purple Point Lights */}
-            <pointLight position={[-16, 8, -10]} color="#06b6d4" intensity={2.5} distance={30} />
-            <pointLight position={[16, 8, 10]} color="#a855f7" intensity={2.5} distance={30} />
-            <pointLight position={[0, 8, 0]} color="#38bdf8" intensity={1.5} distance={20} />
+            {/* Stadium Spotlights: Corners, Chicane & Straightaways */}
+            <pointLight position={[-16, 9, -10]} color="#38bdf8" intensity={2.8} distance={32} />
+            <pointLight position={[16, 9, 10]} color="#a855f7" intensity={2.8} distance={32} />
+            <pointLight position={[0, 9, 9.5]} color="#ffffff" intensity={3.2} distance={25} />
+            <pointLight position={[0, 9, -9.2]} color="#ffffff" intensity={2.8} distance={25} />
+            <pointLight position={[0, 9, 0]} color="#38bdf8" intensity={2.0} distance={22} />
 
             {/* Enclosed Neon Circuit Racetrack with Hologram Gantry & Barriers */}
             <NeonCircuitArena
