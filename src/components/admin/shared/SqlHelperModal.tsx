@@ -128,9 +128,10 @@ CREATE TABLE IF NOT EXISTS circuit_leaderboard (
   created_at timestamptz DEFAULT now()
 );
 
--- Index untuk performa ranking cepat
+-- Index untuk performa ranking cepat & pencarian user unik
 CREATE INDEX IF NOT EXISTS idx_circuit_leaderboard_total_time ON circuit_leaderboard (total_time ASC);
 CREATE INDEX IF NOT EXISTS idx_circuit_leaderboard_best_lap ON circuit_leaderboard (best_lap_time ASC);
+CREATE INDEX IF NOT EXISTS idx_circuit_leaderboard_username ON circuit_leaderboard (LOWER(TRIM(username)));
 
 -- ==========================================
 -- 7. KEAMANAN RLS (Row Level Security) SUPABASE

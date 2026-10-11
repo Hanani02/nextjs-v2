@@ -267,10 +267,17 @@ export default function LandingPlayground() {
           lap_count: 3,
         }).then((res) => {
           if (res.success) {
-            toast.success('🏆 Catatan balapan berhasil disimpan ke Supabase!', {
-              id: 'db-saved',
-              duration: 3500,
-            });
+            if (res.isNewBest === false) {
+              toast('⏱️ Rekor balapan tercatat! (Rekor sebelumnya masih lebih cepat)', {
+                id: 'db-saved',
+                duration: 3500,
+              });
+            } else {
+              toast.success('🏆 Rekor terbaikmu berhasil disimpan ke Supabase!', {
+                id: 'db-saved',
+                duration: 3500,
+              });
+            }
           }
         });
 

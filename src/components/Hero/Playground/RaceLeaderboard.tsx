@@ -54,11 +54,11 @@ export default function RaceLeaderboard({
   const [globalRecords, setGlobalRecords] = useState<CircuitLeaderboardRecord[]>([]);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(false);
 
-  // Mengambil daftar top rekor dari Supabase
+  // Mengambil daftar top rekor dari Supabase (Top 5 unik, best record)
   const loadGlobalRecords = useCallback(async () => {
     setIsLoadingGlobal(true);
     try {
-      const records = await fetchGlobalLeaderboard(10);
+      const records = await fetchGlobalLeaderboard(5);
       setGlobalRecords(records);
     } catch {
       // Ignored
@@ -191,7 +191,7 @@ export default function RaceLeaderboard({
               }`}
             >
               <LuTrophy className="w-3 h-3 text-amber-400" />
-              <span>Rekor Supabase</span>
+              <span>Rekor Supabase (Top 5)</span>
             </button>
           </div>
 
@@ -242,7 +242,7 @@ export default function RaceLeaderboard({
               /* TAB 2: Supabase Global Hall of Fame */
               <div>
                 <div className="flex items-center justify-between px-1 pb-1 text-[9px] text-gray-400 font-mono uppercase tracking-wider border-b border-border/20 mb-1">
-                  <span>Pembalap</span>
+                  <span>Top 5 Pembalap (Best Record)</span>
                   <div className="flex items-center gap-2">
                     <span>Total</span>
                     <button
@@ -262,7 +262,7 @@ export default function RaceLeaderboard({
                 ) : globalRecords.length === 0 ? (
                   <div className="py-4 text-center text-gray-400 text-[11px]">
                     Belum ada rekor di database.<br />
-                    <span className="text-[9px] text-gray-500">Jadilah yang pertama finis 3 lap!</span>
+                    <span className="text-[9px] text-gray-500">Jadilah yang pertama masuk Top 5!</span>
                   </div>
                 ) : (
                   globalRecords.map((rec, idx) => {
