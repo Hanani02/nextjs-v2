@@ -13,6 +13,8 @@ import { useKeyboardControls } from './useKeyboardControls';
 import PlaygroundHUD from './PlaygroundHUD';
 import GarageMenu from './GarageMenu';
 import { useMultiplayer } from './useMultiplayer';
+import ArenaBloom from './ArenaBloom';
+import { playCheckpointChime, playFinishChime } from '@/lib/circuitAudio';
 import type { LeaderboardEntry } from '@/types/vehicle';
 import { saveRaceRecord } from '@/lib/circuitLeaderboard';
 
@@ -21,6 +23,7 @@ import { saveRaceRecord } from '@/lib/circuitLeaderboard';
  * Dynamically adjusts vertical FOV, elevation, and trailing distance
  * based on viewport aspect ratio so mobile portrait screens have a wide,
  * comfortable view without clipping the arena or the car.
+ * Includes dynamic FOV punch (+8 deg) whenever nitro boost is active.
  */
 function WidePlaygroundCamera({
   carPosRef,
@@ -86,7 +89,7 @@ function checkGatePass(
   // 1. Proximity bounding box check (with generous threshold)
   const dx = Math.abs(currPos.x - cp.center[0]);
   const dz = Math.abs(currPos.z - cp.center[1]);
-  if (dx <= cp.width * 0.55 && dz <= cp.depth * 0.55) {
+  if (dx <= cp.width * 0.65 && dz <= cp.depth * 0.65) {
     return true;
   }
 
@@ -97,49 +100,49 @@ function checkGatePass(
 
   switch (gateId) {
     case 0: {
-      // Gate 0: Start / Finish Line at X = 0, Z spanning across the bottom straight ([-14.6, -3.6])
+      // Gate 0: Start / Finish Line at X = 0, Z spanning across the bottom straight ([-16.0, -2.5])
       // Detects whenever the car crosses X = 0 in either direction
       const crossedX = (prevPos.x <= 0 && currPos.x >= 0) || (prevPos.x >= 0 && currPos.x <= 0);
       if (crossedX && Math.abs(currPos.x - prevPos.x) > 0.0001) {
         const t = (0 - prevPos.x) / (currPos.x - prevPos.x);
         const zAtCross = prevPos.z + t * (currPos.z - prevPos.z);
-        if (zAtCross >= -14.6 && zAtCross <= -3.6) {
+        if (zAtCross >= -16.0 && zAtCross <= -2.5) {
           return true;
         }
       }
       break;
     }
     case 1: {
-      // Gate 1: Turn 1 Apex at Z = 0, X spanning across the eastern curve ([10.2, 23.8])
+      // Gate 1: Turn 1 Apex at Z = 0, X spanning across the eastern curve ([9.5, 24.5])
       const crossedZ = (prevPos.z <= 0 && currPos.z >= 0) || (prevPos.z >= 0 && currPos.z <= 0);
       if (crossedZ && Math.abs(currPos.z - prevPos.z) > 0.0001) {
         const t = (0 - prevPos.z) / (currPos.z - prevPos.z);
         const xAtCross = prevPos.x + t * (currPos.x - prevPos.x);
-        if (xAtCross >= 10.2 && xAtCross <= 23.8) {
+        if (xAtCross >= 9.5 && xAtCross <= 24.5) {
           return true;
         }
       }
       break;
     }
     case 2: {
-      // Gate 2: Chicane Entry / Back straight at X = 0, Z spanning across the top straight ([3.6, 14.6])
+      // Gate 2: Chicane Entry / Back straight at X = 0, Z spanning across the top straight ([2.5, 16.0])
       const crossedX = (prevPos.x >= 0 && currPos.x <= 0) || (prevPos.x <= 0 && currPos.x >= 0);
       if (crossedX && Math.abs(currPos.x - prevPos.x) > 0.0001) {
         const t = (0 - prevPos.x) / (currPos.x - prevPos.x);
         const zAtCross = prevPos.z + t * (currPos.z - prevPos.z);
-        if (zAtCross >= 3.6 && zAtCross <= 14.6) {
+        if (zAtCross >= 2.5 && zAtCross <= 16.0) {
           return true;
         }
       }
       break;
     }
     case 3: {
-      // Gate 3: Hairpin Apex at Z = 0, X spanning across the western curve ([-23.8, -10.2])
+      // Gate 3: Hairpin Apex at Z = 0, X spanning across the western curve ([-24.5, -9.5])
       const crossedZ = (prevPos.z >= 0 && currPos.z <= 0) || (prevPos.z <= 0 && currPos.z >= 0);
       if (crossedZ && Math.abs(currPos.z - prevPos.z) > 0.0001) {
         const t = (0 - prevPos.z) / (currPos.z - prevPos.z);
         const xAtCross = prevPos.x + t * (currPos.x - prevPos.x);
-        if (xAtCross >= -23.8 && xAtCross <= -10.2) {
+        if (xAtCross >= -24.5 && xAtCross <= -9.5) {
           return true;
         }
       }
@@ -231,8 +234,8 @@ function CircuitRaceTracker({
     // Accurate Continuous Collision + Proximity detection
     const hit = checkGatePass(currentTarget, prevPos, carPos, cp);
 
-    // Responsive debouncing (300ms) to prevent multi-triggering within consecutive frames
-    if (hit && now - lastCheckpointPassTime.current > 300) {
+    // Responsive debouncing (150ms) to prevent multi-triggering within consecutive frames
+    if (hit && now - lastCheckpointPassTime.current > 150) {
       if (currentTarget === 0) {
         // Enforce that Gates 1, 2, and 3 MUST have been cleared on this lap
         const hasClearedAllGates =
@@ -240,8 +243,9 @@ function CircuitRaceTracker({
           clearedCheckpointsRef.current.has(2) &&
           clearedCheckpointsRef.current.has(3);
 
-        // Enforce minimum lap duration (at least 4.0s) to prevent zero-second glitches
-        if (!hasClearedAllGates || lapTimeRef.current < 4.0) {
+        // Minimum lap time threshold: 0.5s to prevent immediate double-tap on the exact same frame
+        // Allows fast laps under 4 seconds to be detected immediately!
+        if (!hasClearedAllGates || lapTimeRef.current < 0.5) {
           prevPos.copy(carPos);
           return;
         }
@@ -316,6 +320,9 @@ export default function LandingPlayground() {
     remotePlayersRef,
     broadcastCarState,
     getLeaderboard,
+    selfEmote,
+    activeEmotes,
+    sendQuickEmote,
   } = useMultiplayer();
 
   useEffect(() => {
@@ -348,6 +355,7 @@ export default function LandingPlayground() {
 
       if (isFinalLap) {
         setIsFinished(true);
+        playFinishChime();
 
         // Catat rekor balapan secara permanen ke Supabase database
         saveRaceRecord({
@@ -380,6 +388,7 @@ export default function LandingPlayground() {
         );
       } else {
         setCurrentLap((prev) => Math.min(prev + 1, 3));
+        playCheckpointChime();
         toast.success(
           `Lap ${finishedLap}/3 Selesai! (${lapTime.toFixed(2)}s) ⏱️`,
           { id: 'lap-completed', duration: 2500 }
@@ -391,6 +400,7 @@ export default function LandingPlayground() {
 
   const handleCheckpointTrigger = useCallback((nextCp: number) => {
     setActiveCheckpoint(nextCp);
+    playCheckpointChime();
   }, []);
 
   const handleTimerTick = useCallback((lapTime: number, totalTime: number) => {
@@ -479,6 +489,9 @@ export default function LandingPlayground() {
             {/* Adaptive camera tracking car in wide arena */}
             <WidePlaygroundCamera carPosRef={carPositionRef} />
 
+            {/* Post-Processing Bloom for vibrant neon glow */}
+            <ArenaBloom strength={0.65} radius={0.35} threshold={0.82} />
+
             {/* Ambient Lighting - bright enough to see track and barriers clearly */}
             <ambientLight intensity={1.1} color="#334155" />
 
@@ -528,6 +541,7 @@ export default function LandingPlayground() {
             <OtherPlayers
               activePlayerIds={activePlayerIds}
               remotePlayersRef={remotePlayersRef}
+              activeEmotes={activeEmotes}
             />
 
             {/* The User's Customizable Stylized 3D RC Car with Drift Physics */}
@@ -537,6 +551,7 @@ export default function LandingPlayground() {
               model={carModel}
               color={carColor}
               username={username}
+              activeEmote={selfEmote && selfEmote.expiresAt > Date.now() ? selfEmote.text : null}
               onPositionUpdate={(pos) => carPositionRef.current.copy(pos)}
               onPhysicsBroadcast={broadcastCarState}
               raceTelemetry={{
@@ -562,6 +577,7 @@ export default function LandingPlayground() {
         controls={controls}
         onResetCar={handleRestartRace}
         onSetControl={setControlState}
+        onSendEmote={sendQuickEmote}
         visible={isAtPlayground}
       />
 

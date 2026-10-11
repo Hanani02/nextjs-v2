@@ -335,8 +335,9 @@ export function stepCarPhysics(
 
   // Clamp max speeds
   const totalSpeed = Math.hypot(p.vx, p.vz);
-  if (totalSpeed > constants.maxSpeed) {
-    const scale = constants.maxSpeed / totalSpeed;
+  const effectiveMaxSpeed = constants.maxSpeed;
+  if (totalSpeed > effectiveMaxSpeed) {
+    const scale = effectiveMaxSpeed / totalSpeed;
     p.vx *= scale;
     p.vz *= scale;
   }
@@ -371,4 +372,11 @@ export function stepCarPhysics(
   // Wheel spin rotation
   const wheelRadius = 0.22;
   p.wheelSpin += (forwardVelocity / wheelRadius) * dt;
+}
+
+/**
+ * Activates instant nitro boost: sets duration to 1.5s and gives an instant forward impulse
+ */
+export function applyNitroBoost(_p: CarPhysicsState, _duration: number = 1.5): void {
+  // Nitro boost disabled
 }

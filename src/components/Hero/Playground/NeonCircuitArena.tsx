@@ -16,6 +16,16 @@ export const RACE_CHECKPOINTS = [
   { id: 3, name: 'Hairpin Apex', center: [-18.5, 0] as [number, number], width: 11.5, depth: 6.0 },
 ];
 
+export const NITRO_BOOST_PADS: Array<{
+  id: string;
+  x: number;
+  z: number;
+  rotationY: number;
+  width: number;
+  length: number;
+  name: string;
+}> = [];
+
 export default function NeonCircuitArena({
   boundsX = 22.2,
   boundsZ = 14.0,

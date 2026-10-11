@@ -11,9 +11,10 @@ import type { PlayerVehicleState, CarModelType } from '@/types/vehicle';
 interface OtherPlayerCarProps {
   playerId: string;
   remotePlayersRef: React.RefObject<Record<string, PlayerVehicleState>>;
+  activeEmote?: string | null;
 }
 
-function OtherPlayerCar({ playerId, remotePlayersRef }: OtherPlayerCarProps) {
+function OtherPlayerCar({ playerId, remotePlayersRef, activeEmote }: OtherPlayerCarProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const bodyRef = useRef<THREE.Group>(null!);
 
@@ -90,6 +91,7 @@ function OtherPlayerCar({ playerId, remotePlayersRef }: OtherPlayerCarProps) {
         color={color}
         model={model}
         isDrifting={isDrifting}
+        activeEmote={activeEmote}
       />
 
       {/* Tilting Car Body Mesh */}
@@ -116,17 +118,29 @@ function OtherPlayerCar({ playerId, remotePlayersRef }: OtherPlayerCarProps) {
 interface OtherPlayersProps {
   activePlayerIds?: string[];
   remotePlayersRef: React.RefObject<Record<string, PlayerVehicleState>>;
+  activeEmotes?: Record<string, { text: string; expiresAt: number }>;
 }
 
 export default function OtherPlayers({
   activePlayerIds = [],
   remotePlayersRef,
+  activeEmotes = {},
 }: OtherPlayersProps) {
+  const now = Date.now();
   return (
     <group>
-      {activePlayerIds.map((id) => (
-        <OtherPlayerCar key={id} playerId={id} remotePlayersRef={remotePlayersRef} />
-      ))}
+      {activePlayerIds.map((id) => {
+        const emoteObj = activeEmotes[id];
+        const emoteText = emoteObj && emoteObj.expiresAt > now ? emoteObj.text : null;
+        return (
+          <OtherPlayerCar
+            key={id}
+            playerId={id}
+            remotePlayersRef={remotePlayersRef}
+            activeEmote={emoteText}
+          />
+        );
+      })}
     </group>
   );
 }

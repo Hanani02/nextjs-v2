@@ -10,6 +10,7 @@ interface CarUsernameBadgeProps {
   model: CarModelType;
   isDrifting?: boolean;
   speed?: number;
+  activeEmote?: string | null;
 }
 
 export default function CarUsernameBadge({
@@ -19,9 +20,10 @@ export default function CarUsernameBadge({
   model,
   isDrifting = false,
   speed = 0,
+  activeEmote,
 }: CarUsernameBadgeProps) {
   // Height offset above the car based on vehicle model
-  const heightOffset = model === 'truck' ? 1.45 : model === 'buggy' ? 1.35 : 1.2;
+  const heightOffset = model === 'truck' ? 1.55 : model === 'buggy' ? 1.45 : 1.3;
 
   return (
     <Html
@@ -34,6 +36,13 @@ export default function CarUsernameBadge({
       }}
     >
       <div className="flex flex-col items-center gap-1 -translate-y-1">
+        {/* Floating Quick Emote Reaction Bubble */}
+        {activeEmote && (
+          <div className="animate-in zoom-in-75 fade-in slide-in-from-bottom-2 duration-150 px-3.5 py-1.5 rounded-2xl bg-neutral-950/95 border-2 border-cyan-400 text-white font-black text-xs shadow-[0_0_25px_rgba(34,211,238,0.9)] backdrop-blur-xl flex items-center gap-1.5 whitespace-nowrap animate-bounce">
+            <span className="text-sm drop-shadow">{activeEmote}</span>
+          </div>
+        )}
+
         {/* Drift Flame Tag */}
         {isDrifting && (
           <div className="px-2 py-0.5 rounded-full bg-rose-600/90 text-white text-[9px] font-black tracking-widest uppercase shadow-[0_0_12px_rgba(244,63,94,0.9)] animate-bounce flex items-center gap-1 border border-rose-400">

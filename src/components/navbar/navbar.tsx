@@ -6,6 +6,7 @@ import Logo from "./logo";
 import Link from "next/link";
 import LinkButton from "../ui/LinkButton";
 import ThemeToggle from "../theme/ThemeToggle";
+import SoundToggle from "../theme/SoundToggle";
 import { LuDownload, LuX, LuMenu } from "react-icons/lu";
 
 export const navLinks = [
@@ -83,14 +84,16 @@ export default function Navbar() {
                 download
               />
             </div>
-            <div className="pointer-events-auto">
+            <div className="flex items-center gap-2 pointer-events-auto">
+              <SoundToggle size="md" />
               <ThemeToggle size="md" />
             </div>
           </div>
 
-          {/* Mobile actions: Theme Toggle (Always visible) & Hamburger menu (Appears on scroll) */}
+          {/* Mobile actions: Sound & Theme Toggle (Always visible) & Hamburger menu (Appears on scroll) */}
           <div className="flex items-center gap-2 lg:hidden">
-            <div className="pointer-events-auto">
+            <div className="flex items-center gap-1.5 pointer-events-auto">
+              <SoundToggle size="sm" />
               <ThemeToggle size="sm" />
             </div>
             <div

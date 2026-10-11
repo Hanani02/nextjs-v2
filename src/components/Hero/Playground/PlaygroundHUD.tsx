@@ -1,14 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CarControls } from './useKeyboardControls';
+import SoundToggle from '@/components/theme/SoundToggle';
 import {
   LuRotateCcw,
   LuSparkles,
   LuGamepad2,
   LuFlame,
   LuMinimize2,
+  LuZap,
 } from 'react-icons/lu';
+
+export const QUICK_EMOTES = [
+  { key: '1', text: 'GG! 🏁', label: 'GG! 🏁' },
+  { key: '2', text: 'Beep Beep! 🚗', label: 'Beep! 🚗' },
+  { key: '3', text: '🔥', label: '🔥' },
+  { key: '4', text: '💨', label: '💨' },
+];
 
 interface PlaygroundHUDProps {
   controls: CarControls;
@@ -17,6 +26,7 @@ interface PlaygroundHUDProps {
   onResetCar: () => void;
   onRespawnCoins?: () => void;
   onSetControl: (key: keyof CarControls, val: boolean) => void;
+  onSendEmote?: (emote: string) => void;
   visible: boolean;
 }
 
@@ -24,6 +34,7 @@ export default function PlaygroundHUD({
   controls,
   onResetCar,
   onSetControl,
+  onSendEmote,
   visible,
 }: PlaygroundHUDProps) {
   // Drive instruction badge can be minimized into a compact icon button
@@ -39,6 +50,25 @@ export default function PlaygroundHUD({
       // ignore
     }
   }, []);
+
+  // Listen to keyboard shortcut keys 1-4 for quick reactions
+  useEffect(() => {
+    if (!visible || !onSendEmote) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+
+      const found = QUICK_EMOTES.find((item) => item.key === e.key);
+      if (found) {
+        e.preventDefault();
+        onSendEmote(found.text);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [visible, onSendEmote]);
 
   const toggleDriveGuide = (val: boolean) => {
     setDriveGuideMinimized(val);
@@ -79,11 +109,12 @@ export default function PlaygroundHUD({
           : 'opacity-0 -translate-y-6 pointer-events-none'
       }`}
     >
+
       {/* ─────────────────────────────────────────────────────────────
           1. TOP HUD BAR: Responsive Header on both mobile and desktop
       ───────────────────────────────────────────────────────────── */}
       <div className="w-full flex items-center justify-between gap-2 pt-16 sm:pt-18 select-none">
-        {/* Left: Minimizable driving & drift instruction badge + Reset button */}
+        {/* Left: Minimizable driving & drift instruction badge + Reset + Sound */}
         <div className="flex items-center gap-2 pointer-events-auto">
           {driveGuideMinimized ? (
             /* Minimized Icon Button */
@@ -113,7 +144,12 @@ export default function PlaygroundHUD({
                   <span className="mx-0.5 text-gray-500">•</span>
                   <span>Drift:</span>
                   <span className="font-mono text-rose-400 bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-500/30 text-xs">
-                    SPACEBAR
+                    SPACE
+                  </span>
+                  <span className="mx-0.5 text-gray-500">•</span>
+                  <span>Emotes:</span>
+                  <span className="font-mono text-amber-300 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/30 text-xs">
+                    1-4
                   </span>
                 </div>
                 {/* Mobile compact prompt */}
@@ -121,7 +157,7 @@ export default function PlaygroundHUD({
                   <span>Neon Circuit • RC Drift</span>
                 </div>
                 <p className="text-[10px] sm:text-[11px] text-gray-400 hidden sm:block">
-                  Mini Circuit • 3 Laps • Scroll ke bawah untuk pit stop & masuk ke portofolio
+                  Mini Circuit • Drift & selesaikan 3 lap untuk rekor terbaik!
                 </p>
               </div>
 
@@ -145,10 +181,35 @@ export default function PlaygroundHUD({
             <LuRotateCcw className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Reset</span>
           </button>
+
+          {/* Sound Toggle Button inside HUD */}
+          <SoundToggle size="sm" />
         </div>
 
         {/* Right side is reserved for the live transparent Race Leaderboard */}
         <div className="w-1" />
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          QUICK CHAT & EMOTES BAR (Accessible via Click or Keys 1-4)
+      ───────────────────────────────────────────────────────────── */}
+      <div className="absolute bottom-13 sm:bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto z-30 flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-neutral-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-2xl">
+        <span className="hidden sm:inline text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider mr-1">
+          Emotes:
+        </span>
+        {QUICK_EMOTES.map((item) => (
+          <button
+            key={item.key}
+            onClick={() => onSendEmote?.(item.text)}
+            title={`Tekan [${item.key}] untuk kirim ${item.label}`}
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-border/50 hover:border-cyan-400 text-xs sm:text-sm text-gray-200 hover:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm select-none"
+          >
+            <span className="hidden sm:flex w-3.5 h-3.5 rounded-full bg-cyan-950/70 text-[9px] font-mono font-bold text-cyan-400 items-center justify-center border border-cyan-500/30">
+              {item.key}
+            </span>
+            <span className="font-semibold text-[11px] sm:text-xs">{item.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* ─────────────────────────────────────────────────────────────

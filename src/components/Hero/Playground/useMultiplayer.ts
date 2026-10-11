@@ -44,6 +44,10 @@ export function useMultiplayer({
   const isSpectatorRef = useRef<boolean>(false);
   const remotePlayersRef = useRef<Record<string, PlayerVehicleState>>({});
 
+  // Floating reaction emotes
+  const [activeEmotes, setActiveEmotes] = useState<Record<string, { text: string; expiresAt: number }>>({});
+  const [selfEmote, setSelfEmote] = useState<{ text: string; expiresAt: number } | null>(null);
+
   // 1. Initialize Player Identity & load saved preferences from localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -176,6 +180,18 @@ export function useMultiplayer({
         if (isNew) {
           setActivePlayerIds((prev) => (prev.includes(payload.id) ? prev : [...prev, payload.id]));
         }
+      });
+
+      // Handle incoming floating reaction emote broadcast
+      channel.on('broadcast', { event: 'player_emote' }, ({ payload }) => {
+        if (!payload || !payload.id || !payload.emote) return;
+        setActiveEmotes((prev) => ({
+          ...prev,
+          [payload.id]: {
+            text: payload.emote,
+            expiresAt: Date.now() + 2500,
+          },
+        }));
       });
 
       // Subscribe and register presence
@@ -410,6 +426,28 @@ export function useMultiplayer({
     [playerId, username, carColor, carModel]
   );
 
+  // Send floating emote reaction via Realtime Broadcast
+  const sendQuickEmote = useCallback(
+    (emoteText: string) => {
+      const now = Date.now();
+      setSelfEmote({ text: emoteText, expiresAt: now + 2500 });
+      if (channelRef.current && playerId) {
+        channelRef.current
+          .send({
+            type: 'broadcast',
+            event: 'player_emote',
+            payload: {
+              id: playerId,
+              emote: emoteText,
+              timestamp: now,
+            },
+          })
+          .catch(() => {});
+      }
+    },
+    [playerId]
+  );
+
   return {
     playerId,
     username,
@@ -423,5 +461,8 @@ export function useMultiplayer({
     remotePlayersRef,
     broadcastCarState,
     getLeaderboard,
+    selfEmote,
+    activeEmotes,
+    sendQuickEmote,
   };
 }

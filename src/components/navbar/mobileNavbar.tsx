@@ -4,6 +4,7 @@ import { navLinks } from "./navbar";
 import Link from "next/link";
 import { Icon } from "@iconify/react";
 import ThemeToggle from "../theme/ThemeToggle";
+import SoundToggle from "../theme/SoundToggle";
 import { LuDownload } from "react-icons/lu";
 
 const navIcons = {
@@ -60,8 +61,13 @@ export default function MobileNavbar({ navOpen, onClose }: MobileNavProps) {
           </ul>
         </div>
 
-        {/* Bottom controls: Theme Switcher and Download CV */}
-        <div className="space-y-4 pt-6 border-t border-border">
+        {/* Bottom controls: Audio FX, Theme Switcher and Download CV */}
+        <div className="space-y-3 pt-5 border-t border-border">
+          <div className="flex items-center justify-between px-2">
+            <span className="text-sm font-medium text-text/80">Suara Balapan</span>
+            <SoundToggle size="sm" showLabel />
+          </div>
+
           <div className="flex items-center justify-between px-2">
             <span className="text-sm font-medium text-text/80">Tema Tampilan</span>
             <ThemeToggle size="sm" showLabel />
