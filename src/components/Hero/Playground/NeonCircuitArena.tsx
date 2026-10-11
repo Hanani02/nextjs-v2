@@ -10,10 +10,10 @@ interface NeonCircuitArenaProps {
 }
 
 export const RACE_CHECKPOINTS = [
-  { id: 0, name: 'Start / Finish', center: [0, -9.1] as [number, number], width: 2.2, depth: 9.8 },
-  { id: 1, name: 'Turn 1 Apex', center: [18.5, 0] as [number, number], width: 9.8, depth: 3.5 },
-  { id: 2, name: 'Chicane Entry', center: [0, 9.1] as [number, number], width: 2.5, depth: 9.8 },
-  { id: 3, name: 'Hairpin Apex', center: [-18.5, 0] as [number, number], width: 9.8, depth: 3.5 },
+  { id: 0, name: 'Start / Finish', center: [0, -9.1] as [number, number], width: 5.5, depth: 11.5 },
+  { id: 1, name: 'Turn 1 Apex', center: [18.5, 0] as [number, number], width: 11.5, depth: 6.0 },
+  { id: 2, name: 'Chicane Entry', center: [0, 9.1] as [number, number], width: 5.5, depth: 11.5 },
+  { id: 3, name: 'Hairpin Apex', center: [-18.5, 0] as [number, number], width: 11.5, depth: 6.0 },
 ];
 
 export default function NeonCircuitArena({

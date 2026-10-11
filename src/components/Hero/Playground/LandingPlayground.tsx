@@ -73,6 +73,84 @@ function WidePlaygroundCamera({
 }
 
 /**
+ * Evaluates whether the car has passed through or is currently inside the given gate.
+ * Combines Continuous Collision Detection (CCD line crossing) with an expanded bounding box
+ * so high speed or low frame rates never tunnel through the start/finish line or apex gates.
+ */
+function checkGatePass(
+  gateId: number,
+  prevPos: THREE.Vector3,
+  currPos: THREE.Vector3,
+  cp: (typeof RACE_CHECKPOINTS)[0]
+): boolean {
+  // 1. Proximity bounding box check (with generous threshold)
+  const dx = Math.abs(currPos.x - cp.center[0]);
+  const dz = Math.abs(currPos.z - cp.center[1]);
+  if (dx <= cp.width * 0.55 && dz <= cp.depth * 0.55) {
+    return true;
+  }
+
+  // 2. Continuous Collision Detection (crossing the gate trigger plane between frames)
+  // Distance check: ignore if car was teleported or reset (> 8 units in one frame)
+  const dist = prevPos.distanceTo(currPos);
+  if (dist > 8.0) return false;
+
+  switch (gateId) {
+    case 0: {
+      // Gate 0: Start / Finish Line at X = 0, Z spanning across the bottom straight ([-14.6, -3.6])
+      // Detects whenever the car crosses X = 0 in either direction
+      const crossedX = (prevPos.x <= 0 && currPos.x >= 0) || (prevPos.x >= 0 && currPos.x <= 0);
+      if (crossedX && Math.abs(currPos.x - prevPos.x) > 0.0001) {
+        const t = (0 - prevPos.x) / (currPos.x - prevPos.x);
+        const zAtCross = prevPos.z + t * (currPos.z - prevPos.z);
+        if (zAtCross >= -14.6 && zAtCross <= -3.6) {
+          return true;
+        }
+      }
+      break;
+    }
+    case 1: {
+      // Gate 1: Turn 1 Apex at Z = 0, X spanning across the eastern curve ([10.2, 23.8])
+      const crossedZ = (prevPos.z <= 0 && currPos.z >= 0) || (prevPos.z >= 0 && currPos.z <= 0);
+      if (crossedZ && Math.abs(currPos.z - prevPos.z) > 0.0001) {
+        const t = (0 - prevPos.z) / (currPos.z - prevPos.z);
+        const xAtCross = prevPos.x + t * (currPos.x - prevPos.x);
+        if (xAtCross >= 10.2 && xAtCross <= 23.8) {
+          return true;
+        }
+      }
+      break;
+    }
+    case 2: {
+      // Gate 2: Chicane Entry / Back straight at X = 0, Z spanning across the top straight ([3.6, 14.6])
+      const crossedX = (prevPos.x >= 0 && currPos.x <= 0) || (prevPos.x <= 0 && currPos.x >= 0);
+      if (crossedX && Math.abs(currPos.x - prevPos.x) > 0.0001) {
+        const t = (0 - prevPos.x) / (currPos.x - prevPos.x);
+        const zAtCross = prevPos.z + t * (currPos.z - prevPos.z);
+        if (zAtCross >= 3.6 && zAtCross <= 14.6) {
+          return true;
+        }
+      }
+      break;
+    }
+    case 3: {
+      // Gate 3: Hairpin Apex at Z = 0, X spanning across the western curve ([-23.8, -10.2])
+      const crossedZ = (prevPos.z >= 0 && currPos.z <= 0) || (prevPos.z <= 0 && currPos.z >= 0);
+      if (crossedZ && Math.abs(currPos.z - prevPos.z) > 0.0001) {
+        const t = (0 - prevPos.z) / (currPos.z - prevPos.z);
+        const xAtCross = prevPos.x + t * (currPos.x - prevPos.x);
+        if (xAtCross >= -23.8 && xAtCross <= -10.2) {
+          return true;
+        }
+      }
+      break;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Real-time Lap & Checkpoint collision tracker running inside the R3F render loop.
  * Detects checkpoint passes (1 -> 2 -> 3 -> 0) with strict sequential clearance,
  * accumulates both current lap time and total race time across all 3 laps.
@@ -102,6 +180,7 @@ function CircuitRaceTracker({
   const lastCheckpointPassTime = useRef(0);
   const clearedCheckpointsRef = useRef<Set<number>>(new Set());
   const raceEndedRef = useRef(false);
+  const prevCarPosRef = useRef<THREE.Vector3 | null>(null);
 
   useEffect(() => {
     currentLapRef.current = 1;
@@ -111,6 +190,7 @@ function CircuitRaceTracker({
     lastCheckpointPassTime.current = 0;
     clearedCheckpointsRef.current.clear();
     raceEndedRef.current = false;
+    prevCarPosRef.current = null;
   }, [resetTrigger]);
 
   useFrame((_, delta) => {
@@ -118,6 +198,12 @@ function CircuitRaceTracker({
     const dt = Math.min(delta, 0.05);
     const carPos = carPosRef.current;
     if (!carPos) return;
+
+    if (!prevCarPosRef.current) {
+      prevCarPosRef.current = carPos.clone();
+      return;
+    }
+    const prevPos = prevCarPosRef.current;
 
     // Accumulate lap timer and total race timer
     lapTimeRef.current += dt;
@@ -131,21 +217,22 @@ function CircuitRaceTracker({
     }
 
     const currentTarget = targetCheckpointRef.current;
-    if (currentTarget < 0) return;
+    if (currentTarget < 0) {
+      prevPos.copy(carPos);
+      return;
+    }
 
     const cp = RACE_CHECKPOINTS[currentTarget];
-    if (!cp) return;
+    if (!cp) {
+      prevPos.copy(carPos);
+      return;
+    }
 
-    // Check hit radius against target checkpoint gate
-    const dx = Math.abs(carPos.x - cp.center[0]);
-    const dz = Math.abs(carPos.z - cp.center[1]);
+    // Accurate Continuous Collision + Proximity detection
+    const hit = checkGatePass(currentTarget, prevPos, carPos, cp);
 
-    const hit = dx <= cp.width * 0.9 && dz <= cp.depth * 0.85;
-
-    // Checkpoint hit with 1.0s debouncing cooldown to prevent repeat triggers
-    if (hit && now - lastCheckpointPassTime.current > 1000) {
-      lastCheckpointPassTime.current = now;
-
+    // Responsive debouncing (300ms) to prevent multi-triggering within consecutive frames
+    if (hit && now - lastCheckpointPassTime.current > 300) {
       if (currentTarget === 0) {
         // Enforce that Gates 1, 2, and 3 MUST have been cleared on this lap
         const hasClearedAllGates =
@@ -153,10 +240,13 @@ function CircuitRaceTracker({
           clearedCheckpointsRef.current.has(2) &&
           clearedCheckpointsRef.current.has(3);
 
-        // Enforce minimum lap duration (at least 5.5s) to prevent zero-second glitches
-        if (!hasClearedAllGates || lapTimeRef.current < 5.5) {
+        // Enforce minimum lap duration (at least 4.0s) to prevent zero-second glitches
+        if (!hasClearedAllGates || lapTimeRef.current < 4.0) {
+          prevPos.copy(carPos);
           return;
         }
+
+        lastCheckpointPassTime.current = now;
 
         // Lap Completed!
         const finishedLap = currentLapRef.current;
@@ -177,6 +267,7 @@ function CircuitRaceTracker({
           onCheckpointTrigger(1);
         }
       } else {
+        lastCheckpointPassTime.current = now;
         // Mark this intermediate checkpoint as cleared
         clearedCheckpointsRef.current.add(currentTarget);
 
@@ -186,6 +277,8 @@ function CircuitRaceTracker({
         onCheckpointTrigger(nextCp);
       }
     }
+
+    prevPos.copy(carPos);
   });
 
   return null;
