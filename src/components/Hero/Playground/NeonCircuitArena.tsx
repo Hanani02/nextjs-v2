@@ -10,10 +10,10 @@ interface NeonCircuitArenaProps {
 }
 
 export const RACE_CHECKPOINTS = [
-  { id: 0, name: 'Start / Finish', center: [0, -9.2] as [number, number], width: 2.0, depth: 9.0 },
-  { id: 1, name: 'Turn 1 Apex', center: [16.8, 0] as [number, number], width: 9.0, depth: 3.5 },
-  { id: 2, name: 'Chicane Entry', center: [0, 9.5] as [number, number], width: 2.5, depth: 9.0 },
-  { id: 3, name: 'Hairpin Apex', center: [-16.8, 0] as [number, number], width: 9.0, depth: 3.5 },
+  { id: 0, name: 'Start / Finish', center: [0, -9.1] as [number, number], width: 2.2, depth: 9.8 },
+  { id: 1, name: 'Turn 1 Apex', center: [18.5, 0] as [number, number], width: 9.8, depth: 3.5 },
+  { id: 2, name: 'Chicane Entry', center: [0, 9.1] as [number, number], width: 2.5, depth: 9.8 },
+  { id: 3, name: 'Hairpin Apex', center: [-18.5, 0] as [number, number], width: 9.8, depth: 3.5 },
 ];
 
 export default function NeonCircuitArena({
@@ -21,8 +21,14 @@ export default function NeonCircuitArena({
   boundsZ = 14.0,
   activeCheckpoint = 0,
 }: NeonCircuitArenaProps) {
+  // Track geometry parameters matching carPhysics.ts stadium-oval collisions
+  const straightLimit = 11.0;
+  const outerR = boundsZ; // 14.0
+  const islandStraight = 6.0;
+  const islandR = 4.2;
+
   // ─────────────────────────────────────────────────────────────
-  // 1. PROCEDURAL TEXTURES (Asphalt, F1 Red/White Tecpro, Chevrons, Kerbs)
+  // 1. PROCEDURAL TEXTURES (Asphalt, F1 Red/White Tecpro, Chevrons)
   // ─────────────────────────────────────────────────────────────
 
   // High-grip dark asphalt with subtle grid lines
@@ -104,7 +110,7 @@ export default function NeonCircuitArena({
       ctx.fillRect(0, 0, 4, 128);
       ctx.fillRect(508, 0, 4, 128);
 
-      // Plastic specular gradient for authentic glossy barrier sheen
+      // Plastic specular gradient
       const grad = ctx.createLinearGradient(0, 14, 0, 114);
       grad.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
       grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.05)');
@@ -128,11 +134,9 @@ export default function NeonCircuitArena({
     canvas.height = 128;
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      // Vibrant Red background
       ctx.fillStyle = '#dc2626';
       ctx.fillRect(0, 0, 512, 128);
 
-      // Bold white directional arrows (<<<)
       ctx.fillStyle = '#ffffff';
       for (let i = 0; i < 4; i++) {
         const xOffset = i * 128 + 24;
@@ -147,7 +151,6 @@ export default function NeonCircuitArena({
         ctx.fill();
       }
 
-      // Top & bottom black bumper trims
       ctx.fillStyle = '#0f172a';
       ctx.fillRect(0, 0, 512, 14);
       ctx.fillRect(0, 114, 512, 14);
@@ -159,24 +162,8 @@ export default function NeonCircuitArena({
     return tex;
   }, []);
 
-  // Cloned textures with tailored aspect repeats for each wall span
-  const northSouthWallTex = useMemo(() => {
-    if (!f1BarrierTexture) return null;
-    const t = f1BarrierTexture.clone();
-    t.repeat.set(22, 1);
-    t.needsUpdate = true;
-    return t;
-  }, [f1BarrierTexture]);
-
-  const eastWestWallTex = useMemo(() => {
-    if (!f1BarrierTexture) return null;
-    const t = f1BarrierTexture.clone();
-    t.repeat.set(14, 1);
-    t.needsUpdate = true;
-    return t;
-  }, [f1BarrierTexture]);
-
-  const islandLongTex = useMemo(() => {
+  // Cloned textures for straight wall runs
+  const straightWallTex = useMemo(() => {
     if (!f1BarrierTexture) return null;
     const t = f1BarrierTexture.clone();
     t.repeat.set(11, 1);
@@ -184,10 +171,10 @@ export default function NeonCircuitArena({
     return t;
   }, [f1BarrierTexture]);
 
-  const islandShortTex = useMemo(() => {
+  const islandStraightTex = useMemo(() => {
     if (!f1BarrierTexture) return null;
     const t = f1BarrierTexture.clone();
-    t.repeat.set(4, 1);
+    t.repeat.set(6, 1);
     t.needsUpdate = true;
     return t;
   }, [f1BarrierTexture]);
@@ -208,13 +195,147 @@ export default function NeonCircuitArena({
     return t;
   }, [f1ChevronTexture]);
 
+  // ─────────────────────────────────────────────────────────────
+  // 2. CURVED STADIUM OVAL GEOMETRY DATA
+  // ─────────────────────────────────────────────────────────────
+
+  // Outer East Arc (Turn 1): 16 curved barrier blocks from -PI/2 to +PI/2
+  const outerEastSegments = useMemo(() => {
+    const segs = [];
+    const count = 16;
+    const dTheta = Math.PI / count;
+    const arcLength = outerR * dTheta;
+    for (let i = 0; i < count; i++) {
+      const theta = -Math.PI / 2 + (i + 0.5) * dTheta;
+      const x = straightLimit + outerR * Math.cos(theta);
+      const z = outerR * Math.sin(theta);
+      // Tangent rotation: facing inward towards the arena center
+      const rotY = -theta + Math.PI / 2;
+      segs.push({ id: i, x, z, rotY, isRed: i % 2 === 0, width: arcLength + 0.1 });
+    }
+    return segs;
+  }, [straightLimit, outerR]);
+
+  // Outer West Arc (Hairpin): 16 curved barrier blocks from +PI/2 to +3PI/2
+  const outerWestSegments = useMemo(() => {
+    const segs = [];
+    const count = 16;
+    const dTheta = Math.PI / count;
+    const arcLength = outerR * dTheta;
+    for (let i = 0; i < count; i++) {
+      const theta = Math.PI / 2 + (i + 0.5) * dTheta;
+      const x = -straightLimit + outerR * Math.cos(theta);
+      const z = outerR * Math.sin(theta);
+      const rotY = -theta + Math.PI / 2;
+      segs.push({ id: i, x, z, rotY, isRed: i % 2 === 0, width: arcLength + 0.1 });
+    }
+    return segs;
+  }, [straightLimit, outerR]);
+
+  // Infield Island East Semicircular Cap: 10 barrier blocks around (6.0, 0), radius 4.2
+  const islandEastSegments = useMemo(() => {
+    const segs = [];
+    const count = 10;
+    const dTheta = Math.PI / count;
+    const arcLength = islandR * dTheta;
+    for (let i = 0; i < count; i++) {
+      const theta = -Math.PI / 2 + (i + 0.5) * dTheta;
+      const x = islandStraight + islandR * Math.cos(theta);
+      const z = islandR * Math.sin(theta);
+      const rotY = -theta + Math.PI / 2;
+      segs.push({ id: i, x, z, rotY, isRed: i % 2 === 0, width: arcLength + 0.08 });
+    }
+    return segs;
+  }, [islandStraight, islandR]);
+
+  // Infield Island West Semicircular Cap: 10 barrier blocks around (-6.0, 0), radius 4.2
+  const islandWestSegments = useMemo(() => {
+    const segs = [];
+    const count = 10;
+    const dTheta = Math.PI / count;
+    const arcLength = islandR * dTheta;
+    for (let i = 0; i < count; i++) {
+      const theta = Math.PI / 2 + (i + 0.5) * dTheta;
+      const x = -islandStraight + islandR * Math.cos(theta);
+      const z = islandR * Math.sin(theta);
+      const rotY = -theta + Math.PI / 2;
+      segs.push({ id: i, x, z, rotY, isRed: i % 2 === 0, width: arcLength + 0.08 });
+    }
+    return segs;
+  }, [islandStraight, islandR]);
+
+  // Curved Apex Kerbs hugging the inner curve at island caps
+  const eastApexKerbs = useMemo(() => {
+    const kerbs = [];
+    const count = 8;
+    const dTheta = (Math.PI * 0.7) / count;
+    const kerbR = islandR + 0.45;
+    for (let i = 0; i < count; i++) {
+      const theta = -Math.PI * 0.35 + (i + 0.5) * dTheta;
+      const x = islandStraight + kerbR * Math.cos(theta);
+      const z = kerbR * Math.sin(theta);
+      const rotY = -theta + Math.PI / 2;
+      kerbs.push({ id: i, x, z, rotY, isRed: i % 2 === 0 });
+    }
+    return kerbs;
+  }, [islandStraight, islandR]);
+
+  const westApexKerbs = useMemo(() => {
+    const kerbs = [];
+    const count = 8;
+    const dTheta = (Math.PI * 0.7) / count;
+    const kerbR = islandR + 0.45;
+    for (let i = 0; i < count; i++) {
+      const theta = Math.PI * 0.65 + (i + 0.5) * dTheta;
+      const x = -islandStraight + kerbR * Math.cos(theta);
+      const z = kerbR * Math.sin(theta);
+      const rotY = -theta + Math.PI / 2;
+      kerbs.push({ id: i, x, z, rotY, isRed: i % 2 === 0 });
+    }
+    return kerbs;
+  }, [islandStraight, islandR]);
+
+  // Curved Outer White Boundary Line Segments
+  const outerEastLines = useMemo(() => {
+    const lines = [];
+    const count = 18;
+    const dTheta = Math.PI / count;
+    const lineR = outerR - 0.55;
+    const length = lineR * dTheta;
+    for (let i = 0; i < count; i++) {
+      const theta = -Math.PI / 2 + (i + 0.5) * dTheta;
+      const x = straightLimit + lineR * Math.cos(theta);
+      const z = lineR * Math.sin(theta);
+      const rotY = -theta + Math.PI / 2;
+      lines.push({ id: i, x, z, rotY, length });
+    }
+    return lines;
+  }, [straightLimit, outerR]);
+
+  const outerWestLines = useMemo(() => {
+    const lines = [];
+    const count = 18;
+    const dTheta = Math.PI / count;
+    const lineR = outerR - 0.55;
+    const length = lineR * dTheta;
+    for (let i = 0; i < count; i++) {
+      const theta = Math.PI / 2 + (i + 0.5) * dTheta;
+      const x = -straightLimit + lineR * Math.cos(theta);
+      const z = lineR * Math.sin(theta);
+      const rotY = -theta + Math.PI / 2;
+      lines.push({ id: i, x, z, rotY, length });
+    }
+    return lines;
+  }, [straightLimit, outerR]);
+
   return (
     <group position={[0, -0.01, 0]}>
       {/* ─────────────────────────────────────────────────────────────
-          1. CIRCUIT ASPHALT FLOOR & WHITE TRACK LIMIT LINES
+          1. CIRCUIT ASPHALT FLOOR & WHITE PAINTED TRACK LIMITS
       ───────────────────────────────────────────────────────────── */}
+      {/* Base Asphalt Surface */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0, 0]}>
-        <planeGeometry args={[boundsX * 2 + 12, boundsZ * 2 + 12]} />
+        <planeGeometry args={[boundsX * 2 + 16, boundsZ * 2 + 16]} />
         <meshStandardMaterial
           map={asphaltTexture || undefined}
           color="#0d111a"
@@ -223,212 +344,278 @@ export default function NeonCircuitArena({
         />
       </mesh>
 
-      {/* Outer White Track Boundary Lines (Continuous Painted Track Limits) */}
-      {/* North Outer Line */}
-      <mesh position={[0, 0.012, boundsZ - 0.55]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[boundsX * 2 - 1.2, 0.14]} />
+      {/* North Straight Track Limit Line */}
+      <mesh position={[0, 0.012, outerR - 0.55]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[straightLimit * 2, 0.14]} />
         <meshBasicMaterial color="#ffffff" />
       </mesh>
-      {/* South Outer Line */}
-      <mesh position={[0, 0.012, -boundsZ + 0.55]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[boundsX * 2 - 1.2, 0.14]} />
+
+      {/* South Straight Track Limit Line */}
+      <mesh position={[0, 0.012, -outerR + 0.55]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[straightLimit * 2, 0.14]} />
         <meshBasicMaterial color="#ffffff" />
       </mesh>
-      {/* East Outer Line */}
-      <mesh position={[boundsX - 0.55, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.14, boundsZ * 2 - 1.2]} />
+
+      {/* East Curved Track Limit Line */}
+      {outerEastLines.map((line) => (
+        <mesh
+          key={`oel-${line.id}`}
+          position={[line.x, 0.012, line.z]}
+          rotation={[-Math.PI / 2, 0, line.rotY]}
+        >
+          <planeGeometry args={[line.length + 0.05, 0.14]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+      ))}
+
+      {/* West Curved Track Limit Line */}
+      {outerWestLines.map((line) => (
+        <mesh
+          key={`owl-${line.id}`}
+          position={[line.x, 0.012, line.z]}
+          rotation={[-Math.PI / 2, 0, line.rotY]}
+        >
+          <planeGeometry args={[line.length + 0.05, 0.14]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+      ))}
+
+      {/* Infield Capsule Boundary Lines */}
+      <mesh position={[0, 0.012, islandR + 0.25]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[islandStraight * 2, 0.12]} />
         <meshBasicMaterial color="#ffffff" />
       </mesh>
-      {/* West Outer Line */}
-      <mesh position={[-boundsX + 0.55, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[0.14, boundsZ * 2 - 1.2]} />
+      <mesh position={[0, 0.012, -islandR - 0.25]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[islandStraight * 2, 0.12]} />
         <meshBasicMaterial color="#ffffff" />
       </mesh>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. OUTER PERIMETER BARRIERS (F1 Red & White Tecpro Walls)
+          2. OUTER PERIMETER BARRIERS (CURVED STADIUM-OVAL RED & WHITE TECPRO)
       ───────────────────────────────────────────────────────────── */}
-      {/* NORTH WALL (Top) */}
-      <group position={[0, 0.45, boundsZ]}>
-        {/* Core concrete safety barrier */}
+      {/* NORTH STRAIGHT WALL (Back Straight) */}
+      <group position={[0, 0.45, outerR]}>
         <mesh castShadow receiveShadow>
-          <boxGeometry args={[boundsX * 2, 0.9, 0.4]} />
+          <boxGeometry args={[straightLimit * 2, 0.9, 0.4]} />
           <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
         </mesh>
-        {/* Inward-facing Red & White Tecpro plate */}
         <mesh position={[0, 0, -0.205]}>
-          <planeGeometry args={[boundsX * 2, 0.88]} />
+          <planeGeometry args={[straightLimit * 2, 0.88]} />
           <meshStandardMaterial
-            map={northSouthWallTex || undefined}
+            map={straightWallTex || undefined}
             color="#ffffff"
             roughness={0.2}
             metalness={0.1}
           />
         </mesh>
-        {/* Top white safety rail */}
+        {/* Top White Edge Rail & Glowing Safety Strip */}
         <mesh position={[0, 0.46, 0]}>
-          <boxGeometry args={[boundsX * 2, 0.04, 0.44]} />
+          <boxGeometry args={[straightLimit * 2, 0.04, 0.44]} />
           <meshStandardMaterial color="#ffffff" roughness={0.2} />
         </mesh>
-        {/* Glowing LED safety edge strip */}
         <mesh position={[0, 0.44, -0.21]}>
-          <boxGeometry args={[boundsX * 2, 0.06, 0.02]} />
+          <boxGeometry args={[straightLimit * 2, 0.06, 0.02]} />
           <meshBasicMaterial color="#ffffff" />
         </mesh>
       </group>
 
-      {/* SOUTH WALL (Bottom) */}
-      <group position={[0, 0.45, -boundsZ]}>
+      {/* SOUTH STRAIGHT WALL (Start/Finish Straight) */}
+      <group position={[0, 0.45, -outerR]}>
         <mesh castShadow receiveShadow>
-          <boxGeometry args={[boundsX * 2, 0.9, 0.4]} />
+          <boxGeometry args={[straightLimit * 2, 0.9, 0.4]} />
           <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
         </mesh>
         <mesh position={[0, 0, 0.205]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[boundsX * 2, 0.88]} />
+          <planeGeometry args={[straightLimit * 2, 0.88]} />
           <meshStandardMaterial
-            map={northSouthWallTex || undefined}
+            map={straightWallTex || undefined}
             color="#ffffff"
             roughness={0.2}
             metalness={0.1}
           />
         </mesh>
         <mesh position={[0, 0.46, 0]}>
-          <boxGeometry args={[boundsX * 2, 0.04, 0.44]} />
+          <boxGeometry args={[straightLimit * 2, 0.04, 0.44]} />
           <meshStandardMaterial color="#ffffff" roughness={0.2} />
         </mesh>
         <mesh position={[0, 0.44, 0.21]}>
-          <boxGeometry args={[boundsX * 2, 0.06, 0.02]} />
+          <boxGeometry args={[straightLimit * 2, 0.06, 0.02]} />
           <meshBasicMaterial color="#ffffff" />
         </mesh>
       </group>
 
-      {/* EAST WALL (Turn 1 - Right) */}
-      <group position={[boundsX, 0.45, 0]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[0.4, 0.9, boundsZ * 2]} />
-          <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
-        </mesh>
-        <mesh position={[-0.205, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
-          <planeGeometry args={[boundsZ * 2, 0.88]} />
-          <meshStandardMaterial
-            map={eastWestWallTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        <mesh position={[0, 0.46, 0]}>
-          <boxGeometry args={[0.44, 0.04, boundsZ * 2]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.2} />
-        </mesh>
-        <mesh position={[-0.21, 0.44, 0]}>
-          <boxGeometry args={[0.02, 0.06, boundsZ * 2]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
+      {/* EAST CURVED BARRIER (Turn 1 Sweeping Arc) */}
+      <group>
+        {outerEastSegments.map((seg) => (
+          <group key={`oes-${seg.id}`} position={[seg.x, 0.45, seg.z]} rotation={[0, seg.rotY, 0]}>
+            {/* Concrete Core Block */}
+            <mesh castShadow receiveShadow>
+              <boxGeometry args={[seg.width, 0.9, 0.4]} />
+              <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
+            </mesh>
+            {/* Inward-facing Red or White Tecpro Front Plate */}
+            <mesh position={[0, 0, -0.205]}>
+              <planeGeometry args={[seg.width, 0.88]} />
+              <meshStandardMaterial
+                color={seg.isRed ? '#dc2626' : '#ffffff'}
+                roughness={0.25}
+                metalness={0.15}
+              />
+            </mesh>
+            {/* Top White Edge Rail */}
+            <mesh position={[0, 0.46, 0]}>
+              <boxGeometry args={[seg.width + 0.02, 0.04, 0.44]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.2} />
+            </mesh>
+            {/* Glowing White LED Light Strip */}
+            <mesh position={[0, 0.44, -0.21]}>
+              <boxGeometry args={[seg.width, 0.06, 0.02]} />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+          </group>
+        ))}
       </group>
 
-      {/* WEST WALL (Hairpin - Left) */}
-      <group position={[-boundsX, 0.45, 0]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[0.4, 0.9, boundsZ * 2]} />
-          <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
-        </mesh>
-        <mesh position={[0.205, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-          <planeGeometry args={[boundsZ * 2, 0.88]} />
-          <meshStandardMaterial
-            map={eastWestWallTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        <mesh position={[0, 0.46, 0]}>
-          <boxGeometry args={[0.44, 0.04, boundsZ * 2]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.2} />
-        </mesh>
-        <mesh position={[0.21, 0.44, 0]}>
-          <boxGeometry args={[0.02, 0.06, boundsZ * 2]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
+      {/* WEST CURVED BARRIER (Hairpin Sweeping Arc) */}
+      <group>
+        {outerWestSegments.map((seg) => (
+          <group key={`ows-${seg.id}`} position={[seg.x, 0.45, seg.z]} rotation={[0, seg.rotY, 0]}>
+            <mesh castShadow receiveShadow>
+              <boxGeometry args={[seg.width, 0.9, 0.4]} />
+              <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
+            </mesh>
+            <mesh position={[0, 0, -0.205]}>
+              <planeGeometry args={[seg.width, 0.88]} />
+              <meshStandardMaterial
+                color={seg.isRed ? '#dc2626' : '#ffffff'}
+                roughness={0.25}
+                metalness={0.15}
+              />
+            </mesh>
+            <mesh position={[0, 0.46, 0]}>
+              <boxGeometry args={[seg.width + 0.02, 0.04, 0.44]} />
+              <meshStandardMaterial color="#ffffff" roughness={0.2} />
+            </mesh>
+            <mesh position={[0, 0.44, -0.21]}>
+              <boxGeometry args={[seg.width, 0.06, 0.02]} />
+              <meshBasicMaterial color="#ffffff" />
+            </mesh>
+          </group>
+        ))}
       </group>
 
       {/* ─────────────────────────────────────────────────────────────
-          3. INFIELD CENTRAL ISLAND BARRIER (Red & White F1 Safety Block)
+          3. INFIELD CENTRAL ISLAND (ROUNDED CAPSULE BARRIER & PADDOCK)
       ───────────────────────────────────────────────────────────── */}
+      {/* Central Straight Body */}
       <group position={[0, 0.45, 0]}>
-        {/* Core island structure (Light Concrete Base) */}
         <mesh castShadow receiveShadow>
-          <boxGeometry args={[22.0, 0.9, 8.4]} />
+          <boxGeometry args={[islandStraight * 2, 0.9, islandR * 2]} />
           <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.4} />
         </mesh>
-
-        {/* South Face (Facing Start/Finish straight): Red & White Tecpro */}
-        <mesh position={[0, 0, -4.205]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[22.0, 0.88]} />
+        {/* South Face: Red & White Tecpro */}
+        <mesh position={[0, 0, -islandR - 0.005]} rotation={[0, Math.PI, 0]}>
+          <planeGeometry args={[islandStraight * 2, 0.88]} />
           <meshStandardMaterial
-            map={islandLongTex || undefined}
+            map={islandStraightTex || undefined}
             color="#ffffff"
             roughness={0.2}
             metalness={0.1}
           />
         </mesh>
-        {/* North Face (Facing Chicane straight): Red & White Tecpro */}
-        <mesh position={[0, 0, 4.205]}>
-          <planeGeometry args={[22.0, 0.88]} />
+        {/* North Face: Red & White Tecpro */}
+        <mesh position={[0, 0, islandR + 0.005]}>
+          <planeGeometry args={[islandStraight * 2, 0.88]} />
           <meshStandardMaterial
-            map={islandLongTex || undefined}
+            map={islandStraightTex || undefined}
             color="#ffffff"
             roughness={0.2}
             metalness={0.1}
           />
         </mesh>
-        {/* East End (Facing Turn 1 Apex): Red & White Tecpro */}
-        <mesh position={[11.005, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-          <planeGeometry args={[8.4, 0.88]} />
-          <meshStandardMaterial
-            map={islandShortTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        {/* West End (Facing Hairpin Apex): Red & White Tecpro */}
-        <mesh position={[-11.005, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
-          <planeGeometry args={[8.4, 0.88]} />
-          <meshStandardMaterial
-            map={islandShortTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-
-        {/* Top White Edge Rail around Center Island */}
+        {/* Top Trim and LED Strips */}
         <mesh position={[0, 0.46, 0]}>
-          <boxGeometry args={[22.08, 0.04, 8.48]} />
+          <boxGeometry args={[islandStraight * 2 + 0.08, 0.04, islandR * 2 + 0.08]} />
           <meshStandardMaterial color="#f8fafc" roughness={0.2} />
         </mesh>
-        {/* Glowing LED safety strip around island top */}
-        <mesh position={[0, 0.44, 4.22]}>
-          <boxGeometry args={[22.0, 0.06, 0.02]} />
+        <mesh position={[0, 0.44, islandR + 0.02]}>
+          <boxGeometry args={[islandStraight * 2, 0.06, 0.02]} />
           <meshBasicMaterial color="#ffffff" />
         </mesh>
-        <mesh position={[0, 0.44, -4.22]}>
-          <boxGeometry args={[22.0, 0.06, 0.02]} />
+        <mesh position={[0, 0.44, -islandR - 0.02]}>
+          <boxGeometry args={[islandStraight * 2, 0.06, 0.02]} />
           <meshBasicMaterial color="#ffffff" />
         </mesh>
-        <mesh position={[11.02, 0.44, 0]}>
-          <boxGeometry args={[0.02, 0.06, 8.4]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-        <mesh position={[-11.02, 0.44, 0]}>
-          <boxGeometry args={[0.02, 0.06, 8.4]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
+      </group>
 
-        {/* Center Paddock Tower & Telemetry Core */}
+      {/* Infield East Rounded Cap (Semicircular Cylinder Core) */}
+      <mesh
+        position={[islandStraight, 0.45, 0]}
+        rotation={[0, 0, 0]}
+        castShadow
+        receiveShadow
+      >
+        <cylinderGeometry args={[islandR, islandR, 0.9, 24, 1, false, -Math.PI / 2, Math.PI]} />
+        <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.4} />
+      </mesh>
+      {/* Semicircle Curved Barrier Blocks along East End */}
+      {islandEastSegments.map((seg) => (
+        <group key={`ies-${seg.id}`} position={[seg.x, 0.45, seg.z]} rotation={[0, seg.rotY, 0]}>
+          <mesh position={[0, 0, 0.15]} castShadow>
+            <boxGeometry args={[seg.width, 0.88, 0.3]} />
+            <meshStandardMaterial
+              color={seg.isRed ? '#dc2626' : '#ffffff'}
+              roughness={0.25}
+              metalness={0.15}
+            />
+          </mesh>
+          <mesh position={[0, 0.45, 0.15]}>
+            <boxGeometry args={[seg.width, 0.04, 0.32]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 0.44, 0.31]}>
+            <boxGeometry args={[seg.width, 0.06, 0.02]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Infield West Rounded Cap (Semicircular Cylinder Core) */}
+      <mesh
+        position={[-islandStraight, 0.45, 0]}
+        rotation={[0, 0, 0]}
+        castShadow
+        receiveShadow
+      >
+        <cylinderGeometry args={[islandR, islandR, 0.9, 24, 1, false, Math.PI / 2, Math.PI]} />
+        <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.4} />
+      </mesh>
+      {/* Semicircle Curved Barrier Blocks along West End */}
+      {islandWestSegments.map((seg) => (
+        <group key={`iws-${seg.id}`} position={[seg.x, 0.45, seg.z]} rotation={[0, seg.rotY, 0]}>
+          <mesh position={[0, 0, 0.15]} castShadow>
+            <boxGeometry args={[seg.width, 0.88, 0.3]} />
+            <meshStandardMaterial
+              color={seg.isRed ? '#dc2626' : '#ffffff'}
+              roughness={0.25}
+              metalness={0.15}
+            />
+          </mesh>
+          <mesh position={[0, 0.45, 0.15]}>
+            <boxGeometry args={[seg.width, 0.04, 0.32]} />
+            <meshStandardMaterial color="#ffffff" roughness={0.2} />
+          </mesh>
+          <mesh position={[0, 0.44, 0.31]}>
+            <boxGeometry args={[seg.width, 0.06, 0.02]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Center Paddock Tower & Telemetry Core */}
+      <group position={[0, 0, 0]}>
         <mesh position={[0, 1.25, 0]} castShadow>
-          <cylinderGeometry args={[2.2, 2.6, 1.9, 16]} />
+          <cylinderGeometry args={[2.2, 2.6, 1.9, 20]} />
           <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.2} />
         </mesh>
         <mesh position={[0, 2.2, 0]}>
@@ -439,22 +626,18 @@ export default function NeonCircuitArena({
           <ringGeometry args={[1.0, 1.4, 32]} />
           <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} />
         </mesh>
-
-        {/* Stadium Center Floodlight */}
-        <pointLight position={[0, 6.0, 0]} color="#ffffff" intensity={3.5} distance={26} />
+        <pointLight position={[0, 6.0, 0]} color="#ffffff" intensity={3.5} distance={28} />
       </group>
 
       {/* ─────────────────────────────────────────────────────────────
-          4. CHICANE OBSTACLE ISLAND (Bright Red & White F1 Chevron Arrows)
+          4. CHICANE OBSTACLE ISLAND (Red & White F1 Chevrons on North Straight)
       ───────────────────────────────────────────────────────────── */}
-      <group position={[0, 0.45, 9.5]}>
-        {/* Core obstacle body (White safety concrete) */}
+      <group position={[0, 0.45, 9.1]}>
         <mesh castShadow receiveShadow>
           <boxGeometry args={[5.6, 0.9, 3.8]} />
           <meshStandardMaterial color="#f8fafc" roughness={0.3} metalness={0.2} />
         </mesh>
-
-        {/* South Face (Front of chicane): Bold Red & White Chevrons pointing LEFT <<< */}
+        {/* South Face: Red & White Chevrons pointing LEFT <<< */}
         <mesh position={[0, 0, -1.905]} rotation={[0, Math.PI, 0]}>
           <planeGeometry args={[5.6, 0.88]} />
           <meshStandardMaterial
@@ -464,8 +647,7 @@ export default function NeonCircuitArena({
             metalness={0.1}
           />
         </mesh>
-
-        {/* North Face (Back of chicane): Bold Red & White Chevrons */}
+        {/* North Face */}
         <mesh position={[0, 0, 1.905]}>
           <planeGeometry args={[5.6, 0.88]} />
           <meshStandardMaterial
@@ -475,8 +657,7 @@ export default function NeonCircuitArena({
             metalness={0.1}
           />
         </mesh>
-
-        {/* East Face (Chicane Entry end): Red & White Tecpro */}
+        {/* East Face */}
         <mesh position={[2.805, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
           <planeGeometry args={[3.8, 0.88]} />
           <meshStandardMaterial
@@ -486,8 +667,7 @@ export default function NeonCircuitArena({
             metalness={0.1}
           />
         </mesh>
-
-        {/* West Face (Chicane Exit end): Red & White Tecpro */}
+        {/* West Face */}
         <mesh position={[-2.805, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
           <planeGeometry args={[3.8, 0.88]} />
           <meshStandardMaterial
@@ -497,8 +677,7 @@ export default function NeonCircuitArena({
             metalness={0.1}
           />
         </mesh>
-
-        {/* Chicane Top Cap with Red Border Trim */}
+        {/* Chicane Top Cap */}
         <mesh position={[0, 0.46, 0]}>
           <boxGeometry args={[5.68, 0.04, 3.88]} />
           <meshStandardMaterial color="#ffffff" roughness={0.2} />
@@ -508,7 +687,7 @@ export default function NeonCircuitArena({
           <meshStandardMaterial color="#dc2626" roughness={0.3} />
         </mesh>
 
-        {/* 4 Corner High-Visibility Pylon Beacons (Flashing Hazard Markers) */}
+        {/* 4 Corner Warning Beacons */}
         {[
           [-2.7, 1.8],
           [2.7, 1.8],
@@ -516,12 +695,10 @@ export default function NeonCircuitArena({
           [2.7, -1.8],
         ].map(([px, pz], idx) => (
           <group key={idx} position={[px, 0.55, pz]}>
-            {/* Pylon post */}
             <mesh>
               <cylinderGeometry args={[0.06, 0.06, 0.35, 8]} />
               <meshStandardMaterial color="#0f172a" />
             </mesh>
-            {/* Glowing amber/red beacon head */}
             <mesh position={[0, 0.22, 0]}>
               <sphereGeometry args={[0.1, 12, 12]} />
               <meshBasicMaterial color="#f59e0b" />
@@ -529,20 +706,19 @@ export default function NeonCircuitArena({
           </group>
         ))}
 
-        {/* Chicane Spot Floodlight (Guarantees obstacle is 100% brightly lit!) */}
         <pointLight position={[0, 5.0, 0]} color="#ffffff" intensity={3.8} distance={18} />
       </group>
 
       {/* ─────────────────────────────────────────────────────────────
-          5. 3D F1 RED & WHITE ALTERNATING KERBS (Kerbs Apex & Chicanes)
+          5. 3D F1 RED & WHITE ALTERNATING KERBS (Curved Apex & Chicanes)
       ───────────────────────────────────────────────────────────── */}
-      {/* Turn 1 Apex Kerbs (East Curve): alternating 3D Red & White blocks */}
-      {[-11, -9, -7, -5, 5, 7, 9, 11].map((z, idx) => (
-        <group key={`t1-${idx}`} position={[boundsX - 0.45, 0.025, z]}>
+      {/* Turn 1 Inner Apex Curved Kerbs */}
+      {eastApexKerbs.map((k) => (
+        <group key={`eak-${k.id}`} position={[k.x, 0.025, k.z]} rotation={[0, k.rotY, 0]}>
           <mesh castShadow receiveShadow>
-            <boxGeometry args={[0.7, 0.05, 1.8]} />
+            <boxGeometry args={[1.1, 0.05, 0.5]} />
             <meshStandardMaterial
-              color={idx % 2 === 0 ? '#dc2626' : '#ffffff'}
+              color={k.isRed ? '#dc2626' : '#ffffff'}
               roughness={0.3}
               metalness={0.1}
             />
@@ -550,13 +726,13 @@ export default function NeonCircuitArena({
         </group>
       ))}
 
-      {/* Hairpin Apex Kerbs (West Curve): alternating 3D Red & White blocks */}
-      {[-11, -9, -7, -5, 5, 7, 9, 11].map((z, idx) => (
-        <group key={`hp-${idx}`} position={[-boundsX + 0.45, 0.025, z]}>
+      {/* Hairpin Inner Apex Curved Kerbs */}
+      {westApexKerbs.map((k) => (
+        <group key={`wak-${k.id}`} position={[k.x, 0.025, k.z]} rotation={[0, k.rotY, 0]}>
           <mesh castShadow receiveShadow>
-            <boxGeometry args={[0.7, 0.05, 1.8]} />
+            <boxGeometry args={[1.1, 0.05, 0.5]} />
             <meshStandardMaterial
-              color={idx % 2 === 0 ? '#dc2626' : '#ffffff'}
+              color={k.isRed ? '#dc2626' : '#ffffff'}
               roughness={0.3}
               metalness={0.1}
             />
@@ -564,9 +740,9 @@ export default function NeonCircuitArena({
         </group>
       ))}
 
-      {/* Chicane S-Curve Kerbs: alternating Red & White blocks guiding drivers */}
+      {/* Chicane S-Curve Kerbs */}
       {[-4.5, -3.5, -2.5, 2.5, 3.5, 4.5].map((x, idx) => (
-        <group key={`chic-k1-${idx}`} position={[x, 0.025, 7.3]}>
+        <group key={`chic-k1-${idx}`} position={[x, 0.025, 6.9]}>
           <mesh castShadow receiveShadow>
             <boxGeometry args={[0.9, 0.05, 0.4]} />
             <meshStandardMaterial
@@ -578,7 +754,7 @@ export default function NeonCircuitArena({
         </group>
       ))}
       {[-4.5, -3.5, -2.5, 2.5, 3.5, 4.5].map((x, idx) => (
-        <group key={`chic-k2-${idx}`} position={[x, 0.025, 11.7]}>
+        <group key={`chic-k2-${idx}`} position={[x, 0.025, 11.3]}>
           <mesh castShadow receiveShadow>
             <boxGeometry args={[0.9, 0.05, 0.4]} />
             <meshStandardMaterial
@@ -595,18 +771,15 @@ export default function NeonCircuitArena({
       ───────────────────────────────────────────────────────────── */}
       {[
         { slot: 1, x: -2.5, z: -9.8 },
-        { slot: 2, x: -5.5, z: -8.6 },
+        { slot: 2, x: -5.5, z: -8.5 },
         { slot: 3, x: -8.5, z: -9.8 },
-        { slot: 4, x: -11.5, z: -8.6 },
-        { slot: 5, x: -14.5, z: -9.8 },
+        { slot: 4, x: -11.5, z: -8.5 },
       ].map((grid) => (
         <group key={grid.slot} position={[grid.x, 0.012, grid.z]}>
-          {/* Front yellow pole bar */}
           <mesh position={[0.65, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[0.1, 1.2]} />
             <meshBasicMaterial color="#facc15" />
           </mesh>
-          {/* White grid box outline */}
           <mesh position={[0, 0, 0.55]} rotation={[-Math.PI / 2, 0, 0]}>
             <planeGeometry args={[1.4, 0.08]} />
             <meshBasicMaterial color="#ffffff" />
@@ -621,26 +794,26 @@ export default function NeonCircuitArena({
       {/* ─────────────────────────────────────────────────────────────
           7. HOLOGRAM START / FINISH GANTRY ARCH & CHECKERED LINE
       ───────────────────────────────────────────────────────────── */}
-      <group position={[0, 0, -9.2]}>
+      <group position={[0, 0, -9.1]}>
         {/* Left Truss Pillar */}
-        <mesh position={[0, 1.8, -4.5]} castShadow>
+        <mesh position={[0, 1.8, -4.8]} castShadow>
           <boxGeometry args={[0.3, 3.6, 0.3]} />
           <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
         </mesh>
         {/* Right Truss Pillar */}
-        <mesh position={[0, 1.8, 4.5]} castShadow>
+        <mesh position={[0, 1.8, 4.8]} castShadow>
           <boxGeometry args={[0.3, 3.6, 0.3]} />
           <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
         </mesh>
 
         {/* Overhead Arch Crossbeam */}
         <mesh position={[0, 3.6, 0]} castShadow>
-          <boxGeometry args={[0.4, 0.35, 9.3]} />
+          <boxGeometry args={[0.4, 0.35, 9.9]} />
           <meshStandardMaterial color="#0f172a" metalness={0.9} />
         </mesh>
         {/* Overhead Glowing Hologram Sign Banner */}
         <mesh position={[0, 3.25, 0]}>
-          <boxGeometry args={[0.08, 0.5, 7.8]} />
+          <boxGeometry args={[0.08, 0.5, 8.4]} />
           <meshStandardMaterial
             color="#06b6d4"
             emissive="#06b6d4"
@@ -650,18 +823,17 @@ export default function NeonCircuitArena({
           />
         </mesh>
 
-        {/* Overhead Gantry Downlights */}
-        <pointLight position={[0, 3.2, 0]} color="#ffffff" intensity={3.5} distance={10} />
+        <pointLight position={[0, 3.2, 0]} color="#ffffff" intensity={3.5} distance={12} />
 
         {/* Checkered Hologram Finish Line on Asphalt Surface */}
-        {[-3.6, -2.4, -1.2, 0, 1.2, 2.4, 3.6].map((z, idx) => (
+        {[-4.0, -3.0, -2.0, -1.0, 0, 1.0, 2.0, 3.0, 4.0].map((z, idx) => (
           <group key={idx} position={[0, 0.015, z]}>
             <mesh rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[0.45, 0.55]} />
+              <planeGeometry args={[0.45, 0.5]} />
               <meshBasicMaterial color={idx % 2 === 0 ? '#f8fafc' : '#0284c7'} />
             </mesh>
             <mesh position={[0.45, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[0.45, 0.55]} />
+              <planeGeometry args={[0.45, 0.5]} />
               <meshBasicMaterial color={idx % 2 === 0 ? '#0284c7' : '#f8fafc'} />
             </mesh>
           </group>
@@ -669,7 +841,7 @@ export default function NeonCircuitArena({
 
         {/* Start / Finish Glowing Hologram Line Projection */}
         <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[1.2, 8.8]} />
+          <planeGeometry args={[1.2, 9.5]} />
           <meshBasicMaterial color="#06b6d4" transparent opacity={0.35} depthWrite={false} />
         </mesh>
       </group>
@@ -708,10 +880,9 @@ export default function NeonCircuitArena({
       })}
 
       {/* ─────────────────────────────────────────────────────────────
-          9. PIT STOP ENTRY LANE & PADDOCK MARKERS
+          9. PIT STOP ENTRY LANE MARKERS
       ───────────────────────────────────────────────────────────── */}
       <group position={[12.5, 0.015, -4.5]}>
-        {/* Yellow/Cyan Pit Lane Entrance Stripes */}
         <mesh rotation={[-Math.PI / 2, 0, 0]}>
           <planeGeometry args={[2.5, 0.16]} />
           <meshBasicMaterial color="#facc15" />

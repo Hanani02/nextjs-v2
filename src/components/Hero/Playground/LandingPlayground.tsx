@@ -14,6 +14,7 @@ import PlaygroundHUD from './PlaygroundHUD';
 import GarageMenu from './GarageMenu';
 import { useMultiplayer } from './useMultiplayer';
 import type { LeaderboardEntry } from '@/types/vehicle';
+import { saveRaceRecord } from '@/lib/circuitLeaderboard';
 
 /**
  * Responsive Camera Controller for the Expansive Arcade Playground:
@@ -73,7 +74,8 @@ function WidePlaygroundCamera({
 
 /**
  * Real-time Lap & Checkpoint collision tracker running inside the R3F render loop.
- * Detects checkpoint passes (0 -> 1 -> 2 -> 3 -> 0) and accumulates lap timer.
+ * Detects checkpoint passes (1 -> 2 -> 3 -> 0) with strict sequential clearance,
+ * accumulates both current lap time and total race time across all 3 laps.
  */
 function CircuitRaceTracker({
   carPosRef,
@@ -87,39 +89,50 @@ function CircuitRaceTracker({
   carPosRef: React.RefObject<THREE.Vector3>;
   isAtPlayground: boolean;
   resetTrigger: number;
-  onLapUpdate: (lap: number, lapTime: number, isFinalLap: boolean) => void;
+  onLapUpdate: (lap: number, lapTime: number, totalTime: number, isFinalLap: boolean) => void;
   onCheckpointTrigger: (nextCp: number) => void;
-  onTimerTick: (time: number) => void;
+  onTimerTick: (lapTime: number, totalTime: number) => void;
   isFinished: boolean;
 }) {
   const currentLapRef = useRef(1);
   const targetCheckpointRef = useRef(1); // 0: Start/Finish, 1: Turn 1, 2: Chicane, 3: Hairpin
   const lapTimeRef = useRef(0);
+  const totalRaceTimeRef = useRef(0);
   const lastTickTime = useRef(0);
+  const lastCheckpointPassTime = useRef(0);
+  const clearedCheckpointsRef = useRef<Set<number>>(new Set());
+  const raceEndedRef = useRef(false);
 
   useEffect(() => {
     currentLapRef.current = 1;
     targetCheckpointRef.current = 1;
     lapTimeRef.current = 0;
+    totalRaceTimeRef.current = 0;
+    lastCheckpointPassTime.current = 0;
+    clearedCheckpointsRef.current.clear();
+    raceEndedRef.current = false;
   }, [resetTrigger]);
 
   useFrame((_, delta) => {
-    if (isFinished || !isAtPlayground) return;
+    if (raceEndedRef.current || isFinished || !isAtPlayground) return;
     const dt = Math.min(delta, 0.05);
     const carPos = carPosRef.current;
     if (!carPos) return;
 
-    // Accumulate lap timer
+    // Accumulate lap timer and total race timer
     lapTimeRef.current += dt;
+    totalRaceTimeRef.current += dt;
 
-    // Throttle React timer state update to ~15 FPS to keep UI buttery smooth
+    // Throttle React timer state update to ~15 FPS for smooth UI
     const now = performance.now();
     if (now - lastTickTime.current > 65) {
       lastTickTime.current = now;
-      onTimerTick(lapTimeRef.current);
+      onTimerTick(lapTimeRef.current, totalRaceTimeRef.current);
     }
 
     const currentTarget = targetCheckpointRef.current;
+    if (currentTarget < 0) return;
+
     const cp = RACE_CHECKPOINTS[currentTarget];
     if (!cp) return;
 
@@ -129,22 +142,44 @@ function CircuitRaceTracker({
 
     const hit = dx <= cp.width * 0.9 && dz <= cp.depth * 0.85;
 
-    if (hit) {
+    // Checkpoint hit with 1.0s debouncing cooldown to prevent repeat triggers
+    if (hit && now - lastCheckpointPassTime.current > 1000) {
+      lastCheckpointPassTime.current = now;
+
       if (currentTarget === 0) {
+        // Enforce that Gates 1, 2, and 3 MUST have been cleared on this lap
+        const hasClearedAllGates =
+          clearedCheckpointsRef.current.has(1) &&
+          clearedCheckpointsRef.current.has(2) &&
+          clearedCheckpointsRef.current.has(3);
+
+        // Enforce minimum lap duration (at least 5.5s) to prevent zero-second glitches
+        if (!hasClearedAllGates || lapTimeRef.current < 5.5) {
+          return;
+        }
+
         // Lap Completed!
         const finishedLap = currentLapRef.current;
         const lapTime = lapTimeRef.current;
-        lapTimeRef.current = 0;
+        const totalTime = totalRaceTimeRef.current;
 
         if (finishedLap >= 3) {
-          onLapUpdate(finishedLap, lapTime, true);
+          // Immediately set synchronous lock so subsequent frames cannot re-trigger
+          raceEndedRef.current = true;
+          targetCheckpointRef.current = -1;
+          onLapUpdate(finishedLap, lapTime, totalTime, true);
         } else {
           currentLapRef.current += 1;
           targetCheckpointRef.current = 1;
-          onLapUpdate(finishedLap, lapTime, false);
+          lapTimeRef.current = 0;
+          clearedCheckpointsRef.current.clear();
+          onLapUpdate(finishedLap, lapTime, totalTime, false);
           onCheckpointTrigger(1);
         }
       } else {
+        // Mark this intermediate checkpoint as cleared
+        clearedCheckpointsRef.current.add(currentTarget);
+
         // Advance to next checkpoint: 1 -> 2, 2 -> 3, 3 -> 0
         const nextCp = (currentTarget + 1) % 4;
         targetCheckpointRef.current = nextCp;
@@ -164,6 +199,7 @@ export default function LandingPlayground() {
   const [currentLap, setCurrentLap] = useState(1);
   const [activeCheckpoint, setActiveCheckpoint] = useState(1);
   const [currentLapTime, setCurrentLapTime] = useState(0);
+  const [totalRaceTime, setTotalRaceTime] = useState(0);
   const [bestLapTime, setBestLapTime] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
@@ -175,6 +211,7 @@ export default function LandingPlayground() {
 
   // Real-time multiplayer hook (Supabase Realtime Broadcast & Presence)
   const {
+    playerId,
     username,
     setUsername,
     carModel,
@@ -204,17 +241,42 @@ export default function LandingPlayground() {
 
   // Lap progression and finish logic
   const handleLapUpdate = useCallback(
-    (finishedLap: number, lapTime: number, isFinalLap: boolean) => {
-      setBestLapTime((prevBest) => {
-        const newBest = prevBest === 0 || lapTime < prevBest ? lapTime : prevBest;
-        return newBest;
-      });
+    (finishedLap: number, lapTime: number, totalTime: number, isFinalLap: boolean) => {
+      const bestTime = bestLapTime === 0 || lapTime < bestLapTime ? lapTime : bestLapTime;
+      setBestLapTime((prevBest) => (prevBest === 0 || lapTime < prevBest ? lapTime : prevBest));
+      setTotalRaceTime(totalTime);
+
+      const formatMinSec = (sec: number) => {
+        const mins = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        const ms = Math.floor((sec % 1) * 100);
+        return `${mins > 0 ? `${mins}m ` : ''}${s}.${ms.toString().padStart(2, '0')}s`;
+      };
 
       if (isFinalLap) {
         setIsFinished(true);
+
+        // Catat rekor balapan secara permanen ke Supabase database
+        saveRaceRecord({
+          player_id: playerId || 'self',
+          username,
+          car_model: carModel,
+          car_color: carColor,
+          total_time: totalTime,
+          best_lap_time: bestTime,
+          lap_count: 3,
+        }).then((res) => {
+          if (res.success) {
+            toast.success('🏆 Catatan balapan berhasil disimpan ke Supabase!', {
+              id: 'db-saved',
+              duration: 3500,
+            });
+          }
+        });
+
         toast.success(
-          `🎉 FINISH! 3 Lap Selesai! Waktu: ${lapTime.toFixed(2)}s 🏆`,
-          { id: 'race-complete', duration: 4500 }
+          `🎉 FINISH! 3 Lap Selesai!\nTotal Waktu: ${formatMinSec(totalTime)} (Best: ${lapTime.toFixed(2)}s) 🏆`,
+          { id: 'race-complete', duration: 5500 }
         );
       } else {
         setCurrentLap((prev) => Math.min(prev + 1, 3));
@@ -224,21 +286,23 @@ export default function LandingPlayground() {
         );
       }
     },
-    []
+    [playerId, username, carModel, carColor, bestLapTime]
   );
 
   const handleCheckpointTrigger = useCallback((nextCp: number) => {
     setActiveCheckpoint(nextCp);
   }, []);
 
-  const handleTimerTick = useCallback((time: number) => {
-    setCurrentLapTime(time);
+  const handleTimerTick = useCallback((lapTime: number, totalTime: number) => {
+    setCurrentLapTime(lapTime);
+    setTotalRaceTime(totalTime);
   }, []);
 
   const handleRestartRace = useCallback(() => {
     setCurrentLap(1);
     setActiveCheckpoint(1);
     setCurrentLapTime(0);
+    setTotalRaceTime(0);
     setIsFinished(false);
     setResetRaceTrigger((prev) => prev + 1);
     triggerReset();
@@ -409,6 +473,7 @@ export default function LandingPlayground() {
         maxLaps={3}
         currentLapTime={currentLapTime}
         bestLapTime={bestLapTime}
+        totalRaceTime={totalRaceTime}
         leaderboard={leaderboard}
         isFinished={isFinished}
         onRestartRace={handleRestartRace}

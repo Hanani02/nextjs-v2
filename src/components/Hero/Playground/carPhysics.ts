@@ -73,62 +73,131 @@ function resolveCircuitWallCollisions(
   const RESTITUTION = 0.42; // Bounciness
   const SCRAPE_FRICTION = 0.88; // Speed retention along wall
 
-  // 1. Outer Perimeter Walls
-  if (p.position.x + CAR_RADIUS > boundsX) {
-    p.position.x = boundsX - CAR_RADIUS;
-    p.vx = -Math.abs(p.vx) * RESTITUTION;
-    p.vz *= SCRAPE_FRICTION;
-  } else if (p.position.x - CAR_RADIUS < -boundsX) {
-    p.position.x = -boundsX + CAR_RADIUS;
-    p.vx = Math.abs(p.vx) * RESTITUTION;
-    p.vz *= SCRAPE_FRICTION;
-  }
+  // 1. OUTER STADIUM-OVAL BOUNDARY (Curved Turn 1 & Sweeping Hairpin)
+  // Straight sections: X between -11.0 and +11.0
+  // East sweeping curve: center at (11.0, 0), radius 14.0
+  // West sweeping hairpin: center at (-11.0, 0), radius 14.0
+  const straightLimit = 11.0;
+  const outerR = boundsZ; // 14.0
 
-  if (p.position.z + CAR_RADIUS > boundsZ) {
-    p.position.z = boundsZ - CAR_RADIUS;
-    p.vz = -Math.abs(p.vz) * RESTITUTION;
-    p.vx *= SCRAPE_FRICTION;
-  } else if (p.position.z - CAR_RADIUS < -boundsZ) {
-    p.position.z = -boundsZ + CAR_RADIUS;
-    p.vz = Math.abs(p.vz) * RESTITUTION;
-    p.vx *= SCRAPE_FRICTION;
-  }
+  if (p.position.x > straightLimit) {
+    // East Curve (Turn 1 into back straight)
+    const dx = p.position.x - straightLimit;
+    const dz = p.position.z;
+    const dist = Math.hypot(dx, dz);
+    const maxDist = outerR - CAR_RADIUS;
 
-  // 2. Infield Island Barrier Box (Center island separating straightaway from back straight)
-  const islandMinX = -11.0;
-  const islandMaxX = 11.0;
-  const islandMinZ = -4.2;
-  const islandMaxZ = 4.2;
+    if (dist > maxDist) {
+      const nx = dx / (dist || 1);
+      const nz = dz / (dist || 1);
+      p.position.x = straightLimit + nx * maxDist;
+      p.position.z = nz * maxDist;
 
-  if (
-    p.position.x + CAR_RADIUS > islandMinX &&
-    p.position.x - CAR_RADIUS < islandMaxX &&
-    p.position.z + CAR_RADIUS > islandMinZ &&
-    p.position.z - CAR_RADIUS < islandMaxZ
-  ) {
-    // Find axis of minimum penetration
-    const overlapLeft = (p.position.x + CAR_RADIUS) - islandMinX;
-    const overlapRight = islandMaxX - (p.position.x - CAR_RADIUS);
-    const overlapBottom = (p.position.z + CAR_RADIUS) - islandMinZ;
-    const overlapTop = islandMaxZ - (p.position.z - CAR_RADIUS);
+      // Reflect velocity along normal
+      const vDot = p.vx * nx + p.vz * nz;
+      if (vDot > 0) {
+        p.vx -= (1 + RESTITUTION) * vDot * nx;
+        p.vz -= (1 + RESTITUTION) * vDot * nz;
+        p.vx *= SCRAPE_FRICTION;
+        p.vz *= SCRAPE_FRICTION;
+      }
+    }
+  } else if (p.position.x < -straightLimit) {
+    // West Curve (Hairpin 180-degree bend)
+    const dx = p.position.x - (-straightLimit);
+    const dz = p.position.z;
+    const dist = Math.hypot(dx, dz);
+    const maxDist = outerR - CAR_RADIUS;
 
-    const minOverlap = Math.min(overlapLeft, overlapRight, overlapBottom, overlapTop);
+    if (dist > maxDist) {
+      const nx = dx / (dist || 1);
+      const nz = dz / (dist || 1);
+      p.position.x = -straightLimit + nx * maxDist;
+      p.position.z = nz * maxDist;
 
-    if (minOverlap === overlapLeft) {
-      p.position.x = islandMinX - CAR_RADIUS;
-      p.vx = -Math.abs(p.vx) * RESTITUTION;
-      p.vz *= SCRAPE_FRICTION;
-    } else if (minOverlap === overlapRight) {
-      p.position.x = islandMaxX + CAR_RADIUS;
-      p.vx = Math.abs(p.vx) * RESTITUTION;
-      p.vz *= SCRAPE_FRICTION;
-    } else if (minOverlap === overlapBottom) {
-      p.position.z = islandMinZ - CAR_RADIUS;
+      const vDot = p.vx * nx + p.vz * nz;
+      if (vDot > 0) {
+        p.vx -= (1 + RESTITUTION) * vDot * nx;
+        p.vz -= (1 + RESTITUTION) * vDot * nz;
+        p.vx *= SCRAPE_FRICTION;
+        p.vz *= SCRAPE_FRICTION;
+      }
+    }
+  } else {
+    // North & South Outer Straightaways
+    if (p.position.z + CAR_RADIUS > outerR) {
+      p.position.z = outerR - CAR_RADIUS;
       p.vz = -Math.abs(p.vz) * RESTITUTION;
       p.vx *= SCRAPE_FRICTION;
-    } else {
-      p.position.z = islandMaxZ + CAR_RADIUS;
+    } else if (p.position.z - CAR_RADIUS < -outerR) {
+      p.position.z = -outerR + CAR_RADIUS;
       p.vz = Math.abs(p.vz) * RESTITUTION;
+      p.vx *= SCRAPE_FRICTION;
+    }
+  }
+
+  // 2. INFIELD CENTRAL ISLAND (Smooth Rounded Capsule Shape)
+  // Straight body: X in [-6.0, 6.0], Z in [-4.2, 4.2]
+  // East rounded end: center (6.0, 0), radius 4.2
+  // West rounded end: center (-6.0, 0), radius 4.2
+  const islandStraight = 6.0;
+  const islandR = 4.2;
+
+  if (p.position.x > islandStraight) {
+    // East rounded end cap
+    const dx = p.position.x - islandStraight;
+    const dz = p.position.z;
+    const dist = Math.hypot(dx, dz);
+    const minAllowed = islandR + CAR_RADIUS;
+
+    if (dist < minAllowed) {
+      const nx = dx / (dist || 1);
+      const nz = dz / (dist || 1);
+      p.position.x = islandStraight + nx * minAllowed;
+      p.position.z = nz * minAllowed;
+
+      const vDot = p.vx * nx + p.vz * nz;
+      if (vDot < 0) {
+        p.vx -= (1 + RESTITUTION) * vDot * nx;
+        p.vz -= (1 + RESTITUTION) * vDot * nz;
+        p.vx *= SCRAPE_FRICTION;
+        p.vz *= SCRAPE_FRICTION;
+      }
+    }
+  } else if (p.position.x < -islandStraight) {
+    // West rounded end cap
+    const dx = p.position.x - (-islandStraight);
+    const dz = p.position.z;
+    const dist = Math.hypot(dx, dz);
+    const minAllowed = islandR + CAR_RADIUS;
+
+    if (dist < minAllowed) {
+      const nx = dx / (dist || 1);
+      const nz = dz / (dist || 1);
+      p.position.x = -islandStraight + nx * minAllowed;
+      p.position.z = nz * minAllowed;
+
+      const vDot = p.vx * nx + p.vz * nz;
+      if (vDot < 0) {
+        p.vx -= (1 + RESTITUTION) * vDot * nx;
+        p.vz -= (1 + RESTITUTION) * vDot * nz;
+        p.vx *= SCRAPE_FRICTION;
+        p.vz *= SCRAPE_FRICTION;
+      }
+    }
+  } else {
+    // Straight body: X in [-6.0, 6.0]
+    if (
+      p.position.z + CAR_RADIUS > -islandR &&
+      p.position.z - CAR_RADIUS < islandR
+    ) {
+      if (p.position.z > 0) {
+        p.position.z = islandR + CAR_RADIUS;
+        p.vz = Math.abs(p.vz) * RESTITUTION;
+      } else {
+        p.position.z = -islandR - CAR_RADIUS;
+        p.vz = -Math.abs(p.vz) * RESTITUTION;
+      }
       p.vx *= SCRAPE_FRICTION;
     }
   }

@@ -114,13 +114,33 @@ CREATE TABLE IF NOT EXISTS detail (
 );
 
 -- ==========================================
--- 6. KEAMANAN RLS (Row Level Security) SUPABASE
+-- 6. TABEL CIRCUIT LEADERBOARD (Mini Racing Playground)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS circuit_leaderboard (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  player_id varchar(100) NOT NULL DEFAULT 'anonymous',
+  username varchar(100) NOT NULL,
+  car_model varchar(50) NOT NULL DEFAULT 'sport',
+  car_color varchar(50) NOT NULL DEFAULT '#06b6d4',
+  total_time numeric(10, 2) NOT NULL,
+  best_lap_time numeric(10, 2) NOT NULL,
+  lap_count int NOT NULL DEFAULT 3,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Index untuk performa ranking cepat
+CREATE INDEX IF NOT EXISTS idx_circuit_leaderboard_total_time ON circuit_leaderboard (total_time ASC);
+CREATE INDEX IF NOT EXISTS idx_circuit_leaderboard_best_lap ON circuit_leaderboard (best_lap_time ASC);
+
+-- ==========================================
+-- 7. KEAMANAN RLS (Row Level Security) SUPABASE
 -- ==========================================
 ALTER TABLE hero DISABLE ROW LEVEL SECURITY;
 ALTER TABLE about DISABLE ROW LEVEL SECURITY;
 ALTER TABLE project DISABLE ROW LEVEL SECURITY;
 ALTER TABLE experience DISABLE ROW LEVEL SECURITY;
-ALTER TABLE detail DISABLE ROW LEVEL SECURITY;`;
+ALTER TABLE detail DISABLE ROW LEVEL SECURITY;
+ALTER TABLE circuit_leaderboard DISABLE ROW LEVEL SECURITY;`;
 
 export default function SqlHelperModal({ isOpen, onClose }: SqlHelperModalProps) {
   if (!isOpen) return null;

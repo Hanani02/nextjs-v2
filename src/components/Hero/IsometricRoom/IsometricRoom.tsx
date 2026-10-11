@@ -116,7 +116,7 @@ export default function IsometricRoom({
 
           <RoomMeshes profileImage={profileImage} onSelectHotspot={onSelectHotspot} />
           <Hotspots onSelect={onSelectHotspot} />
-          <ParkedHeroCar position={[2.0, -1.12, 0.9]} rotationY={-0.75} />
+          <ParkedHeroCar position={[2.0, -0.73, 0.9]} rotationY={-0.75} />
         </Suspense>
       </Canvas>
     </div>

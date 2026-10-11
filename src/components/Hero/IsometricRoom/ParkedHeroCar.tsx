@@ -12,7 +12,7 @@ interface ParkedHeroCarProps {
 }
 
 export default function ParkedHeroCar({
-  position = [1.8, 0.08, 0.9],
+  position = [2.0, -0.74, 0.9],
   rotationY = -0.75, // Angled toward the isometric center
 }: ParkedHeroCarProps) {
   const [model, setModel] = useState<CarModelType>('sport');
@@ -43,23 +43,31 @@ export default function ParkedHeroCar({
 
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      {/* Floating Badge (Parked Status) */}
-      <CarUsernameBadge
-        username={username}
-        isSelf={true}
-        color={color}
-        model={model}
-        isDrifting={false}
-        speed={0}
-      />
+      {/* Ground Contact Shadow / Display Decal so wheels look planted */}
+      <mesh position={[0, 0.008, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[1.5, 2.4]} />
+        <meshBasicMaterial color="#090514" transparent opacity={0.45} depthWrite={false} />
+      </mesh>
 
-      {/* 3D Car Body Mesh */}
-      <CarBodyMesh
-        model={model}
-        color={color}
-        isDrifting={false}
-        isBraking={true}
-      />
+      {/* Volumetric Miniature Scale Group (Uniform 3D Proportions) */}
+      <group scale={[0.92, 0.92, 0.92]}>
+        {/* Floating Badge (Parked Status) */}
+        <CarUsernameBadge
+          username={username}
+          isSelf={true}
+          color={color}
+          model={model}
+          isDrifting={false}
+          speed={0}
+        />
+
+        {/* 3D Car Body Mesh */}
+        <CarBodyMesh
+          model={model}
+          color={color}
+          isDrifting={false}
+          isBraking={true}
+        />
 
       {/* Wheel Assembly (Straight parked wheels) */}
       <CarWheels
@@ -69,16 +77,17 @@ export default function ParkedHeroCar({
         wheelSpin={0}
       />
 
-      {/* Gentle Idle Headlight Beam */}
-      <spotLight
-        position={[0, 0.3, 0.9]}
-        target-position={[0, 0, 3.5]}
-        color="#38bdf8"
-        intensity={1.8}
-        angle={0.6}
-        penumbra={0.7}
-        distance={5}
-      />
+        {/* Gentle Idle Headlight Beam */}
+        <spotLight
+          position={[0, 0.3, 0.9]}
+          target-position={[0, 0, 3.5]}
+          color="#38bdf8"
+          intensity={1.8}
+          angle={0.6}
+          penumbra={0.7}
+          distance={5}
+        />
+      </group>
     </group>
   );
 }
