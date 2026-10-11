@@ -6,11 +6,13 @@ import * as THREE from 'three';
 interface PlaygroundArenaProps {
   boundsX?: number;
   boundsZ?: number;
+  scrollProgress?: number;
 }
 
 export default function PlaygroundArena({
   boundsX = 24,
-  boundsZ = 16
+  boundsZ = 16,
+  scrollProgress = 0
 }: PlaygroundArenaProps) {
   // Dark cyber floor grid texture
   const gridTexture = useMemo(() => {
