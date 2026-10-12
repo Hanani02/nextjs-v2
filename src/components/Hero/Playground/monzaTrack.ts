@@ -66,9 +66,9 @@ export const MONZA_CONTROL_POINTS: Array<[number, number]> = [
   [-15, -25],
 ];
 
-export const MONZA_TRACK_WIDTH = 5.6; // Width of the asphalt ribbon in world units
-export const MONZA_CAR_RADIUS = 0.65; // Collision radius of the car
-export const MONZA_MAX_DEVIATION = MONZA_TRACK_WIDTH / 2 - MONZA_CAR_RADIUS; // ~2.15 units
+export const MONZA_TRACK_WIDTH = 11.5; // Realistic F1 grand prix track width in world units
+export const MONZA_CAR_RADIUS = 0.7; // Collision radius of the car
+export const MONZA_MAX_DEVIATION = 5.85; // Max allowed distance from centerline before hitting 3D barriers
 
 export interface TrackPoint {
   x: number;
@@ -177,7 +177,7 @@ export const MONZA_CHECKPOINTS = [
     id: 0,
     name: 'Start / Finish',
     center: [0, -25] as [number, number],
-    width: 6.8,
+    width: 12.8,
     depth: 3.5,
     normal: [1, 0] as [number, number], // Car crosses towards +X
   },
@@ -185,7 +185,7 @@ export const MONZA_CHECKPOINTS = [
     id: 1,
     name: 'Prima Variante Exit',
     center: [51, -15] as [number, number],
-    width: 6.8,
+    width: 12.8,
     depth: 3.5,
     normal: [0.6, 0.8] as [number, number],
   },
@@ -193,7 +193,7 @@ export const MONZA_CHECKPOINTS = [
     id: 2,
     name: 'Roggia Chicane Exit',
     center: [28, 38] as [number, number],
-    width: 6.8,
+    width: 12.8,
     depth: 3.5,
     normal: [-0.6, 0.8] as [number, number],
   },
@@ -201,7 +201,7 @@ export const MONZA_CHECKPOINTS = [
     id: 3,
     name: 'Lesmo 2 Exit',
     center: [-8, 25] as [number, number],
-    width: 6.8,
+    width: 12.8,
     depth: 3.5,
     normal: [-0.5, -0.8] as [number, number],
   },
@@ -209,7 +209,7 @@ export const MONZA_CHECKPOINTS = [
     id: 4,
     name: 'Variante Ascari Exit',
     center: [-37, 4] as [number, number],
-    width: 6.8,
+    width: 12.8,
     depth: 3.5,
     normal: [-1, 0] as [number, number],
   },
@@ -217,7 +217,7 @@ export const MONZA_CHECKPOINTS = [
     id: 5,
     name: 'Curva Parabolica Exit',
     center: [-54, -25] as [number, number],
-    width: 6.8,
+    width: 12.8,
     depth: 3.5,
     normal: [0.8, -0.6] as [number, number],
   },
@@ -245,12 +245,12 @@ export function findClosestTrackPoint(
   let bestIdx = hintIdx;
   let bestDistSq = Infinity;
 
-  // Search window of ±24 points around hint, or full search if hint is distant
-  const windowSize = 26;
+  // Search window of points around hint, or full search if hint is distant
+  const windowSize = 35;
   const isLocal =
     hintIdx >= 0 &&
     hintIdx < N &&
-    Math.hypot(points[hintIdx].x - x, points[hintIdx].z - z) < 18;
+    Math.hypot(points[hintIdx].x - x, points[hintIdx].z - z) < 28;
 
   const start = isLocal ? hintIdx - windowSize : 0;
   const end = isLocal ? hintIdx + windowSize : N;
@@ -306,7 +306,7 @@ export function findClosestTrackPoint(
 
 /**
  * Continuous collision detection against Monza track limits.
- * Clamps car inside the track ribbon with realistic bounce and scrape friction.
+ * Clamps car inside track boundary with realistic bounce without trapping the car.
  */
 export function resolveMonzaTrackCollisions(
   pos: THREE.Vector3,
@@ -316,25 +316,27 @@ export function resolveMonzaTrackCollisions(
   const info = findClosestTrackPoint(pos.x, pos.z, hintIndexRef.current);
   hintIndexRef.current = info.index;
 
-  const maxAllowed = MONZA_MAX_DEVIATION; // ~2.15m
+  const maxAllowed = MONZA_MAX_DEVIATION;
 
   if (info.dist > maxAllowed) {
-    // Car has hit outer or inner track barrier!
-    // Push car back onto edge
-    pos.x = info.projX + info.normalX * maxAllowed;
-    pos.z = info.projZ + info.normalZ * maxAllowed;
+    // Car has hit 3D boundary wall!
+    // Push car slightly inward from boundary so it doesn't get caught in sticky edge loop
+    pos.x = info.projX + info.normalX * (maxAllowed - 0.04);
+    pos.z = info.projZ + info.normalZ * (maxAllowed - 0.04);
 
-    const RESTITUTION = 0.35; // Bounciness off Tecpro barrier
-    const SCRAPE_FRICTION = 0.88; // Friction along wall
+    const RESTITUTION = 0.25; // Gentle bounce off 3D Tecpro barrier
 
-    // Velocity dot product with outward normal
+    // Outward velocity component along normal
     const vDot = vel.vx * info.normalX + vel.vz * info.normalZ;
 
     if (vDot > 0) {
+      // Reflect and eliminate outward velocity
       vel.vx -= (1 + RESTITUTION) * vDot * info.normalX;
       vel.vz -= (1 + RESTITUTION) * vDot * info.normalZ;
-      vel.vx *= SCRAPE_FRICTION;
-      vel.vz *= SCRAPE_FRICTION;
+
+      // Gentle graze friction: preserves high forward speed instead of grinding to dead halt!
+      vel.vx *= 0.96;
+      vel.vz *= 0.96;
     }
     return true;
   }

@@ -34,16 +34,16 @@ export interface PhysicsConstants {
 }
 
 export const DEFAULT_PHYSICS_CONSTANTS: PhysicsConstants = {
-  acceleration: 30.0,
-  maxSpeed: 23.5,
-  reverseAccel: 14.0,
-  maxReverse: -9.0,
-  turnSpeed: 4.2,
+  acceleration: 32.0,
+  maxSpeed: 25.0,
+  reverseAccel: 16.0,
+  maxReverse: -10.0,
+  turnSpeed: 4.4,
   driftTurnMultiplier: 2.1,
   normalGrip: 0.94,
   driftGrip: 0.16, // Extra slippery drift by default
   friction: 0.988,
-  maxSteer: 0.58,
+  maxSteer: 0.60,
 };
 
 export function createInitialPhysicsState(
@@ -117,9 +117,11 @@ export function stepCarPhysics(
     (p.isDrifting && hasLateralSlide);
 
   // 4. Heading (Yaw) Calculation
-  if (currentSpeed > 0.2) {
-    const speedRatio = Math.min(currentSpeed / constants.maxSpeed, 1.0);
-    const driveDir = forwardVelocity >= 0 ? 1 : -1;
+  const isInputActive = controls.forward || controls.backward || currentSpeed > 0.15;
+  if (isInputActive) {
+    const minTurnRatio = controls.forward || controls.backward ? 0.38 : 0.0;
+    const speedRatio = Math.max(minTurnRatio, Math.min(currentSpeed / constants.maxSpeed, 1.0));
+    const driveDir = controls.backward && !controls.forward && forwardVelocity <= 0.1 ? -1 : 1;
     const steerMultiplier = p.isDrifting
       ? effectiveTurnSpeed * constants.driftTurnMultiplier
       : effectiveTurnSpeed;

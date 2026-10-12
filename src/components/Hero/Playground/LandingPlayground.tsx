@@ -33,13 +33,13 @@ function checkMonzaGatePass(
 ): boolean {
   // 1. Proximity bounding radius check
   const dist = Math.hypot(currPos.x - cp.center[0], currPos.z - cp.center[1]);
-  if (dist <= 4.2) {
+  if (dist <= 7.5) {
     return true;
   }
 
   // 2. Continuous Collision Detection (CCD plane crossing)
   const prevDist = prevPos.distanceTo(currPos);
-  if (prevDist > 12.0) return false; // Ignore teleport/reset
+  if (prevDist > 16.0) return false; // Ignore teleport/reset
 
   const nx = cp.normal[0];
   const nz = cp.normal[1];
@@ -47,7 +47,7 @@ function checkMonzaGatePass(
   const dotPrev = (prevPos.x - cp.center[0]) * nx + (prevPos.z - cp.center[1]) * nz;
   const dotCurr = (currPos.x - cp.center[0]) * nx + (currPos.z - cp.center[1]) * nz;
 
-  if (dotPrev <= 0.25 && dotCurr >= -0.25 && dist <= 8.5) {
+  if (dotPrev <= 0.35 && dotCurr >= -0.35 && dist <= 12.5) {
     return true;
   }
 

@@ -258,53 +258,99 @@ export default function NeonCircuitArena({
   }, [points, halfWidth]);
 
   // ─────────────────────────────────────────────────────────────
-  // 5. TECPRO SAFETY BARRIERS (Continuous F1 Safety Walls)
+  // 5. 3D SOLID RECTANGULAR CONNECTED BARRIERS (Alternating Red & White)
   // ─────────────────────────────────────────────────────────────
   const barriersGeom = useMemo(() => {
     const N = points.length;
     const positions: number[] = [];
     const colors: number[] = [];
     const indices: number[] = [];
-    const barrierHeight = 0.88;
-    const barrierOffset = halfWidth + 0.55;
+
+    const barrierHeight = 0.95; // 3D block height
+    const barrierThickness = 0.55; // 3D block cross-section thickness
+    const barrierOffset = halfWidth + 0.45; // Placed right at edge of track & kerbs
 
     let vIdx = 0;
 
-    // Step every 2 points along track to generate barrier wall
-    const step = 2;
-    for (let i = 0; i < N; i += step) {
-      const pt = points[i];
-      const nextPt = points[(i + step) % N];
+    const redColor = [0.88, 0.14, 0.14];
+    const whiteColor = [0.97, 0.97, 0.98];
 
-      const isRed = Math.floor(pt.distanceAlongTrack / 2.2) % 2 === 0;
-      const wallColor = isRed ? [0.86, 0.15, 0.15] : [0.95, 0.95, 0.98];
-
-      // 1. Left Barrier Wall
-      const p1x = pt.x + pt.nx * barrierOffset;
-      const p1z = pt.z + pt.nz * barrierOffset;
-      const p2x = nextPt.x + nextPt.nx * barrierOffset;
-      const p2z = nextPt.z + nextPt.nz * barrierOffset;
-
-      // Bottom 2 vertices, Top 2 vertices
-      positions.push(p1x, 0, p1z, p2x, 0, p2z, p1x, barrierHeight, p1z, p2x, barrierHeight, p2z);
-      colors.push(...wallColor, ...wallColor, ...wallColor, ...wallColor);
-
-      indices.push(vIdx, vIdx + 2, vIdx + 1);
-      indices.push(vIdx + 1, vIdx + 2, vIdx + 3);
-      vIdx += 4;
-
-      // 2. Right Barrier Wall
-      const rp1x = pt.x - pt.nx * barrierOffset;
-      const rp1z = pt.z - pt.nz * barrierOffset;
-      const rp2x = nextPt.x - nextPt.nx * barrierOffset;
-      const rp2z = nextPt.z - nextPt.nz * barrierOffset;
-
-      positions.push(rp1x, 0, rp1z, rp2x, 0, rp2z, rp1x, barrierHeight, rp1z, rp2x, barrierHeight, rp2z);
-      colors.push(...wallColor, ...wallColor, ...wallColor, ...wallColor);
-
+    // Helper to add a quad face (2 triangles) with specific vertex color
+    const addQuad = (
+      p0: [number, number, number],
+      p1: [number, number, number],
+      p2: [number, number, number],
+      p3: [number, number, number],
+      col: number[]
+    ) => {
+      positions.push(...p0, ...p1, ...p2, ...p3);
+      colors.push(...col, ...col, ...col, ...col);
       indices.push(vIdx, vIdx + 1, vIdx + 2);
-      indices.push(vIdx + 1, vIdx + 3, vIdx + 2);
+      indices.push(vIdx, vIdx + 2, vIdx + 3);
       vIdx += 4;
+    };
+
+    // Step every 2 spline points (~1.8m segment per rectangular block)
+    const step = 2;
+
+    // 1. LEFT 3D BARRIER WALL (Solid connected rectangular blocks)
+    for (let i = 0; i < N; i += step) {
+      const pt1 = points[i];
+      const pt2 = points[(i + step) % N];
+
+      // Alternating red and white every ~2.2m
+      const isRed = Math.floor(pt1.distanceAlongTrack / 2.2) % 2 === 0;
+      const col = isRed ? redColor : whiteColor;
+
+      // 8 vertices of the 3D rectangular block on the left side
+      const inB1: [number, number, number] = [pt1.x + pt1.nx * barrierOffset, 0, pt1.z + pt1.nz * barrierOffset];
+      const inT1: [number, number, number] = [pt1.x + pt1.nx * barrierOffset, barrierHeight, pt1.z + pt1.nz * barrierOffset];
+      const inB2: [number, number, number] = [pt2.x + pt2.nx * barrierOffset, 0, pt2.z + pt2.nz * barrierOffset];
+      const inT2: [number, number, number] = [pt2.x + pt2.nx * barrierOffset, barrierHeight, pt2.z + pt2.nz * barrierOffset];
+
+      const outB1: [number, number, number] = [pt1.x + pt1.nx * (barrierOffset + barrierThickness), 0, pt1.z + pt1.nz * (barrierOffset + barrierThickness)];
+      const outT1: [number, number, number] = [pt1.x + pt1.nx * (barrierOffset + barrierThickness), barrierHeight, pt1.z + pt1.nz * (barrierOffset + barrierThickness)];
+      const outB2: [number, number, number] = [pt2.x + pt2.nx * (barrierOffset + barrierThickness), 0, pt2.z + pt2.nz * (barrierOffset + barrierThickness)];
+      const outT2: [number, number, number] = [pt2.x + pt2.nx * (barrierOffset + barrierThickness), barrierHeight, pt2.z + pt2.nz * (barrierOffset + barrierThickness)];
+
+      // Inner Face (facing track & car POV)
+      addQuad(inB1, inB2, inT2, inT1, col);
+      // Top Face (horizontal top surface of block)
+      addQuad(inT1, inT2, outT2, outT1, col);
+      // Outer Face (facing arena floor)
+      addQuad(outB2, outB1, outT1, outT2, col);
+      // Connecting End-Cap Face between blocks
+      addQuad(inB2, outB2, outT2, inT2, col);
+    }
+
+    // 2. RIGHT 3D BARRIER WALL (Solid connected rectangular blocks - 100% visible from car POV!)
+    for (let i = 0; i < N; i += step) {
+      const pt1 = points[i];
+      const pt2 = points[(i + step) % N];
+
+      // Alternating red and white (offset by 1 block so corners look dynamic)
+      const isRed = Math.floor(pt1.distanceAlongTrack / 2.2 + 1) % 2 === 0;
+      const col = isRed ? redColor : whiteColor;
+
+      // 8 vertices of the 3D rectangular block on the right side
+      const inB1: [number, number, number] = [pt1.x - pt1.nx * barrierOffset, 0, pt1.z - pt1.nz * barrierOffset];
+      const inT1: [number, number, number] = [pt1.x - pt1.nx * barrierOffset, barrierHeight, pt1.z - pt1.nz * barrierOffset];
+      const inB2: [number, number, number] = [pt2.x - pt2.nx * barrierOffset, 0, pt2.z - pt2.nz * barrierOffset];
+      const inT2: [number, number, number] = [pt2.x - pt2.nx * barrierOffset, barrierHeight, pt2.z - pt2.nz * barrierOffset];
+
+      const outB1: [number, number, number] = [pt1.x - pt1.nx * (barrierOffset + barrierThickness), 0, pt1.z - pt1.nz * (barrierOffset + barrierThickness)];
+      const outT1: [number, number, number] = [pt1.x - pt1.nx * (barrierOffset + barrierThickness), barrierHeight, pt1.z - pt1.nz * (barrierOffset + barrierThickness)];
+      const outB2: [number, number, number] = [pt2.x - pt2.nx * (barrierOffset + barrierThickness), 0, pt2.z - pt2.nz * (barrierOffset + barrierThickness)];
+      const outT2: [number, number, number] = [pt2.x - pt2.nx * (barrierOffset + barrierThickness), barrierHeight, pt2.z - pt2.nz * (barrierOffset + barrierThickness)];
+
+      // Inner Face (facing track & car POV from the right)
+      addQuad(inB2, inB1, inT1, inT2, col);
+      // Top Face (horizontal top surface of block)
+      addQuad(outT1, outT2, inT2, inT1, col);
+      // Outer Face (facing arena floor)
+      addQuad(outB1, outB2, outT2, outT1, col);
+      // Connecting End-Cap Face between blocks
+      addQuad(outB2, inB2, inT2, outT2, col);
     }
 
     const geom = new THREE.BufferGeometry();
@@ -322,7 +368,7 @@ export default function NeonCircuitArena({
       ───────────────────────────────────────────────────────────── */}
       {/* Expansive Surrounding Arena Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.02, 5]}>
-        <planeGeometry args={[180, 110]} />
+        <planeGeometry args={[220, 140]} />
         <meshStandardMaterial color="#050811" roughness={0.9} metalness={0.1} />
       </mesh>
 
@@ -346,9 +392,9 @@ export default function NeonCircuitArena({
         <meshStandardMaterial vertexColors roughness={0.35} metalness={0.15} />
       </mesh>
 
-      {/* Continuous Tecpro Barriers */}
+      {/* Continuous 3D Rectangular Connected Barriers (Alternating Red & White) */}
       <mesh geometry={barriersGeom} castShadow receiveShadow>
-        <meshStandardMaterial vertexColors roughness={0.4} metalness={0.2} />
+        <meshStandardMaterial vertexColors roughness={0.35} metalness={0.2} side={THREE.DoubleSide} />
       </mesh>
 
       {/* ─────────────────────────────────────────────────────────────
@@ -356,25 +402,25 @@ export default function NeonCircuitArena({
       ───────────────────────────────────────────────────────────── */}
       <group position={[0, 0, -25]}>
         {/* Left Truss Pillar */}
-        <mesh position={[0, 2.0, -halfWidth - 0.6]} castShadow>
-          <boxGeometry args={[0.35, 4.0, 0.35]} />
+        <mesh position={[0, 2.0, -halfWidth - 0.7]} castShadow>
+          <boxGeometry args={[0.35, 4.2, 0.35]} />
           <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
         </mesh>
         {/* Right Truss Pillar */}
-        <mesh position={[0, 2.0, halfWidth + 0.6]} castShadow>
-          <boxGeometry args={[0.35, 4.0, 0.35]} />
+        <mesh position={[0, 2.0, halfWidth + 0.7]} castShadow>
+          <boxGeometry args={[0.35, 4.2, 0.35]} />
           <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
         </mesh>
 
         {/* Overhead Gantry Crossbeam */}
-        <mesh position={[0, 3.8, 0]} castShadow>
-          <boxGeometry args={[0.45, 0.4, MONZA_TRACK_WIDTH + 2.0]} />
+        <mesh position={[0, 4.0, 0]} castShadow>
+          <boxGeometry args={[0.45, 0.4, MONZA_TRACK_WIDTH + 2.2]} />
           <meshStandardMaterial color="#0f172a" metalness={0.9} />
         </mesh>
 
         {/* Glowing Hologram Monza Signboard */}
-        <mesh position={[0, 3.3, 0]}>
-          <boxGeometry args={[0.08, 0.65, MONZA_TRACK_WIDTH + 0.5]} />
+        <mesh position={[0, 3.5, 0]}>
+          <boxGeometry args={[0.08, 0.65, MONZA_TRACK_WIDTH + 0.6]} />
           <meshStandardMaterial
             color="#06b6d4"
             emissive="#06b6d4"
@@ -385,10 +431,10 @@ export default function NeonCircuitArena({
         </mesh>
 
         {/* Gantry Overhead Lighting */}
-        <pointLight position={[0, 3.4, 0]} color="#ffffff" intensity={4.2} distance={16} />
+        <pointLight position={[0, 3.6, 0]} color="#ffffff" intensity={4.5} distance={18} />
 
         {/* Checkered Hologram Finish Line on Asphalt Surface */}
-        {[-2.0, -1.0, 0, 1.0, 2.0].map((offsetZ, idx) => (
+        {[-5.0, -4.0, -3.0, -2.0, -1.0, 0, 1.0, 2.0, 3.0, 4.0, 5.0].map((offsetZ, idx) => (
           <group key={idx} position={[0, 0.016, offsetZ]}>
             <mesh rotation={[-Math.PI / 2, 0, 0]}>
               <planeGeometry args={[0.55, 0.55]} />
@@ -403,7 +449,7 @@ export default function NeonCircuitArena({
 
         {/* Glowing Hologram Start / Finish Laser Beam Projection */}
         <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[1.5, MONZA_TRACK_WIDTH + 0.4]} />
+          <planeGeometry args={[1.5, MONZA_TRACK_WIDTH + 0.6]} />
           <meshBasicMaterial color="#06b6d4" transparent opacity={0.35} depthWrite={false} />
         </mesh>
       </group>
@@ -418,7 +464,7 @@ export default function NeonCircuitArena({
           <group key={cp.id} position={[cp.center[0], 0.015, cp.center[1]]}>
             {/* Ground Checkpoint Ring */}
             <mesh rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[1.4, 1.75, 32]} />
+              <ringGeometry args={[2.0, 2.45, 32]} />
               <meshBasicMaterial
                 color={beamColor}
                 transparent
