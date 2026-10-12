@@ -12,63 +12,58 @@ export const MONZA_CONTROL_POINTS: Array<[number, number]> = [
   // Start / Finish on Rettifilo Straight
   [0, -25],
   [18, -25],
-  [34, -25],
+  [32, -25],
 
-  // Variante del Rettifilo (Prima Variante Chicane - Turns 1 & 2)
-  [44, -24],
-  [49, -21], // Turn 1 (Right flick)
-  [51, -15], // Turn 2 (Left flick)
+  // Variante del Rettifilo (Prima Variante Chicane - smooth flowing entry & exit)
+  [43, -24.5],
+  [50, -22],   // Right flick
+  [53, -16],   // Apex
+  [53.5, -9],  // Transition to Curva Grande
 
   // Curva Grande (Curva Biassono - Turn 3: long high-speed sweeping right curve)
-  [55, -8],
-  [58, 2],
-  [57, 12],
-  [52, 21],
-  [45, 27],
+  [56, 1],
+  [55, 12],
+  [50, 22],
+  [43, 28],
 
-  // Variante della Roggia (Seconda Variante - Turns 4 & 5: chicane)
-  [39, 30],
-  [34, 33], // Turn 4 (Left)
-  [30, 38], // Turn 5 (Right)
+  // Variante della Roggia (Turns 4 & 5)
+  [37, 31],
+  [31, 35],
+  [27, 40],
 
-  // Curva di Lesmo 1 (Turn 6)
-  [23, 41],
-  [14, 40],
-
-  // Short Straight between Lesmos
-  [6, 38],
-
-  // Curva di Lesmo 2 (Turn 7)
-  [-1, 35],
-  [-7, 28],
+  // Curva di Lesmo 1 & 2
+  [20, 42.5],
+  [11, 41.5],
+  [3, 38],
+  [-3, 34],
+  [-8, 27],
 
   // Curva del Serraglio & Straight towards Ascari
-  [-12, 19],
-  [-16, 9],
-  [-19, 1],
+  [-13, 18],
+  [-17, 10],
+  [-21, 3],
 
-  // Variante Ascari (Turns 8, 9, 10: high-speed chicane Left -> Right -> Left)
-  [-23, 0], // Turn 8 (Left entry)
-  [-29, 4], // Turn 9 (Right apex)
-  [-36, 4], // Turn 10 (Left exit)
+  // Variante Ascari (Turns 8, 9, 10: high-speed chicane)
+  [-27, 1],
+  [-33, 3],
+  [-39, 2.5],
 
-  // Back Straight (Rettifilo towards Curva Parabolica)
-  [-44, 4],
-  [-52, 4],
+  // Back Straight
+  [-46, 1.5],
+  [-54, -0.5],
 
-  // Curva Parabolica (Curva Alboreto - Turn 11: iconic 180° long sweeping right curve)
-  [-59, 2], // Parabolica entry
-  [-65, -4],
-  [-67, -13], // Mid-corner apex
-  [-63, -21], // Exit opening up
-  [-53, -25], // Full throttle onto Rettifilo Straight
-  [-30, -25], // Rettifilo approach to Start/Finish
+  // Curva Parabolica (Curva Alboreto - Turn 11)
+  [-61, -4],
+  [-65, -11],
+  [-63, -19],
+  [-54, -24.5],
+  [-32, -25],
   [-15, -25],
 ];
 
-export const MONZA_TRACK_WIDTH = 11.5; // Realistic F1 grand prix track width in world units
+export const MONZA_TRACK_WIDTH = 9.2; // Optimized wide F1 track width without chicane pinch/overlap
 export const MONZA_CAR_RADIUS = 0.7; // Collision radius of the car
-export const MONZA_MAX_DEVIATION = 5.85; // Max allowed distance from centerline before hitting 3D barriers
+export const MONZA_MAX_DEVIATION = 4.65; // Max allowed distance from centerline before hitting 3D barriers
 
 export interface TrackPoint {
   x: number;
@@ -90,15 +85,17 @@ function generateSampledTrack(sampleCount: number = 360): TrackPoint[] {
   const points3D = MONZA_CONTROL_POINTS.map(([x, z]) => new THREE.Vector3(x, 0, z));
   const curve = new THREE.CatmullRomCurve3(points3D, true, 'centripetal', 0.5);
 
-  const rawPoints = curve.getSpacedPoints(sampleCount);
+  // getSpacedPoints returns sampleCount + 1 points where index 0 and sampleCount are duplicates.
+  // Take exactly sampleCount points to prevent duplicate point seam and index jump.
+  const rawPoints = curve.getSpacedPoints(sampleCount).slice(0, sampleCount);
   const trackPoints: TrackPoint[] = [];
 
   let accumulatedDist = 0;
 
-  for (let i = 0; i < rawPoints.length; i++) {
+  for (let i = 0; i < sampleCount; i++) {
     const curr = rawPoints[i];
-    const next = rawPoints[(i + 1) % rawPoints.length];
-    const prev = rawPoints[(i - 1 + rawPoints.length) % rawPoints.length];
+    const next = rawPoints[(i + 1) % sampleCount];
+    const prev = rawPoints[(i - 1 + sampleCount) % sampleCount];
 
     // Tangent direction
     const tVec = new THREE.Vector3().subVectors(next, prev).normalize();
@@ -113,25 +110,25 @@ function generateSampledTrack(sampleCount: number = 360): TrackPoint[] {
     const d1 = new THREE.Vector3().subVectors(curr, prev).normalize();
     const d2 = new THREE.Vector3().subVectors(next, curr).normalize();
     const angle = d1.angleTo(d2);
-    const isCorner = angle > 0.045;
+    const isCorner = angle > 0.038;
 
     // Corner name attribution
     let cornerName: string | undefined;
-    if (curr.x > 38 && curr.x < 53 && curr.z < -14) {
+    if (curr.x > 40 && curr.x < 55 && curr.z < -14) {
       cornerName = 'Prima Variante';
-    } else if (curr.x > 45 && curr.z >= -14 && curr.z < 26) {
+    } else if (curr.x > 43 && curr.z >= -14 && curr.z < 26) {
       cornerName = 'Curva Grande';
-    } else if (curr.x > 25 && curr.x <= 40 && curr.z >= 26 && curr.z < 38) {
+    } else if (curr.x > 25 && curr.x <= 40 && curr.z >= 26 && curr.z < 41) {
       cornerName = 'Variante della Roggia';
-    } else if (curr.x > 8 && curr.x <= 25 && curr.z >= 38) {
+    } else if (curr.x > 8 && curr.x <= 25 && curr.z >= 39) {
       cornerName = 'Lesmo 1';
-    } else if (curr.x <= 8 && curr.x >= -8 && curr.z >= 28) {
+    } else if (curr.x <= 8 && curr.x >= -10 && curr.z >= 26) {
       cornerName = 'Lesmo 2';
-    } else if (curr.x >= -20 && curr.x < -8 && curr.z >= 0 && curr.z < 28) {
+    } else if (curr.x >= -22 && curr.x < -10 && curr.z >= 2 && curr.z < 26) {
       cornerName = 'Curva del Serraglio';
-    } else if (curr.x <= -20 && curr.x >= -38 && curr.z >= -1 && curr.z <= 6) {
+    } else if (curr.x <= -22 && curr.x >= -40 && curr.z >= 0 && curr.z <= 4) {
       cornerName = 'Variante Ascari';
-    } else if (curr.x <= -52 && curr.z <= 4) {
+    } else if (curr.x <= -50 && curr.z <= 2) {
       cornerName = 'Curva Parabolica';
     } else if (curr.z <= -24) {
       cornerName = 'Rettifilo Straight';
@@ -157,10 +154,10 @@ export const MONZA_SAMPLED_POINTS = generateSampledTrack(360);
 
 // Bounding box for 2D minimap scaling
 export const MONZA_BOUNDS = {
-  minX: -70,
-  maxX: 61,
-  minZ: -27.5,
-  maxZ: 43.5,
+  minX: -68,
+  maxX: 58,
+  minZ: -28,
+  maxZ: 44,
 };
 
 /**
@@ -177,49 +174,49 @@ export const MONZA_CHECKPOINTS = [
     id: 0,
     name: 'Start / Finish',
     center: [0, -25] as [number, number],
-    width: 12.8,
+    width: 10.5,
     depth: 3.5,
     normal: [1, 0] as [number, number], // Car crosses towards +X
   },
   {
     id: 1,
     name: 'Prima Variante Exit',
-    center: [51, -15] as [number, number],
-    width: 12.8,
+    center: [53.2, -15] as [number, number],
+    width: 10.5,
     depth: 3.5,
-    normal: [0.6, 0.8] as [number, number],
+    normal: [0.1, 1.0] as [number, number],
   },
   {
     id: 2,
     name: 'Roggia Chicane Exit',
-    center: [28, 38] as [number, number],
-    width: 12.8,
+    center: [27.1, 40] as [number, number],
+    width: 10.5,
     depth: 3.5,
-    normal: [-0.6, 0.8] as [number, number],
+    normal: [-0.8, 0.6] as [number, number],
   },
   {
     id: 3,
     name: 'Lesmo 2 Exit',
-    center: [-8, 25] as [number, number],
-    width: 12.8,
+    center: [-8.2, 27] as [number, number],
+    width: 10.5,
     depth: 3.5,
-    normal: [-0.5, -0.8] as [number, number],
+    normal: [-0.5, -0.85] as [number, number],
   },
   {
     id: 4,
     name: 'Variante Ascari Exit',
-    center: [-37, 4] as [number, number],
-    width: 12.8,
+    center: [-39.1, 2.5] as [number, number],
+    width: 10.5,
     depth: 3.5,
-    normal: [-1, 0] as [number, number],
+    normal: [-1, -0.1] as [number, number],
   },
   {
     id: 5,
     name: 'Curva Parabolica Exit',
-    center: [-54, -25] as [number, number],
-    width: 12.8,
+    center: [-54.1, -24.5] as [number, number],
+    width: 10.5,
     depth: 3.5,
-    normal: [0.8, -0.6] as [number, number],
+    normal: [0.97, -0.25] as [number, number],
   },
 ];
 

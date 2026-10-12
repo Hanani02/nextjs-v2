@@ -19,7 +19,7 @@ import { useMultiplayer } from './useMultiplayer';
 import ArenaBloom from './ArenaBloom';
 import type { DriftSlicknessMode } from './carPhysics';
 import { playCheckpointChime, playFinishChime } from '@/lib/circuitAudio';
-import type { LeaderboardEntry } from '@/types/vehicle';
+import type { LeaderboardEntry, GraphicsQuality } from '@/types/vehicle';
 import { saveRaceRecord } from '@/lib/circuitLeaderboard';
 
 /**
@@ -205,6 +205,7 @@ export default function LandingPlayground() {
   // Handling & Sensitivity Settings State
   const [steeringSensitivity, setSteeringSensitivity] = useState<number>(1.0);
   const [driftSlickness, setDriftSlickness] = useState<DriftSlicknessMode>('slippery');
+  const [graphicsQuality, setGraphicsQuality] = useState<GraphicsQuality>('medium');
 
   // Monza Racing Circuit & Lap System State
   const [currentLap, setCurrentLap] = useState(1);
@@ -258,6 +259,10 @@ export default function LandingPlayground() {
       if (savedDrift && ['normal', 'slippery', 'hyper'].includes(savedDrift)) {
         setDriftSlickness(savedDrift);
       }
+      const savedQuality = localStorage.getItem('playground_graphics_quality') as GraphicsQuality;
+      if (savedQuality && ['low', 'medium', 'high'].includes(savedQuality)) {
+        setGraphicsQuality(savedQuality);
+      }
     } catch {
       // ignore
     }
@@ -288,6 +293,15 @@ export default function LandingPlayground() {
     setDriftSlickness(mode);
     try {
       localStorage.setItem('playground_drift_slickness', mode);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleUpdateGraphicsQuality = useCallback((quality: GraphicsQuality) => {
+    setGraphicsQuality(quality);
+    try {
+      localStorage.setItem('playground_graphics_quality', quality);
     } catch {
       // ignore
     }
@@ -428,16 +442,22 @@ export default function LandingPlayground() {
       <div className="absolute inset-0 z-0 pointer-events-none">
         <Canvas
           style={{ pointerEvents: 'none' }}
-          shadows
+          shadows={graphicsQuality !== 'low'}
           camera={{
             position: [0, 19, 0],
             fov: 48,
             near: 0.1,
             far: 240,
           }}
-          dpr={[1, typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1.5]}
+          dpr={
+            graphicsQuality === 'high'
+              ? [1, typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 2]
+              : graphicsQuality === 'medium'
+              ? [1, 1.5]
+              : [1, 1]
+          }
           gl={{
-            antialias: true,
+            antialias: graphicsQuality !== 'low',
             alpha: false,
             powerPreference: 'high-performance',
             toneMapping: THREE.ACESFilmicToneMapping,
@@ -457,30 +477,37 @@ export default function LandingPlayground() {
             />
 
             {/* Post-Processing Bloom for vibrant neon glow */}
-            <ArenaBloom strength={0.65} radius={0.35} threshold={0.82} />
+            <ArenaBloom
+              strength={graphicsQuality === 'high' ? 0.78 : graphicsQuality === 'medium' ? 0.45 : 0.18}
+              radius={graphicsQuality === 'high' ? 0.4 : 0.3}
+              threshold={0.82}
+            />
 
             {/* Ambient Stadium Lighting */}
-            <ambientLight intensity={1.15} color="#334155" />
+            <ambientLight
+              intensity={graphicsQuality === 'high' ? 1.25 : graphicsQuality === 'medium' ? 1.1 : 0.95}
+              color="#334155"
+            />
 
             {/* Main Floodlight */}
             <directionalLight
               position={[25, 45, -10]}
-              intensity={2.4}
+              intensity={graphicsQuality === 'high' ? 2.8 : graphicsQuality === 'medium' ? 2.1 : 1.6}
               color="#ffffff"
-              castShadow
-              shadow-mapSize-width={1024}
-              shadow-mapSize-height={1024}
+              castShadow={graphicsQuality !== 'low'}
+              shadow-mapSize-width={graphicsQuality === 'high' ? 2048 : 1024}
+              shadow-mapSize-height={graphicsQuality === 'high' ? 2048 : 1024}
               shadow-camera-near={0.5}
               shadow-camera-far={120}
               shadow-camera-left={-70}
               shadow-camera-right={70}
               shadow-camera-top={50}
               shadow-camera-bottom={-50}
-              shadow-bias={-0.0005}
+              shadow-bias={0.0001}
             />
 
             {/* Full 3D Autodromo Nazionale Monza Circuit */}
-            <NeonCircuitArena activeCheckpoint={activeCheckpoint} />
+            <NeonCircuitArena activeCheckpoint={activeCheckpoint} graphicsQuality={graphicsQuality} />
 
             {/* Checkpoint & Lap Progress Tracker */}
             <MonzaRaceTracker
@@ -510,6 +537,7 @@ export default function LandingPlayground() {
               activeEmote={selfEmote && selfEmote.expiresAt > Date.now() ? selfEmote.text : null}
               steeringSensitivity={steeringSensitivity}
               driftSlickness={driftSlickness}
+              graphicsQuality={graphicsQuality}
               onPositionUpdate={handleCarPositionUpdate}
               onPhysicsBroadcast={broadcastCarState}
               raceTelemetry={{
@@ -550,6 +578,8 @@ export default function LandingPlayground() {
         onUpdateSensitivity={handleUpdateSensitivity}
         driftSlickness={driftSlickness}
         onUpdateDriftSlickness={handleUpdateDriftSlickness}
+        graphicsQuality={graphicsQuality}
+        onUpdateGraphicsQuality={handleUpdateGraphicsQuality}
         visible={isAtPlayground}
       />
 
@@ -583,6 +613,8 @@ export default function LandingPlayground() {
         onUpdateSensitivity={handleUpdateSensitivity}
         driftSlickness={driftSlickness}
         onUpdateDriftSlickness={handleUpdateDriftSlickness}
+        graphicsQuality={graphicsQuality}
+        onUpdateGraphicsQuality={handleUpdateGraphicsQuality}
         onSelectModel={setCarModel}
         onSelectColor={setCarColor}
         onUpdateUsername={setUsername}

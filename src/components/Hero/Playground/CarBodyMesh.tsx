@@ -2,13 +2,14 @@
 
 import { useRef } from 'react';
 import * as THREE from 'three';
-import type { CarModelType } from '@/types/vehicle';
+import type { CarModelType, GraphicsQuality } from '@/types/vehicle';
 
 interface CarBodyMeshProps {
   model: CarModelType;
   color: string;
   isDrifting?: boolean;
   isBraking?: boolean;
+  graphicsQuality?: GraphicsQuality;
 }
 
 export default function CarBodyMesh({
@@ -16,9 +17,16 @@ export default function CarBodyMesh({
   color,
   isDrifting = false,
   isBraking = false,
+  graphicsQuality = 'medium',
 }: CarBodyMeshProps) {
-  // Common materials tuned to the chosen neon palette
-  const neonGlowIntensity = isDrifting ? 1.8 : 0.8;
+  // Dynamic material reflection & detail based on graphics settings
+  const bodyRoughness =
+    graphicsQuality === 'high' ? 0.18 : graphicsQuality === 'medium' ? 0.60 : 0.85;
+  const bodyMetalness =
+    graphicsQuality === 'high' ? 0.78 : graphicsQuality === 'medium' ? 0.28 : 0.10;
+  const glowMultiplier =
+    graphicsQuality === 'high' ? 1.25 : graphicsQuality === 'medium' ? 0.85 : 0.5;
+  const neonGlowIntensity = (isDrifting ? 1.8 : 0.8) * glowMultiplier;
 
   if (model === 'truck') {
     // ─────────────────────────────────────────────────────────────
@@ -39,8 +47,8 @@ export default function CarBodyMesh({
             color={color}
             emissive={color}
             emissiveIntensity={neonGlowIntensity * 0.3}
-            roughness={0.25}
-            metalness={0.65}
+            roughness={bodyRoughness}
+            metalness={bodyMetalness}
           />
         </mesh>
 
@@ -182,8 +190,8 @@ export default function CarBodyMesh({
             color={color}
             emissive={color}
             emissiveIntensity={neonGlowIntensity * 0.4}
-            roughness={0.3}
-            metalness={0.6}
+            roughness={bodyRoughness}
+            metalness={bodyMetalness}
           />
         </mesh>
 
@@ -303,8 +311,8 @@ export default function CarBodyMesh({
           color={color}
           emissive={color}
           emissiveIntensity={neonGlowIntensity * 0.35}
-          metalness={0.65}
-          roughness={0.22}
+          metalness={bodyMetalness}
+          roughness={bodyRoughness}
         />
       </mesh>
 
@@ -315,8 +323,8 @@ export default function CarBodyMesh({
           color={color}
           emissive={color}
           emissiveIntensity={neonGlowIntensity * 0.25}
-          metalness={0.65}
-          roughness={0.22}
+          metalness={bodyMetalness}
+          roughness={bodyRoughness}
         />
       </mesh>
 

@@ -65,3 +65,6 @@ export interface RaceCheckpoint {
   width: number;
   depth: number;
 }
+
+export type GraphicsQuality = 'low' | 'medium' | 'high';
+

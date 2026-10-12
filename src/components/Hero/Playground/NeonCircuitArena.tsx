@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import * as THREE from 'three';
+import type { GraphicsQuality } from '@/types/vehicle';
 import {
   MONZA_SAMPLED_POINTS,
   MONZA_CHECKPOINTS,
@@ -13,6 +14,7 @@ interface NeonCircuitArenaProps {
   boundsX?: number;
   boundsZ?: number;
   activeCheckpoint?: number;
+  graphicsQuality?: GraphicsQuality;
 }
 
 // Re-export checkpoints from the canonical Monza model
@@ -45,51 +47,97 @@ export const NITRO_BOOST_PADS: Array<{
  */
 export default function NeonCircuitArena({
   activeCheckpoint = 0,
+  graphicsQuality = 'medium',
 }: NeonCircuitArenaProps) {
   const points = MONZA_SAMPLED_POINTS;
-  const halfWidth = MONZA_TRACK_WIDTH / 2; // 2.8 units
+  const halfWidth = MONZA_TRACK_WIDTH / 2;
 
   // ─────────────────────────────────────────────────────────────
-  // 1. PROCEDURAL ASPHALT TEXTURE (Dark, high-grip racing surface)
+  // 1. PROCEDURAL ASPHALT TEXTURE (Scaled by Graphics Quality)
   // ─────────────────────────────────────────────────────────────
   const asphaltTexture = useMemo(() => {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 1024;
+    const size = graphicsQuality === 'high' ? 2048 : graphicsQuality === 'medium' ? 1024 : 512;
+    canvas.width = size;
+    canvas.height = size;
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.fillStyle = '#0a0d14';
-      ctx.fillRect(0, 0, 1024, 1024);
+      ctx.fillRect(0, 0, size, size);
 
-      // Fine asphalt pebble noise and racing groove
-      ctx.strokeStyle = '#121824';
-      ctx.lineWidth = 1;
-      const step = 32;
-      for (let x = 0; x <= 1024; x += step) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, 1024);
-        ctx.stroke();
-      }
-      for (let y = 0; y <= 1024; y += step) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(1024, y);
-        ctx.stroke();
-      }
+      if (graphicsQuality === 'high') {
+        // High Quality: Ultra-detailed aggregate pebbles, micro-tarmac cracks & dual rubber racing line
+        ctx.strokeStyle = 'rgba(26, 34, 52, 0.7)';
+        ctx.lineWidth = 1;
+        const step = 16;
+        for (let x = 0; x <= size; x += step) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, size);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= size; y += step) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(size, y);
+          ctx.stroke();
+        }
 
-      // Rubber racing line streaks
-      ctx.fillStyle = 'rgba(2, 6, 23, 0.45)';
-      ctx.fillRect(256, 0, 512, 1024);
+        // Multi-tone asphalt aggregate noise
+        for (let k = 0; k < 6000; k++) {
+          const rx = Math.random() * size;
+          const ry = Math.random() * size;
+          const brightness = Math.random() * 0.12 + 0.04;
+          ctx.fillStyle = `rgba(255, 255, 255, ${brightness.toFixed(3)})`;
+          ctx.fillRect(rx, ry, Math.random() * 2 + 1, Math.random() * 2 + 1);
+        }
+
+        // Deep rubberized racing groove streaks with soft gradient
+        const grad = ctx.createLinearGradient(0, 0, size, 0);
+        grad.addColorStop(0, 'rgba(10, 13, 20, 0.1)');
+        grad.addColorStop(0.25, 'rgba(2, 6, 23, 0.75)');
+        grad.addColorStop(0.5, 'rgba(2, 6, 23, 0.4)');
+        grad.addColorStop(0.75, 'rgba(2, 6, 23, 0.75)');
+        grad.addColorStop(1, 'rgba(10, 13, 20, 0.1)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, size, size);
+      } else if (graphicsQuality === 'medium') {
+        // Medium Quality: Standard asphalt grid and rubber streak
+        ctx.strokeStyle = '#121824';
+        ctx.lineWidth = 1;
+        const step = 32;
+        for (let x = 0; x <= size; x += step) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, size);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= size; y += step) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(size, y);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.45)';
+        ctx.fillRect(size * 0.25, 0, size * 0.5, size);
+      } else {
+        // Low Quality: Minimal lightweight texture
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.3)';
+        ctx.fillRect(size * 0.3, 0, size * 0.4, size);
+      }
     }
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(1, 48);
+    tex.repeat.set(1, graphicsQuality === 'high' ? 64 : 48);
+    if (graphicsQuality === 'high') {
+      tex.anisotropy = 16;
+    }
     return tex;
-  }, []);
+  }, [graphicsQuality]);
 
   // ─────────────────────────────────────────────────────────────
   // 2. MONZA ASPHALT ROAD RIBBON GEOMETRY
@@ -128,7 +176,15 @@ export default function NeonCircuitArena({
     geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
     geom.setIndex(indices);
-    geom.computeVertexNormals();
+
+    // Explicit UP normals (0, 1, 0) for perfectly uniform asphalt illumination without pinched fan artifacts
+    const normals = new Float32Array(positions.length);
+    for (let i = 0; i < positions.length / 3; i++) {
+      normals[i * 3] = 0;
+      normals[i * 3 + 1] = 1;
+      normals[i * 3 + 2] = 0;
+    }
+    geom.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     return geom;
   }, [points, halfWidth]);
 
@@ -184,7 +240,14 @@ export default function NeonCircuitArena({
     const geom = new THREE.BufferGeometry();
     geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geom.setIndex(indices);
-    geom.computeVertexNormals();
+
+    const normals = new Float32Array(positions.length);
+    for (let i = 0; i < positions.length / 3; i++) {
+      normals[i * 3] = 0;
+      normals[i * 3 + 1] = 1;
+      normals[i * 3 + 2] = 0;
+    }
+    geom.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
     return geom;
   }, [points, halfWidth]);
 
@@ -361,6 +424,19 @@ export default function NeonCircuitArena({
     return geom;
   }, [points, halfWidth]);
 
+  // Dynamic material reflection & detail based on graphics settings
+  const floorRoughness = graphicsQuality === 'high' ? 0.72 : graphicsQuality === 'medium' ? 0.90 : 0.96;
+  const floorMetalness = graphicsQuality === 'high' ? 0.20 : graphicsQuality === 'medium' ? 0.05 : 0.02;
+
+  const roadRoughness = graphicsQuality === 'high' ? 0.48 : graphicsQuality === 'medium' ? 0.85 : 0.94;
+  const roadMetalness = graphicsQuality === 'high' ? 0.32 : graphicsQuality === 'medium' ? 0.08 : 0.02;
+
+  const kerbRoughness = graphicsQuality === 'high' ? 0.25 : graphicsQuality === 'medium' ? 0.50 : 0.65;
+  const kerbMetalness = graphicsQuality === 'high' ? 0.25 : graphicsQuality === 'medium' ? 0.10 : 0.05;
+
+  const barrierRoughness = graphicsQuality === 'high' ? 0.28 : graphicsQuality === 'medium' ? 0.50 : 0.65;
+  const barrierMetalness = graphicsQuality === 'high' ? 0.25 : graphicsQuality === 'medium' ? 0.10 : 0.05;
+
   return (
     <group position={[0, -0.01, 0]}>
       {/* ─────────────────────────────────────────────────────────────
@@ -369,7 +445,7 @@ export default function NeonCircuitArena({
       {/* Expansive Surrounding Arena Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.02, 5]}>
         <planeGeometry args={[220, 140]} />
-        <meshStandardMaterial color="#050811" roughness={0.9} metalness={0.1} />
+        <meshStandardMaterial color="#050811" roughness={floorRoughness} metalness={floorMetalness} />
       </mesh>
 
       {/* Monza Dark Asphalt Ribbon */}
@@ -377,8 +453,8 @@ export default function NeonCircuitArena({
         <meshStandardMaterial
           map={asphaltTexture || undefined}
           color="#0c101a"
-          roughness={0.7}
-          metalness={0.25}
+          roughness={roadRoughness}
+          metalness={roadMetalness}
         />
       </mesh>
 
@@ -389,12 +465,12 @@ export default function NeonCircuitArena({
 
       {/* F1 Red & White Alternating Kerbs */}
       <mesh geometry={kerbsGeom} castShadow receiveShadow>
-        <meshStandardMaterial vertexColors roughness={0.35} metalness={0.15} />
+        <meshStandardMaterial vertexColors roughness={kerbRoughness} metalness={kerbMetalness} />
       </mesh>
 
       {/* Continuous 3D Rectangular Connected Barriers (Alternating Red & White) */}
       <mesh geometry={barriersGeom} castShadow receiveShadow>
-        <meshStandardMaterial vertexColors roughness={0.35} metalness={0.2} side={THREE.DoubleSide} />
+        <meshStandardMaterial vertexColors roughness={barrierRoughness} metalness={barrierMetalness} side={THREE.DoubleSide} />
       </mesh>
 
       {/* ─────────────────────────────────────────────────────────────

@@ -4,11 +4,14 @@ import { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 
+import type { GraphicsQuality } from '@/types/vehicle';
+
 interface TireSkidmarksProps {
   carPosRef: React.RefObject<THREE.Vector3>;
   headingRef: React.RefObject<number>;
   speedRef: React.RefObject<number>;
   isDriftingRef: React.RefObject<boolean>;
+  graphicsQuality?: GraphicsQuality;
 }
 
 const MAX_SKID_MARKS = 140;
@@ -26,6 +29,7 @@ export default function TireSkidmarks({
   headingRef,
   speedRef,
   isDriftingRef,
+  graphicsQuality = 'medium',
 }: TireSkidmarksProps) {
   const meshRef = useRef<THREE.InstancedMesh>(null!);
   const lastSpawnPos = useRef<THREE.Vector3>(new THREE.Vector3());
@@ -33,16 +37,17 @@ export default function TireSkidmarks({
   const dummyMatrix = useMemo(() => new THREE.Matrix4(), []);
   const dummyColor = useMemo(() => new THREE.Color(), []);
 
-  // Ring buffer pool
+  // Ring buffer pool with quality-dependent lifespan
+  const skidLife = graphicsQuality === 'high' ? 6.5 : graphicsQuality === 'medium' ? 4.5 : 2.2;
   const skidData = useMemo<SkidMarkItem[]>(() => {
     return Array.from({ length: MAX_SKID_MARKS }, () => ({
       pos: new THREE.Vector3(0, -100, 0),
       heading: 0,
       life: 0,
-      maxLife: 5.5,
+      maxLife: skidLife,
       active: false,
     }));
-  }, []);
+  }, [skidLife]);
 
   // Initialize all instances parked off-screen
   useEffect(() => {

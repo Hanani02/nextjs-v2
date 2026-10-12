@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { CarControls } from './useKeyboardControls';
 import SoundToggle from '@/components/theme/SoundToggle';
 import type { DriftSlicknessMode } from './carPhysics';
+import type { GraphicsQuality } from '@/types/vehicle';
 import {
   LuRotateCcw,
   LuGamepad2,
@@ -12,6 +13,7 @@ import {
   LuX,
   LuFlame,
   LuGauge,
+  LuMonitor,
 } from 'react-icons/lu';
 
 export const QUICK_EMOTES = [
@@ -33,6 +35,8 @@ interface PlaygroundHUDProps {
   onUpdateSensitivity?: (val: number) => void;
   driftSlickness?: DriftSlicknessMode;
   onUpdateDriftSlickness?: (mode: DriftSlicknessMode) => void;
+  graphicsQuality?: GraphicsQuality;
+  onUpdateGraphicsQuality?: (quality: GraphicsQuality) => void;
   visible: boolean;
 }
 
@@ -45,6 +49,8 @@ export default function PlaygroundHUD({
   onUpdateSensitivity,
   driftSlickness = 'slippery',
   onUpdateDriftSlickness,
+  graphicsQuality = 'medium',
+  onUpdateGraphicsQuality,
   visible,
 }: PlaygroundHUDProps) {
   // Drive instruction badge can be minimized into a compact icon button
@@ -306,6 +312,46 @@ export default function PlaygroundHUD({
             </div>
             <p className="text-[9px] text-gray-400 leading-tight pt-0.5">
               💡 Tekan <strong>Spacebar</strong> di tikungan untuk mengepot licin dan menjaga kecepatan!
+            </p>
+          </div>
+
+          {/* Graphics Quality (Grafis: Low, Medium, High) */}
+          <div className="space-y-1.5 border-t border-border/40 pt-2.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-gray-300 font-medium flex items-center gap-1">
+                <LuMonitor className="w-3 h-3 text-emerald-400" />
+                <span>Kualitas Grafis:</span>
+              </span>
+              <span className="font-mono text-[10px] text-emerald-300 uppercase font-bold">
+                {graphicsQuality}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              {[
+                { id: 'low' as GraphicsQuality, label: 'Low', sub: 'Hemat FPS' },
+                { id: 'medium' as GraphicsQuality, label: 'Medium', sub: 'Seimbang' },
+                { id: 'high' as GraphicsQuality, label: 'High', sub: 'Ultra Detail' },
+              ].map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => onUpdateGraphicsQuality?.(g.id)}
+                  className={`py-1.5 rounded-xl text-[10px] font-bold border transition flex flex-col items-center cursor-pointer ${
+                    graphicsQuality === g.id
+                      ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-sm'
+                      : 'bg-neutral-900 border-border/40 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <span>{g.label}</span>
+                  <span className="text-[8px] font-normal opacity-75">{g.sub}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-[9px] text-gray-400 leading-tight pt-0.5">
+              {graphicsQuality === 'low'
+                ? '⚡ Low: Partikel sedikit & asap tipis.'
+                : graphicsQuality === 'medium'
+                ? '⚖️ Medium: Refleksi cahaya lembut & seimbang.'
+                : '✨ High: Tekstur ultra tajam, partikel padat & pantulan wet-track.'}
             </p>
           </div>
         </div>

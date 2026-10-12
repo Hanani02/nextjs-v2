@@ -12,8 +12,9 @@ import {
   LuSlidersHorizontal,
   LuFlame,
   LuGauge,
+  LuMonitor,
 } from 'react-icons/lu';
-import { CAR_COLORS, type CarModelType } from '@/types/vehicle';
+import { CAR_COLORS, type CarModelType, type GraphicsQuality } from '@/types/vehicle';
 import type { DriftSlicknessMode } from './carPhysics';
 
 interface GarageMenuProps {
@@ -28,6 +29,8 @@ interface GarageMenuProps {
   onUpdateSensitivity?: (val: number) => void;
   driftSlickness?: DriftSlicknessMode;
   onUpdateDriftSlickness?: (mode: DriftSlicknessMode) => void;
+  graphicsQuality?: GraphicsQuality;
+  onUpdateGraphicsQuality?: (quality: GraphicsQuality) => void;
   onSelectModel: (model: CarModelType) => void;
   onSelectColor: (color: string) => void;
   onUpdateUsername: (name: string) => void;
@@ -84,6 +87,8 @@ export default function GarageMenu({
   onUpdateSensitivity,
   driftSlickness = 'slippery',
   onUpdateDriftSlickness,
+  graphicsQuality = 'medium',
+  onUpdateGraphicsQuality,
   onSelectModel,
   onSelectColor,
   onUpdateUsername,
@@ -461,6 +466,39 @@ export default function GarageMenu({
                         }`}
                       >
                         {mode.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Kualitas Grafis (Graphics Quality: Low, Medium, High) */}
+                <div className="space-y-1.5 border-t border-border/40 pt-2">
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-gray-300 font-medium flex items-center gap-1">
+                      <LuMonitor className="w-3 h-3 text-emerald-400" />
+                      <span>Kualitas Grafis:</span>
+                    </span>
+                    <span className="font-mono text-[9px] text-emerald-300 uppercase font-bold">
+                      {graphicsQuality}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1">
+                    {[
+                      { id: 'low' as GraphicsQuality, label: 'Low', sub: 'Hemat FPS' },
+                      { id: 'medium' as GraphicsQuality, label: 'Medium', sub: 'Seimbang' },
+                      { id: 'high' as GraphicsQuality, label: 'High', sub: 'Ultra Detail' },
+                    ].map((g) => (
+                      <button
+                        key={g.id}
+                        onClick={() => onUpdateGraphicsQuality?.(g.id)}
+                        className={`py-1 rounded-lg text-[9px] font-bold border transition flex flex-col items-center cursor-pointer ${
+                          graphicsQuality === g.id
+                            ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-sm'
+                            : 'bg-neutral-900 border-border/40 text-gray-400 hover:text-white'
+                        }`}
+                      >
+                        <span>{g.label}</span>
+                        <span className="text-[7.5px] font-normal opacity-75">{g.sub}</span>
                       </button>
                     ))}
                   </div>

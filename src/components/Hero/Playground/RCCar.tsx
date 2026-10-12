@@ -4,7 +4,7 @@ import { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import type { CarControls } from './useKeyboardControls';
-import type { CarModelType } from '@/types/vehicle';
+import type { CarModelType, GraphicsQuality } from '@/types/vehicle';
 import CarBodyMesh from './CarBodyMesh';
 import CarWheels from './CarWheels';
 import CarUsernameBadge from './CarUsernameBadge';
@@ -26,6 +26,7 @@ interface RCCarProps {
   activeEmote?: string | null;
   steeringSensitivity?: number;
   driftSlickness?: DriftSlicknessMode;
+  graphicsQuality?: GraphicsQuality;
   onPositionUpdate?: (pos: THREE.Vector3, heading?: number, speed?: number) => void;
   onPhysicsBroadcast?: (state: {
     x: number;
@@ -63,6 +64,7 @@ export default function RCCar({
   activeEmote,
   steeringSensitivity = 1.0,
   driftSlickness = 'slippery',
+  graphicsQuality = 'medium',
   onPositionUpdate,
   onPhysicsBroadcast,
   raceTelemetry,
@@ -81,8 +83,8 @@ export default function RCCar({
   const speedRef = useRef(0);
   const isDriftingRef = useRef(false);
 
-  // Particles system (48 instances for drift smoke and sparks)
-  const maxParticles = 48;
+  // Particles system scaled by Graphics Quality (Low: 14 minimal, Med: 44, High: 72 dense)
+  const maxParticles = graphicsQuality === 'high' ? 72 : graphicsQuality === 'medium' ? 44 : 14;
   const particlesRef = useRef<THREE.InstancedMesh>(null!);
   const particleData = useMemo(() => {
     return Array.from({ length: maxParticles }, () => ({
@@ -236,13 +238,22 @@ export default function RCCar({
           }
           particlesRef.current.setColorAt(i, dummyColor);
         } else if (isEmitting) {
-          if (p.isDrifting && Math.random() < 0.7) {
+          const driftSpawnChance =
+            graphicsQuality === 'high' ? 0.90 : graphicsQuality === 'medium' ? 0.70 : 0.32;
+          const sparkChance =
+            graphicsQuality === 'high' ? 0.45 : graphicsQuality === 'medium' ? 0.30 : 0.0;
+          const smokeBaseSize =
+            graphicsQuality === 'high' ? 0.28 : graphicsQuality === 'medium' ? 0.22 : 0.10;
+          const smokeBaseLife =
+            graphicsQuality === 'high' ? 0.75 : graphicsQuality === 'medium' ? 0.60 : 0.35;
+
+          if (p.isDrifting && Math.random() < driftSpawnChance) {
             // Spawn drift smoke or neon sparks
-            const isSpark = Math.random() < 0.35;
+            const isSpark = sparkChance > 0 && Math.random() < sparkChance;
             pt.type = isSpark ? 'spark' : 'smoke';
-            pt.life = isSpark ? 0.3 : 0.6;
+            pt.life = isSpark ? 0.3 : smokeBaseLife;
             pt.maxLife = pt.life;
-            pt.size = isSpark ? 0.08 : 0.22;
+            pt.size = isSpark ? 0.08 : smokeBaseSize;
 
             const sideOffset = (Math.random() > 0.5 ? 1 : -1) * 0.45;
             const rearOffset = new THREE.Vector3(
@@ -263,12 +274,12 @@ export default function RCCar({
             particlesRef.current.setMatrixAt(i, dummyMatrix);
             dummyColor.set(isSpark ? '#f59e0b' : color);
             particlesRef.current.setColorAt(i, dummyColor);
-          } else if (Math.random() < 0.25) {
+          } else if (Math.random() < (graphicsQuality === 'low' ? 0.08 : 0.25)) {
             // Gentle standard tire dust
             pt.type = 'smoke';
-            pt.life = 0.5;
-            pt.maxLife = 0.5;
-            pt.size = 0.1;
+            pt.life = smokeBaseLife * 0.8;
+            pt.maxLife = pt.life;
+            pt.size = smokeBaseSize * 0.6;
 
             const sideOffset = (Math.random() > 0.5 ? 1 : -1) * 0.4;
             const rearOffset = new THREE.Vector3(
@@ -304,6 +315,9 @@ export default function RCCar({
     }
   });
 
+  const particleOpacity =
+    graphicsQuality === 'high' ? 0.78 : graphicsQuality === 'medium' ? 0.52 : 0.22;
+
   return (
     <>
       <group ref={carGroup} position={[0, 0.08, -25]} rotation={[0, Math.PI / 2, 0]}>
@@ -325,6 +339,7 @@ export default function RCCar({
             color={color}
             isDrifting={physics.current.isDrifting}
             isBraking={physics.current.isBraking}
+            graphicsQuality={graphicsQuality}
           />
         </group>
 
@@ -341,7 +356,7 @@ export default function RCCar({
           position={[-0.32, 0.28, 0.85]}
           target-position={[-0.15, 0, 8.5]}
           color="#f0f9ff"
-          intensity={2.8}
+          intensity={graphicsQuality === 'high' ? 3.2 : 2.5}
           angle={0.52}
           penumbra={0.65}
           distance={10.0}
@@ -350,7 +365,7 @@ export default function RCCar({
           position={[0.32, 0.28, 0.85]}
           target-position={[0.15, 0, 8.5]}
           color="#f0f9ff"
-          intensity={2.8}
+          intensity={graphicsQuality === 'high' ? 3.2 : 2.5}
           angle={0.52}
           penumbra={0.65}
           distance={10.0}
@@ -363,6 +378,7 @@ export default function RCCar({
         headingRef={headingRef}
         speedRef={speedRef}
         isDriftingRef={isDriftingRef}
+        graphicsQuality={graphicsQuality}
       />
 
       {/* Instanced Drift Smoke & Sparks */}
@@ -374,7 +390,7 @@ export default function RCCar({
         <sphereGeometry args={[1, 6, 6]} />
         <meshBasicMaterial
           transparent
-          opacity={0.65}
+          opacity={particleOpacity}
           depthWrite={false}
         />
       </instancedMesh>
