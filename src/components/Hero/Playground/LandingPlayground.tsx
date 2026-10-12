@@ -17,6 +17,7 @@ import PlaygroundHUD from './PlaygroundHUD';
 import GarageMenu from './GarageMenu';
 import { useMultiplayer } from './useMultiplayer';
 import ArenaBloom from './ArenaBloom';
+import type { DriftSlicknessMode } from './carPhysics';
 import { playCheckpointChime, playFinishChime } from '@/lib/circuitAudio';
 import type { LeaderboardEntry } from '@/types/vehicle';
 import { saveRaceRecord } from '@/lib/circuitLeaderboard';
@@ -201,6 +202,10 @@ export default function LandingPlayground() {
   const [isAtPlayground, setIsAtPlayground] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
 
+  // Handling & Sensitivity Settings State
+  const [steeringSensitivity, setSteeringSensitivity] = useState<number>(1.0);
+  const [driftSlickness, setDriftSlickness] = useState<DriftSlicknessMode>('slippery');
+
   // Monza Racing Circuit & Lap System State
   const [currentLap, setCurrentLap] = useState(1);
   const [activeCheckpoint, setActiveCheckpoint] = useState(1);
@@ -240,6 +245,23 @@ export default function LandingPlayground() {
   useEffect(() => {
     setMounted(true);
 
+    // Load saved handling and sensitivity preferences
+    try {
+      const savedSens = localStorage.getItem('playground_steering_sens');
+      if (savedSens) {
+        const val = parseFloat(savedSens);
+        if (!isNaN(val) && val >= 0.5 && val <= 1.5) {
+          setSteeringSensitivity(val);
+        }
+      }
+      const savedDrift = localStorage.getItem('playground_drift_slickness') as DriftSlicknessMode;
+      if (savedDrift && ['normal', 'slippery', 'hyper'].includes(savedDrift)) {
+        setDriftSlickness(savedDrift);
+      }
+    } catch {
+      // ignore
+    }
+
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsAtPlayground(scrollY < 80);
@@ -251,6 +273,24 @@ export default function LandingPlayground() {
     handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handleUpdateSensitivity = useCallback((val: number) => {
+    setSteeringSensitivity(val);
+    try {
+      localStorage.setItem('playground_steering_sens', String(val));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleUpdateDriftSlickness = useCallback((mode: DriftSlicknessMode) => {
+    setDriftSlickness(mode);
+    try {
+      localStorage.setItem('playground_drift_slickness', mode);
+    } catch {
+      // ignore
+    }
   }, []);
 
   const handleCarPositionUpdate = useCallback(
@@ -390,10 +430,10 @@ export default function LandingPlayground() {
           style={{ pointerEvents: 'none' }}
           shadows
           camera={{
-            position: [0, 4, -30],
-            fov: 50,
+            position: [0, 19, 0],
+            fov: 48,
             near: 0.1,
-            far: 220,
+            far: 240,
           }}
           dpr={[1, typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1.5]}
           gl={{
@@ -408,7 +448,7 @@ export default function LandingPlayground() {
           }}
         >
           <Suspense fallback={null}>
-            {/* Third-Person Follow Camera with Smooth Lerp Damping */}
+            {/* Elevated Wide Tracking Camera (Kamera Seperti Sebelumnya) */}
             <FollowCamera
               carPosRef={carPositionRef}
               carHeadingRef={carHeadingRef}
@@ -468,6 +508,8 @@ export default function LandingPlayground() {
               color={carColor}
               username={username}
               activeEmote={selfEmote && selfEmote.expiresAt > Date.now() ? selfEmote.text : null}
+              steeringSensitivity={steeringSensitivity}
+              driftSlickness={driftSlickness}
               onPositionUpdate={handleCarPositionUpdate}
               onPhysicsBroadcast={broadcastCarState}
               raceTelemetry={{
@@ -497,13 +539,17 @@ export default function LandingPlayground() {
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          3. RESPONSIVE HUD OVERLAY (Instructions, Keys, Mobile Controls)
+          3. RESPONSIVE HUD OVERLAY (Instructions, Keys, Mobile Controls, Tuning)
       ───────────────────────────────────────────────────────────── */}
       <PlaygroundHUD
         controls={controls}
         onResetCar={handleRestartRace}
         onSetControl={setControlState}
         onSendEmote={sendQuickEmote}
+        steeringSensitivity={steeringSensitivity}
+        onUpdateSensitivity={handleUpdateSensitivity}
+        driftSlickness={driftSlickness}
+        onUpdateDriftSlickness={handleUpdateDriftSlickness}
         visible={isAtPlayground}
       />
 
@@ -523,7 +569,7 @@ export default function LandingPlayground() {
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          5. GARAGE MENU UI (Vehicle Model, Neon Palette, Username)
+          5. GARAGE MENU UI (Vehicle Model, Neon Palette, Username, Handling)
       ───────────────────────────────────────────────────────────── */}
       <GarageMenu
         currentModel={carModel}
@@ -533,6 +579,10 @@ export default function LandingPlayground() {
         maxPlayers={roomState.maxPlayers}
         isSpectator={roomState.isSpectator}
         roomStatus={roomState.status}
+        steeringSensitivity={steeringSensitivity}
+        onUpdateSensitivity={handleUpdateSensitivity}
+        driftSlickness={driftSlickness}
+        onUpdateDriftSlickness={handleUpdateDriftSlickness}
         onSelectModel={setCarModel}
         onSelectColor={setCarColor}
         onUpdateUsername={setUsername}

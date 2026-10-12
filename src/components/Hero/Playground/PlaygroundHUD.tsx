@@ -1,15 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { CarControls } from './useKeyboardControls';
 import SoundToggle from '@/components/theme/SoundToggle';
+import type { DriftSlicknessMode } from './carPhysics';
 import {
   LuRotateCcw,
-  LuSparkles,
   LuGamepad2,
-  LuFlame,
   LuMinimize2,
-  LuZap,
+  LuSlidersHorizontal,
+  LuX,
+  LuFlame,
+  LuGauge,
 } from 'react-icons/lu';
 
 export const QUICK_EMOTES = [
@@ -27,6 +29,10 @@ interface PlaygroundHUDProps {
   onRespawnCoins?: () => void;
   onSetControl: (key: keyof CarControls, val: boolean) => void;
   onSendEmote?: (emote: string) => void;
+  steeringSensitivity?: number;
+  onUpdateSensitivity?: (val: number) => void;
+  driftSlickness?: DriftSlicknessMode;
+  onUpdateDriftSlickness?: (mode: DriftSlicknessMode) => void;
   visible: boolean;
 }
 
@@ -35,10 +41,15 @@ export default function PlaygroundHUD({
   onResetCar,
   onSetControl,
   onSendEmote,
+  steeringSensitivity = 1.0,
+  onUpdateSensitivity,
+  driftSlickness = 'slippery',
+  onUpdateDriftSlickness,
   visible,
 }: PlaygroundHUDProps) {
   // Drive instruction badge can be minimized into a compact icon button
   const [driveGuideMinimized, setDriveGuideMinimized] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     try {
@@ -56,7 +67,6 @@ export default function PlaygroundHUD({
     if (!visible || !onSendEmote) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
       if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
 
       const found = QUICK_EMOTES.find((item) => item.key === e.key);
@@ -81,7 +91,6 @@ export default function PlaygroundHUD({
 
   /**
    * Helper to bind touch and mouse events safely with multi-touch support
-   * and prevent default browser zooming/scrolling behavior.
    */
   const bindTouchHandlers = (key: keyof CarControls) => ({
     onTouchStart: (e: React.TouchEvent) => {
@@ -109,13 +118,12 @@ export default function PlaygroundHUD({
           : 'opacity-0 -translate-y-6 pointer-events-none'
       }`}
     >
-
       {/* ─────────────────────────────────────────────────────────────
           1. TOP HUD BAR: Responsive Header on both mobile and desktop
       ───────────────────────────────────────────────────────────── */}
       <div className="w-full flex items-center justify-between gap-2 pt-16 sm:pt-18 select-none">
-        {/* Left: Minimizable driving & drift instruction badge + Reset + Sound */}
-        <div className="flex items-center gap-2 pointer-events-auto">
+        {/* Left: Minimizable driving & drift instruction badge + Reset + Tuning Settings + Sound */}
+        <div className="flex items-center gap-2 pointer-events-auto flex-wrap">
           {driveGuideMinimized ? (
             /* Minimized Icon Button */
             <button
@@ -154,10 +162,10 @@ export default function PlaygroundHUD({
                 </div>
                 {/* Mobile compact prompt */}
                 <div className="flex sm:hidden items-center gap-1 text-[11px] font-bold text-cyan-300">
-                  <span>Neon Circuit • RC Drift</span>
+                  <span>Autodromo Monza • Drift</span>
                 </div>
                 <p className="text-[10px] sm:text-[11px] text-gray-400 hidden sm:block">
-                  Mini Circuit • Drift & selesaikan 3 lap untuk rekor terbaik!
+                  Monza Circuit • Drift licin & selesaikan 3 lap!
                 </p>
               </div>
 
@@ -172,10 +180,24 @@ export default function PlaygroundHUD({
             </div>
           )}
 
+          {/* Quick Tuning / Sensitivity Settings Modal Trigger */}
+          <button
+            onClick={() => setShowSettings((prev) => !prev)}
+            title="Pengaturan Sensitivitas Kemudi & Kelicinan Drift"
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-2xl border text-[11px] sm:text-xs font-semibold backdrop-blur-xl shadow-lg transition active:scale-95 cursor-pointer ${
+              showSettings
+                ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                : 'bg-neutral-950/85 hover:bg-neutral-900 border-border/80 hover:border-cyan-400 text-gray-300 hover:text-cyan-400'
+            }`}
+          >
+            <LuSlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Tuning ({Math.round(steeringSensitivity * 100)}%)</span>
+          </button>
+
           {/* Reset Car Position */}
           <button
             onClick={onResetCar}
-            title="Reset posisi mobil ke garis Start/Finish"
+            title="Reset posisi mobil ke garis Start/Finish Monza"
             className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-2xl bg-neutral-950/85 hover:bg-neutral-900 border border-border/80 hover:border-cyan-400 text-gray-300 hover:text-cyan-400 text-[11px] sm:text-xs font-semibold backdrop-blur-xl shadow-lg transition active:scale-95 cursor-pointer"
           >
             <LuRotateCcw className="w-3.5 h-3.5" />
@@ -186,9 +208,108 @@ export default function PlaygroundHUD({
           <SoundToggle size="sm" />
         </div>
 
-        {/* Right side is reserved for the live transparent Race Leaderboard */}
+        {/* Right side spacer */}
         <div className="w-1" />
       </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          TUNING & SENSITIVITY FLOATING SETTINGS MODAL
+      ───────────────────────────────────────────────────────────── */}
+      {showSettings && (
+        <div className="absolute top-28 sm:top-32 left-3 sm:left-6 z-50 pointer-events-auto w-[290px] sm:w-[320px] rounded-2xl bg-neutral-950/95 border border-cyan-500/40 backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.85)] p-3.5 space-y-3.5 animate-in fade-in zoom-in-95 duration-200 select-none">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-border/40 pb-2">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-white">
+              <LuGauge className="w-4 h-4 text-cyan-400" />
+              <span>Handling & Sensitivitas</span>
+            </div>
+            <button
+              onClick={() => setShowSettings(false)}
+              className="w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-white hover:bg-neutral-800 transition cursor-pointer"
+            >
+              <LuX className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Steering Sensitivity Slider */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-gray-300 font-medium">Sensitivitas Kemudi:</span>
+              <span className="font-mono font-bold text-cyan-400 bg-cyan-950/80 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                {Math.round(steeringSensitivity * 100)}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0.5"
+              max="1.5"
+              step="0.05"
+              value={steeringSensitivity}
+              onChange={(e) => onUpdateSensitivity?.(parseFloat(e.target.value))}
+              className="w-full h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+            />
+            {/* Quick preset chips */}
+            <div className="flex items-center justify-between gap-1 pt-1">
+              {[
+                { label: 'Santai', val: 0.75 },
+                { label: 'Normal', val: 1.0 },
+                { label: 'Agresif', val: 1.35 },
+              ].map((p) => (
+                <button
+                  key={p.label}
+                  onClick={() => onUpdateSensitivity?.(p.val)}
+                  className={`flex-1 py-1 rounded-lg text-[10px] font-semibold border transition ${
+                    Math.abs(steeringSensitivity - p.val) < 0.05
+                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                      : 'bg-neutral-900 border-border/40 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {p.label} ({Math.round(p.val * 100)}%)
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Drift Slickness Mode (Kelicinan Drift) */}
+          <div className="space-y-1.5 border-t border-border/40 pt-2.5">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="text-gray-300 font-medium flex items-center gap-1">
+                <LuFlame className="w-3 h-3 text-rose-400" />
+                <span>Kelicinan Drift (Spacebar):</span>
+              </span>
+              <span className="font-mono text-[10px] text-rose-300 capitalize font-bold">
+                {driftSlickness === 'hyper'
+                  ? 'Hyper Slick'
+                  : driftSlickness === 'slippery'
+                  ? 'Licin (Default)'
+                  : 'Standar'}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              {[
+                { id: 'normal' as DriftSlicknessMode, label: 'Standar' },
+                { id: 'slippery' as DriftSlicknessMode, label: 'Licin' },
+                { id: 'hyper' as DriftSlicknessMode, label: 'Hyper Licin' },
+              ].map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => onUpdateDriftSlickness?.(mode.id)}
+                  className={`py-1.5 rounded-xl text-[10px] font-bold border transition ${
+                    driftSlickness === mode.id
+                      ? 'bg-rose-500/20 border-rose-400 text-rose-300 shadow-sm'
+                      : 'bg-neutral-900 border-border/40 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[9px] text-gray-400 leading-tight pt-0.5">
+              💡 Tekan <strong>Spacebar</strong> di tikungan untuk mengepot licin dan menjaga kecepatan!
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ─────────────────────────────────────────────────────────────
           QUICK CHAT & EMOTES BAR (Accessible via Click or Keys 1-4)
@@ -214,7 +335,6 @@ export default function PlaygroundHUD({
 
       {/* ─────────────────────────────────────────────────────────────
           2. DESKTOP KEYBOARD VISUALIZER (Positioned Bottom-Left on desktop)
-             Leaves the center of the screen clean and unobstructed!
       ───────────────────────────────────────────────────────────── */}
       <div className="hidden md:flex absolute bottom-6 left-6 pointer-events-none select-none z-30">
         <div className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-neutral-950/80 border border-border/50 backdrop-blur-xl shadow-2xl pointer-events-auto">
@@ -260,103 +380,89 @@ export default function PlaygroundHUD({
             </div>
           </div>
 
-          <div className="w-[1px] h-9 bg-border/40 mx-1.5" />
+          <div className="h-9 w-px bg-border/40 mx-1" />
 
-          {/* Space / Drift Handbrake */}
-          <span
-            className={`px-3 h-7 rounded-lg flex items-center justify-center font-mono font-semibold text-[11px] border transition-all whitespace-nowrap ${
-              controls.brake
-                ? 'bg-rose-500 text-white border-rose-400 shadow-[0_0_14px_rgba(244,63,94,0.9)] scale-95'
-                : 'bg-neutral-900 text-gray-300 border-border/60'
-            }`}
-          >
-            SPACE [Drift]
-          </span>
+          {/* Spacebar for Drift */}
+          <div className="flex flex-col items-center gap-1">
+            <span
+              className={`px-3 py-1.5 rounded-lg flex items-center justify-center font-mono font-bold text-[10px] tracking-wider border transition-all ${
+                controls.brake
+                  ? 'bg-rose-500 text-white border-rose-400 shadow-[0_0_16px_rgba(244,63,94,0.9)] scale-95'
+                  : 'bg-neutral-900 text-gray-300 border-border/60'
+              }`}
+            >
+              SPACE DRIFT
+            </span>
+            <span className="text-[9px] text-gray-400 font-mono">Rem Tangan</span>
+          </div>
         </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          3. ERGONOMIC MOBILE DUAL-THUMB GAMEPAD CONTROLLER
-             - Left Thumb: Kemudi Belok Kiri & Belok Kanan
-             - Right Thumb: Pedal GAS (Maju), Pedal MUNDUR / REM, & Pedal HANDBRAKE DRIFT
+          3. MOBILE ON-SCREEN TOUCH CONTROLS (D-Pad Left, Gas & Drift Right)
       ───────────────────────────────────────────────────────────── */}
-      <div className="flex md:hidden w-full items-end justify-between px-2 pb-14 sm:pb-16 pointer-events-none select-none">
-        {/* Left Thumb Cluster: Steering Rocker */}
-        <div className="flex items-center gap-2 p-1.5 rounded-3xl bg-neutral-950/70 border border-cyan-500/30 backdrop-blur-md shadow-2xl pointer-events-auto touch-none">
-          {/* Turn Left Button */}
+      <div className="flex md:hidden items-end justify-between w-full pointer-events-auto select-none pb-2 sm:pb-4">
+        {/* Left Touch Pad: Steer Left & Right */}
+        <div className="flex items-center gap-2">
           <button
             {...bindTouchHandlers('left')}
-            aria-label="Kemudi Kiri"
-            className={`w-13 h-14 sm:w-15 sm:h-16 rounded-2xl font-black text-xl flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
               controls.left
-                ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.9)] scale-95'
-                : 'bg-neutral-900/90 text-cyan-400 border border-cyan-500/40 active:bg-cyan-400 active:text-black'
+                ? 'bg-cyan-500 text-black border-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.8)]'
+                : 'bg-neutral-950/80 border-cyan-500/30 text-white'
             }`}
           >
-            <span>◀</span>
-            <span className="text-[8px] uppercase tracking-wider font-bold">Kiri</span>
+            ◀
           </button>
-
-          {/* Turn Right Button */}
           <button
             {...bindTouchHandlers('right')}
-            aria-label="Kemudi Kanan"
-            className={`w-13 h-14 sm:w-15 sm:h-16 rounded-2xl font-black text-xl flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
               controls.right
-                ? 'bg-cyan-400 text-black shadow-[0_0_20px_rgba(34,211,238,0.9)] scale-95'
-                : 'bg-neutral-900/90 text-cyan-400 border border-cyan-500/40 active:bg-cyan-400 active:text-black'
+                ? 'bg-cyan-500 text-black border-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.8)]'
+                : 'bg-neutral-950/80 border-cyan-500/30 text-white'
             }`}
           >
-            <span>▶</span>
-            <span className="text-[8px] uppercase tracking-wider font-bold">Kanan</span>
+            ▶
           </button>
         </div>
 
-        {/* Right Thumb Cluster: Handbrake Drift + Accelerator + Brake/Reverse */}
-        <div className="flex items-center gap-1.5 p-1.5 rounded-3xl bg-neutral-950/70 border border-purple-500/30 backdrop-blur-md shadow-2xl pointer-events-auto touch-none">
+        {/* Right Touch Pad: Gas (W), Reverse (S), and Handbrake (Space) */}
+        <div className="flex items-center gap-2">
           {/* Handbrake Drift Button */}
           <button
             {...bindTouchHandlers('brake')}
-            aria-label="Handbrake Drift"
-            className={`w-11 h-14 sm:w-13 sm:h-16 rounded-2xl font-black text-xs flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+            className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-bold text-[10px] backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
               controls.brake
-                ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.9)] scale-95'
-                : 'bg-neutral-900/90 text-rose-400 border border-rose-500/40 active:bg-rose-500 active:text-white'
+                ? 'bg-rose-500 text-white border-rose-300 shadow-[0_0_24px_rgba(244,63,94,0.9)]'
+                : 'bg-neutral-950/80 border-rose-500/40 text-rose-400'
             }`}
           >
-            <span>🔥</span>
-            <span className="text-[7px] uppercase tracking-wider font-extrabold">Drift</span>
+            <LuFlame className="w-4 h-4 mb-0.5" />
+            <span>DRIFT</span>
           </button>
 
-          {/* Brake / Reverse Button */}
+          {/* Reverse Button */}
           <button
             {...bindTouchHandlers('backward')}
-            aria-label="Rem dan Mundur"
-            className={`w-12 h-14 sm:w-14 sm:h-16 rounded-2xl font-black text-lg flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center text-base font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
               controls.backward
-                ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.9)] scale-95'
-                : 'bg-neutral-900/90 text-rose-400 border border-rose-500/40 active:bg-rose-500 active:text-white'
+                ? 'bg-neutral-700 text-white border-white shadow-lg'
+                : 'bg-neutral-950/80 border-border/60 text-gray-400'
             }`}
           >
-            <span>▼</span>
-            <span className="text-[8px] uppercase tracking-wider font-bold">Mundur</span>
+            ▼
           </button>
 
-          {/* Gas / Forward Accelerator Button */}
+          {/* Gas Button */}
           <button
             {...bindTouchHandlers('forward')}
-            aria-label="Pedal Gas Maju"
-            className={`w-13 h-14 sm:w-15 sm:h-16 rounded-2xl font-black text-xl flex flex-col items-center justify-center shadow-lg transition-transform active:scale-95 touch-none select-none ${
+            className={`w-15 h-15 rounded-2xl flex items-center justify-center text-xl font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
               controls.forward
-                ? 'bg-cyan-400 text-black shadow-[0_0_24px_rgba(6,182,212,1.0)] scale-95'
-                : 'bg-gradient-to-br from-cyan-500/90 to-blue-600/90 text-white border border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)] active:bg-cyan-400 active:text-black'
+                ? 'bg-cyan-500 text-black border-cyan-300 shadow-[0_0_24px_rgba(6,182,212,0.8)]'
+                : 'bg-neutral-950/80 border-cyan-500/40 text-cyan-400'
             }`}
           >
-            <div className="flex items-center gap-0.5">
-              <span>▲</span>
-              <LuFlame className="w-3.5 h-3.5 animate-bounce" />
-            </div>
-            <span className="text-[9px] uppercase tracking-wider font-extrabold">Gas</span>
+            ▲
           </button>
         </div>
       </div>

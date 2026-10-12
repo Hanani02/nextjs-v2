@@ -13,6 +13,7 @@ import {
   createInitialPhysicsState,
   stepCarPhysics,
   type CarPhysicsState,
+  type DriftSlicknessMode,
 } from './carPhysics';
 import { updateEngineSound, setTireScreech } from '@/lib/circuitAudio';
 
@@ -23,6 +24,8 @@ interface RCCarProps {
   color?: string;
   username?: string;
   activeEmote?: string | null;
+  steeringSensitivity?: number;
+  driftSlickness?: DriftSlicknessMode;
   onPositionUpdate?: (pos: THREE.Vector3, heading?: number, speed?: number) => void;
   onPhysicsBroadcast?: (state: {
     x: number;
@@ -58,6 +61,8 @@ export default function RCCar({
   color = '#06b6d4',
   username = 'Pilot_01',
   activeEmote,
+  steeringSensitivity = 1.0,
+  driftSlickness = 'slippery',
   onPositionUpdate,
   onPhysicsBroadcast,
   raceTelemetry,
@@ -151,11 +156,11 @@ export default function RCCar({
       // ─────────────────────────────────────────────────────────────
       // 2. ACTIVE DRIFT PLAYGROUND PHYSICS STEP
       // ─────────────────────────────────────────────────────────────
-      stepCarPhysics(p, controls, dt);
+      stepCarPhysics(p, controls, dt, steeringSensitivity, driftSlickness);
 
       // Procedural Web Audio engine sound and drift tire screech
       updateEngineSound(p.speed, controls.forward);
-      setTireScreech(p.isDrifting && p.speed > 3.0);
+      setTireScreech(p.isDrifting && p.speed > 2.5);
     }
 
     // Update telemetry refs for TireSkidmarks
