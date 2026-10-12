@@ -165,6 +165,11 @@ export default function PlaygroundHUD({
                   <span className="font-mono text-amber-300 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-500/30 text-xs">
                     1-4
                   </span>
+                  <span className="mx-0.5 text-gray-500">•</span>
+                  <span>Chat:</span>
+                  <span className="font-mono text-emerald-300 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30 text-xs">
+                    T / Enter
+                  </span>
                 </div>
                 {/* Mobile compact prompt */}
                 <div className="flex sm:hidden items-center gap-1 text-[11px] font-bold text-cyan-300">

@@ -24,6 +24,7 @@ interface RCCarProps {
   color?: string;
   username?: string;
   activeEmote?: string | null;
+  activeChat?: { message: string; timestamp?: number } | string | null;
   steeringSensitivity?: number;
   driftSlickness?: DriftSlicknessMode;
   graphicsQuality?: GraphicsQuality;
@@ -62,6 +63,7 @@ export default function RCCar({
   color = '#06b6d4',
   username = 'Pilot_01',
   activeEmote,
+  activeChat,
   steeringSensitivity = 1.0,
   driftSlickness = 'slippery',
   graphicsQuality = 'medium',
@@ -330,6 +332,7 @@ export default function RCCar({
           isDrifting={physics.current.isDrifting}
           speed={physics.current.speed}
           activeEmote={activeEmote}
+          activeChat={activeChat}
         />
 
         {/* Dynamic Tilting Car Body Mesh */}

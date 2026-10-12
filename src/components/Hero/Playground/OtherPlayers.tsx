@@ -12,9 +12,10 @@ interface OtherPlayerCarProps {
   playerId: string;
   remotePlayersRef: React.RefObject<Record<string, PlayerVehicleState>>;
   activeEmote?: string | null;
+  activeChat?: string | null;
 }
 
-function OtherPlayerCar({ playerId, remotePlayersRef, activeEmote }: OtherPlayerCarProps) {
+function OtherPlayerCar({ playerId, remotePlayersRef, activeEmote, activeChat }: OtherPlayerCarProps) {
   const groupRef = useRef<THREE.Group>(null!);
   const bodyRef = useRef<THREE.Group>(null!);
 
@@ -92,6 +93,7 @@ function OtherPlayerCar({ playerId, remotePlayersRef, activeEmote }: OtherPlayer
         model={model}
         isDrifting={isDrifting}
         activeEmote={activeEmote}
+        activeChat={activeChat}
       />
 
       {/* Tilting Car Body Mesh */}
@@ -119,12 +121,14 @@ interface OtherPlayersProps {
   activePlayerIds?: string[];
   remotePlayersRef: React.RefObject<Record<string, PlayerVehicleState>>;
   activeEmotes?: Record<string, { text: string; expiresAt: number }>;
+  activeChatBubbles?: Record<string, { message: string; timestamp: number; expiresAt: number }>;
 }
 
 export default function OtherPlayers({
   activePlayerIds = [],
   remotePlayersRef,
   activeEmotes = {},
+  activeChatBubbles = {},
 }: OtherPlayersProps) {
   const now = Date.now();
   return (
@@ -132,12 +136,15 @@ export default function OtherPlayers({
       {activePlayerIds.map((id) => {
         const emoteObj = activeEmotes[id];
         const emoteText = emoteObj && emoteObj.expiresAt > now ? emoteObj.text : null;
+        const chatObj = activeChatBubbles[id];
+        const chatText = chatObj && chatObj.expiresAt > now ? chatObj.message : null;
         return (
           <OtherPlayerCar
             key={id}
             playerId={id}
             remotePlayersRef={remotePlayersRef}
             activeEmote={emoteText}
+            activeChat={chatText}
           />
         );
       })}

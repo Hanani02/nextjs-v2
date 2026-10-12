@@ -9,6 +9,7 @@ import type {
   MultiplayerRoomState,
   LeaderboardEntry,
 } from '@/types/vehicle';
+import type { ChatMessage, ActiveChatBubble } from '@/types/chat';
 
 const MAX_ROOM_PLAYERS = 5;
 const BROADCAST_INTERVAL_MS = 38; // ~26 updates/sec throttle
@@ -47,6 +48,12 @@ export function useMultiplayer({
   // Floating reaction emotes
   const [activeEmotes, setActiveEmotes] = useState<Record<string, { text: string; expiresAt: number }>>({});
   const [selfEmote, setSelfEmote] = useState<{ text: string; expiresAt: number } | null>(null);
+
+  // Real-time Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [activeChatBubbles, setActiveChatBubbles] = useState<Record<string, ActiveChatBubble>>({});
+  const [selfChatBubble, setSelfChatBubble] = useState<ActiveChatBubble | null>(null);
+  const lastChatTimeRef = useRef<number>(0);
 
   // 1. Initialize Player Identity & load saved preferences from localStorage
   useEffect(() => {
@@ -190,6 +197,37 @@ export function useMultiplayer({
           [payload.id]: {
             text: payload.emote,
             expiresAt: Date.now() + 2500,
+          },
+        }));
+      });
+
+      // Handle incoming real-time chat broadcast
+      channel.on('broadcast', { event: 'player_chat' }, ({ payload }) => {
+        if (!payload || !payload.id || !payload.message) return;
+        const cleanMsg = String(payload.message).trim().replace(/[\u0000-\u001F\u007F-\u009F]/g, '').slice(0, 60);
+        if (!cleanMsg) return;
+
+        const now = Date.now();
+        const msgId = payload.msgId || `msg_${now}_${Math.random().toString(36).substring(2, 6)}`;
+
+        const incomingMsg: ChatMessage = {
+          id: msgId,
+          senderId: payload.id,
+          username: payload.username || 'Pilot',
+          message: cleanMsg,
+          timestamp: payload.timestamp || now,
+          color: payload.color || '#38bdf8',
+          isSelf: payload.id === playerId,
+        };
+
+        setChatMessages((prev) => [...prev.slice(-25), incomingMsg]);
+
+        setActiveChatBubbles((prev) => ({
+          ...prev,
+          [payload.id]: {
+            message: cleanMsg,
+            timestamp: now,
+            expiresAt: now + 5000,
           },
         }));
       });
@@ -448,6 +486,66 @@ export function useMultiplayer({
     [playerId]
   );
 
+  // Send in-game text chat message via Realtime Broadcast
+  const sendChatMessage = useCallback(
+    (rawMessage: string): { success: boolean; reason?: string } => {
+      const now = Date.now();
+      if (now - lastChatTimeRef.current < 1000) {
+        return { success: false, reason: 'cooldown' };
+      }
+
+      const clean = rawMessage
+        .trim()
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+        .slice(0, 60);
+
+      if (!clean) {
+        return { success: false, reason: 'empty' };
+      }
+
+      lastChatTimeRef.current = now;
+      const msgId = `msg_${now}_${Math.random().toString(36).substring(2, 7)}`;
+      const expiresAt = now + 5000;
+
+      const localMsg: ChatMessage = {
+        id: msgId,
+        senderId: playerId || 'self',
+        username,
+        message: clean,
+        timestamp: now,
+        color: carColor,
+        isSelf: true,
+      };
+
+      setChatMessages((prev) => [...prev.slice(-25), localMsg]);
+      setSelfChatBubble({
+        message: clean,
+        timestamp: now,
+        expiresAt,
+      });
+
+      if (channelRef.current && playerId) {
+        channelRef.current
+          .send({
+            type: 'broadcast',
+            event: 'player_chat',
+            payload: {
+              msgId,
+              id: playerId,
+              username,
+              message: clean,
+              color: carColor,
+              timestamp: now,
+            },
+          })
+          .catch(() => {});
+      }
+
+      return { success: true };
+    },
+    [playerId, username, carColor]
+  );
+
   return {
     playerId,
     username,
@@ -464,5 +562,9 @@ export function useMultiplayer({
     selfEmote,
     activeEmotes,
     sendQuickEmote,
+    chatMessages,
+    activeChatBubbles,
+    selfChatBubble,
+    sendChatMessage,
   };
 }

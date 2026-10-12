@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Html } from '@react-three/drei';
 import type { CarModelType } from '@/types/vehicle';
 
@@ -11,6 +12,7 @@ interface CarUsernameBadgeProps {
   isDrifting?: boolean;
   speed?: number;
   activeEmote?: string | null;
+  activeChat?: { message: string; timestamp?: number } | string | null;
 }
 
 export default function CarUsernameBadge({
@@ -21,9 +23,35 @@ export default function CarUsernameBadge({
   isDrifting = false,
   speed = 0,
   activeEmote,
+  activeChat,
 }: CarUsernameBadgeProps) {
   // Height offset above the car based on vehicle model
   const heightOffset = model === 'truck' ? 1.55 : model === 'buggy' ? 1.45 : 1.3;
+
+  // Active floating chat message with auto-fade timer
+  const [displayedChat, setDisplayedChat] = useState<string | null>(null);
+  const [chatAnimKey, setChatAnimKey] = useState<number>(0);
+
+  useEffect(() => {
+    if (!activeChat) {
+      setDisplayedChat(null);
+      return;
+    }
+    const msg = typeof activeChat === 'string' ? activeChat : activeChat.message;
+    if (!msg) {
+      setDisplayedChat(null);
+      return;
+    }
+
+    setDisplayedChat(msg);
+    setChatAnimKey((k) => k + 1);
+
+    const timer = setTimeout(() => {
+      setDisplayedChat(null);
+    }, 4800);
+
+    return () => clearTimeout(timer);
+  }, [activeChat]);
 
   return (
     <Html
@@ -36,6 +64,29 @@ export default function CarUsernameBadge({
       }}
     >
       <div className="flex flex-col items-center gap-1 -translate-y-1">
+        {/* Floating Chat Bubble (In-game Chat) */}
+        {displayedChat && (
+          <div
+            key={chatAnimKey}
+            className="flex flex-col items-center animate-in zoom-in-90 fade-in slide-in-from-bottom-2 duration-200 mb-0.5 pointer-events-none select-none max-w-[220px]"
+          >
+            <div
+              className="px-3 py-1.5 rounded-2xl bg-black/85 backdrop-blur-md border text-white font-medium text-xs shadow-[0_4px_24px_rgba(0,0,0,0.85)] text-center break-words leading-tight"
+              style={{
+                borderColor: isSelf ? '#22d3ee' : color,
+                boxShadow: `0 0 16px ${isSelf ? 'rgba(34,211,238,0.45)' : `${color}40`}`,
+              }}
+            >
+              <span>{displayedChat}</span>
+            </div>
+            {/* Triangular tail pointing down to car */}
+            <div
+              className="w-0 h-0 border-x-4 border-x-transparent border-t-[6px]"
+              style={{ borderTopColor: isSelf ? '#22d3ee' : color }}
+            />
+          </div>
+        )}
+
         {/* Floating Quick Emote Reaction Bubble */}
         {activeEmote && (
           <div className="animate-in zoom-in-75 fade-in slide-in-from-bottom-2 duration-150 px-3.5 py-1.5 rounded-2xl bg-neutral-950/95 border-2 border-cyan-400 text-white font-black text-xs shadow-[0_0_25px_rgba(34,211,238,0.9)] backdrop-blur-xl flex items-center gap-1.5 whitespace-nowrap animate-bounce">

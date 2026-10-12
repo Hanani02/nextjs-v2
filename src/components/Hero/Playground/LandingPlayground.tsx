@@ -15,6 +15,7 @@ import RaceLeaderboard from './RaceLeaderboard';
 import { useKeyboardControls } from './useKeyboardControls';
 import PlaygroundHUD from './PlaygroundHUD';
 import GarageMenu from './GarageMenu';
+import GameChat from './GameChat';
 import { useMultiplayer } from './useMultiplayer';
 import ArenaBloom from './ArenaBloom';
 import type { DriftSlicknessMode } from './carPhysics';
@@ -217,12 +218,16 @@ export default function LandingPlayground() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [resetRaceTrigger, setResetRaceTrigger] = useState(0);
 
+  // In-Game Multiplayer Chat state (disables car controls when focused/typing)
+  const [isChatFocused, setIsChatFocused] = useState(false);
+
   // Start/Finish grid position on Rettifilo Straight: [0, 0.08, -25]
   const carPositionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.08, -25));
   const carHeadingRef = useRef<number>(Math.PI / 2);
   const carSpeedRef = useRef<number>(0);
 
-  const { controls, setControlState, triggerReset } = useKeyboardControls(true);
+  // Keyboard controls are completely disabled while typing in chat
+  const { controls, setControlState, triggerReset } = useKeyboardControls(!isChatFocused);
 
   // Real-time multiplayer hook (Supabase Realtime Broadcast & Presence)
   const {
@@ -241,6 +246,10 @@ export default function LandingPlayground() {
     selfEmote,
     activeEmotes,
     sendQuickEmote,
+    chatMessages,
+    activeChatBubbles,
+    selfChatBubble,
+    sendChatMessage,
   } = useMultiplayer();
 
   useEffect(() => {
@@ -525,6 +534,7 @@ export default function LandingPlayground() {
               activePlayerIds={activePlayerIds}
               remotePlayersRef={remotePlayersRef}
               activeEmotes={activeEmotes}
+              activeChatBubbles={activeChatBubbles}
             />
 
             {/* The User's Customizable Stylized 3D RC Car with Drift Physics */}
@@ -535,6 +545,7 @@ export default function LandingPlayground() {
               color={carColor}
               username={username}
               activeEmote={selfEmote && selfEmote.expiresAt > Date.now() ? selfEmote.text : null}
+              activeChat={selfChatBubble && selfChatBubble.expiresAt > Date.now() ? selfChatBubble.message : null}
               steeringSensitivity={steeringSensitivity}
               driftSlickness={driftSlickness}
               graphicsQuality={graphicsQuality}
@@ -619,6 +630,18 @@ export default function LandingPlayground() {
         onSelectColor={setCarColor}
         onUpdateUsername={setUsername}
         visible={isAtPlayground}
+      />
+
+      {/* ─────────────────────────────────────────────────────────────
+          6. REAL-TIME IN-GAME CHAT SYSTEM (HUD + Shortcuts + Auto-dim)
+      ───────────────────────────────────────────────────────────── */}
+      <GameChat
+        messages={chatMessages}
+        onSendMessage={sendChatMessage}
+        isChatFocused={isChatFocused}
+        onFocusChange={setIsChatFocused}
+        visible={isAtPlayground}
+        selfUsername={username}
       />
 
       {/* ─────────────────────────────────────────────────────────────
