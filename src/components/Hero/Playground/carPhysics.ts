@@ -91,35 +91,36 @@ export function stepCarPhysics(
 
   p.steerAngle = THREE.MathUtils.lerp(p.steerAngle, targetSteer, dt * steerSmoothing);
 
-  // 2. Velocity Components along Car Orientation
-  const currentSpeed = Math.hypot(p.vx, p.vz);
+  // 2. Unit vectors along Car Orientation
   const forwardX = Math.sin(p.heading);
   const forwardZ = Math.cos(p.heading);
   const rightX = Math.cos(p.heading);
   const rightZ = -Math.sin(p.heading);
 
+  // Decompose current velocity into longitudinal and lateral components
   const forwardVelocity = p.vx * forwardX + p.vz * forwardZ;
   const latVel = p.vx * rightX + p.vz * rightZ;
+  const currentSpeed = Math.hypot(p.vx, p.vz);
 
   // 3. Determine Drift & Braking State (Licin & Sustained Drift)
   const isHandbrake = Boolean(controls.brake);
   const isReverseBraking = controls.backward && forwardVelocity > 1.0;
   const isHardSteerAtSpeed =
-    Math.abs(p.steerAngle) > 0.26 && currentSpeed > 6.0 && (controls.forward || isHandbrake);
+    Math.abs(p.steerAngle) > 0.26 && currentSpeed > 5.0 && (controls.forward || isHandbrake);
 
   p.isBraking = isHandbrake || isReverseBraking;
 
   // Drift engages easily and sustains smoothly while momentum lasts
-  const hasLateralSlide = Math.abs(latVel) > 1.4 && currentSpeed > 4.0;
+  const hasLateralSlide = Math.abs(latVel) > 1.2 && currentSpeed > 3.0;
   p.isDrifting =
-    (isHandbrake && currentSpeed > 2.0) ||
-    (isHardSteerAtSpeed && (isHandbrake || controls.backward || Math.abs(latVel) > 1.2)) ||
+    (isHandbrake && currentSpeed > 1.8) ||
+    (isHardSteerAtSpeed && (isHandbrake || controls.backward || Math.abs(latVel) > 1.0)) ||
     (p.isDrifting && hasLateralSlide);
 
   // 4. Heading (Yaw) Calculation
   const isInputActive = controls.forward || controls.backward || currentSpeed > 0.15;
   if (isInputActive) {
-    const minTurnRatio = controls.forward || controls.backward ? 0.38 : 0.0;
+    const minTurnRatio = controls.forward || controls.backward ? 0.45 : 0.0;
     const speedRatio = Math.max(minTurnRatio, Math.min(currentSpeed / constants.maxSpeed, 1.0));
     const driveDir = controls.backward && !controls.forward && forwardVelocity <= 0.1 ? -1 : 1;
     const steerMultiplier = p.isDrifting
@@ -135,20 +136,16 @@ export function stepCarPhysics(
     engineThrust = constants.acceleration;
   } else if (controls.backward && !controls.forward) {
     if (forwardVelocity > 0.5) {
-      engineThrust = -constants.acceleration * 1.85;
+      engineThrust = -constants.acceleration * 1.85; // Hard braking before reverse
     } else {
-      engineThrust = -constants.reverseAccel;
+      engineThrust = -constants.reverseAccel; // Reverse acceleration
     }
   }
 
-  p.vx += forwardX * engineThrust * dt;
-  p.vz += forwardZ * engineThrust * dt;
+  // Directly apply engine thrust to forward longitudinal velocity!
+  let updatedLongVel = forwardVelocity + engineThrust * dt;
 
   // 6. Super Slick Drift Traction & Lateral Momentum
-  // Mode Kelicinan:
-  // - normal: 0.26 grip (agak licin)
-  // - slippery: 0.16 grip (sangat licin)
-  // - hyper: 0.10 grip (ekstra licin / Tokyo Drift hyper slide)
   let activeDriftGrip = constants.driftGrip;
   if (driftSlickness === 'normal') activeDriftGrip = 0.26;
   else if (driftSlickness === 'slippery') activeDriftGrip = 0.16;
@@ -156,41 +153,34 @@ export function stepCarPhysics(
 
   const gripFactor = p.isDrifting ? activeDriftGrip : constants.normalGrip;
 
-  // Lateral velocity attenuation (Higher retention = much longer, smoother slide!)
+  // Lateral velocity attenuation (higher retention = sustained slide)
   const lateralRetention = Math.pow(1 - gripFactor, dt * 60);
   const newLatVel = latVel * lateralRetention;
 
-  // Longitudinal drag: retains high forward speed during drifts so car doesn't bog down
+  // Longitudinal drag: retains high forward speed during drifts
   const driftDecel = p.isDrifting ? 0.988 : constants.friction;
-  const newLongVel = forwardVelocity * Math.pow(driftDecel, dt * 60);
+  const draggedLongVel = updatedLongVel * Math.pow(driftDecel, dt * 60);
 
   // Handbrake smooth slide deceleration (preserves slide speed)
   const handbrakeSlideDecel = driftSlickness === 'hyper' ? 0.985 : 0.972;
-  const finalLongVel = isHandbrake
-    ? newLongVel * Math.pow(handbrakeSlideDecel, dt * 60)
-    : newLongVel;
-
-  // Recombine velocity vector
-  p.vx = forwardX * finalLongVel + rightX * newLatVel;
-  p.vz = forwardZ * finalLongVel + rightZ * newLatVel;
+  let finalLongVel = isHandbrake
+    ? draggedLongVel * Math.pow(handbrakeSlideDecel, dt * 60)
+    : draggedLongVel;
 
   // Clamp speeds
-  const totalSpeed = Math.hypot(p.vx, p.vz);
-  const effectiveMaxSpeed = constants.maxSpeed;
-  if (totalSpeed > effectiveMaxSpeed) {
-    const scale = effectiveMaxSpeed / totalSpeed;
-    p.vx *= scale;
-    p.vz *= scale;
-  }
-  if (finalLongVel < constants.maxReverse) {
-    p.vx = forwardX * constants.maxReverse;
-    p.vz = forwardZ * constants.maxReverse;
+  if (finalLongVel > constants.maxSpeed) {
+    finalLongVel = constants.maxSpeed;
+  } else if (finalLongVel < constants.maxReverse) {
+    finalLongVel = constants.maxReverse;
   }
 
-  if (Math.abs(p.vx) < 0.02 && Math.abs(p.vz) < 0.02 && !controls.forward && !controls.backward) {
-    p.vx = 0;
-    p.vz = 0;
+  if (Math.abs(finalLongVel) < 0.05 && Math.abs(newLatVel) < 0.05 && !controls.forward && !controls.backward) {
+    finalLongVel = 0;
   }
+
+  // Recombine velocity vector into world space
+  p.vx = forwardX * finalLongVel + rightX * newLatVel;
+  p.vz = forwardZ * finalLongVel + rightZ * newLatVel;
 
   p.speed = Math.hypot(p.vx, p.vz);
 
