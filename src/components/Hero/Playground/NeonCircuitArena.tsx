@@ -2,6 +2,12 @@
 
 import { useMemo } from 'react';
 import * as THREE from 'three';
+import {
+  MONZA_SAMPLED_POINTS,
+  MONZA_CHECKPOINTS,
+  MONZA_TRACK_WIDTH,
+  type TrackPoint,
+} from './monzaTrack';
 
 interface NeonCircuitArenaProps {
   boundsX?: number;
@@ -9,13 +15,10 @@ interface NeonCircuitArenaProps {
   activeCheckpoint?: number;
 }
 
-export const RACE_CHECKPOINTS = [
-  { id: 0, name: 'Start / Finish', center: [0, -9.1] as [number, number], width: 5.5, depth: 11.5 },
-  { id: 1, name: 'Turn 1 Apex', center: [18.5, 0] as [number, number], width: 11.5, depth: 6.0 },
-  { id: 2, name: 'Chicane Entry', center: [0, 9.1] as [number, number], width: 5.5, depth: 11.5 },
-  { id: 3, name: 'Hairpin Apex', center: [-18.5, 0] as [number, number], width: 11.5, depth: 6.0 },
-];
+// Re-export checkpoints from the canonical Monza model
+export const RACE_CHECKPOINTS = MONZA_CHECKPOINTS;
 
+// All nitro boost pads removed per specification
 export const NITRO_BOOST_PADS: Array<{
   id: string;
   x: number;
@@ -26,22 +29,29 @@ export const NITRO_BOOST_PADS: Array<{
   name: string;
 }> = [];
 
+/**
+ * Autodromo Nazionale Monza - Full Scale 3D Racing Circuit
+ * Features:
+ * - Rettifilo Straight (Long high-speed straight with Start/Finish line)
+ * - Variante del Rettifilo (Prima Variante Chicane)
+ * - Curva Grande (Biassono high-speed sweeper)
+ * - Variante della Roggia (Left-Right chicane)
+ * - Curve di Lesmo (Lesmo 1 & Lesmo 2)
+ * - Curva del Serraglio straight towards Ascari
+ * - Variante Ascari (Turns 8, 9, 10 chicane complex)
+ * - Back straight sprint towards Parabolica
+ * - Curva Parabolica (Alboreto 180° long sweeping right curve)
+ * - F1 Red & White kerbs on corners, Tecpro barriers, and hologram Start/Finish gantry.
+ */
 export default function NeonCircuitArena({
-  boundsX = 22.2,
-  boundsZ = 14.0,
   activeCheckpoint = 0,
 }: NeonCircuitArenaProps) {
-  // Track geometry parameters matching carPhysics.ts stadium-oval collisions
-  const straightLimit = 11.0;
-  const outerR = boundsZ; // 14.0
-  const islandStraight = 6.0;
-  const islandR = 4.2;
+  const points = MONZA_SAMPLED_POINTS;
+  const halfWidth = MONZA_TRACK_WIDTH / 2; // 2.8 units
 
   // ─────────────────────────────────────────────────────────────
-  // 1. PROCEDURAL TEXTURES (Asphalt, F1 Red/White Tecpro, Chevrons)
+  // 1. PROCEDURAL ASPHALT TEXTURE (Dark, high-grip racing surface)
   // ─────────────────────────────────────────────────────────────
-
-  // High-grip dark asphalt with subtle grid lines
   const asphaltTexture = useMemo(() => {
     if (typeof document === 'undefined') return null;
     const canvas = document.createElement('canvas');
@@ -52,8 +62,8 @@ export default function NeonCircuitArena({
       ctx.fillStyle = '#0a0d14';
       ctx.fillRect(0, 0, 1024, 1024);
 
-      // Fine grid texture
-      ctx.strokeStyle = '#141a29';
+      // Fine asphalt pebble noise and racing groove
+      ctx.strokeStyle = '#121824';
       ctx.lineWidth = 1;
       const step = 32;
       for (let x = 0; x <= 1024; x += step) {
@@ -69,819 +79,361 @@ export default function NeonCircuitArena({
         ctx.stroke();
       }
 
-      // Checkered grid accents
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = 1.5;
-      for (let x = 0; x <= 1024; x += step * 4) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, 1024);
-        ctx.stroke();
-      }
-      for (let y = 0; y <= 1024; y += step * 4) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(1024, y);
-        ctx.stroke();
-      }
+      // Rubber racing line streaks
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.45)';
+      ctx.fillRect(256, 0, 512, 1024);
     }
 
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = THREE.RepeatWrapping;
     tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(16, 12);
+    tex.repeat.set(1, 48);
     return tex;
   }, []);
-
-  // F1 Tecpro Safety Barrier: alternating vibrant Red (#dc2626) and pure White (#ffffff)
-  const f1BarrierTexture = useMemo(() => {
-    if (typeof document === 'undefined') return null;
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      // Left block: Bright F1 Red
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(0, 0, 256, 128);
-
-      // Right block: Crisp White
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(256, 0, 256, 128);
-
-      // Top and bottom heavy-duty black rubber bumper strips
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, 512, 14);
-      ctx.fillRect(0, 114, 512, 14);
-
-      // Vertical seam grooves between Tecpro blocks
-      ctx.fillStyle = '#020617';
-      ctx.fillRect(253, 0, 6, 128);
-      ctx.fillRect(0, 0, 4, 128);
-      ctx.fillRect(508, 0, 4, 128);
-
-      // Plastic specular gradient
-      const grad = ctx.createLinearGradient(0, 14, 0, 114);
-      grad.addColorStop(0, 'rgba(255, 255, 255, 0.35)');
-      grad.addColorStop(0.3, 'rgba(255, 255, 255, 0.05)');
-      grad.addColorStop(0.7, 'rgba(0, 0, 0, 0.0)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0.25)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 14, 512, 100);
-    }
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    return tex;
-  }, []);
-
-  // F1 Chicane Chevron directional arrows (pointing cars around the obstacle)
-  const f1ChevronTexture = useMemo(() => {
-    if (typeof document === 'undefined') return null;
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(0, 0, 512, 128);
-
-      ctx.fillStyle = '#ffffff';
-      for (let i = 0; i < 4; i++) {
-        const xOffset = i * 128 + 24;
-        ctx.beginPath();
-        ctx.moveTo(xOffset + 70, 20);
-        ctx.lineTo(xOffset + 25, 64);
-        ctx.lineTo(xOffset + 70, 108);
-        ctx.lineTo(xOffset + 48, 108);
-        ctx.lineTo(xOffset + 0, 64);
-        ctx.lineTo(xOffset + 48, 20);
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, 512, 14);
-      ctx.fillRect(0, 114, 512, 14);
-    }
-
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    return tex;
-  }, []);
-
-  // Cloned textures for straight wall runs
-  const straightWallTex = useMemo(() => {
-    if (!f1BarrierTexture) return null;
-    const t = f1BarrierTexture.clone();
-    t.repeat.set(11, 1);
-    t.needsUpdate = true;
-    return t;
-  }, [f1BarrierTexture]);
-
-  const islandStraightTex = useMemo(() => {
-    if (!f1BarrierTexture) return null;
-    const t = f1BarrierTexture.clone();
-    t.repeat.set(6, 1);
-    t.needsUpdate = true;
-    return t;
-  }, [f1BarrierTexture]);
-
-  const chicaneSideTex = useMemo(() => {
-    if (!f1BarrierTexture) return null;
-    const t = f1BarrierTexture.clone();
-    t.repeat.set(3, 1);
-    t.needsUpdate = true;
-    return t;
-  }, [f1BarrierTexture]);
-
-  const chicaneFaceTex = useMemo(() => {
-    if (!f1ChevronTexture) return null;
-    const t = f1ChevronTexture.clone();
-    t.repeat.set(2, 1);
-    t.needsUpdate = true;
-    return t;
-  }, [f1ChevronTexture]);
 
   // ─────────────────────────────────────────────────────────────
-  // 2. CURVED STADIUM OVAL GEOMETRY DATA
+  // 2. MONZA ASPHALT ROAD RIBBON GEOMETRY
   // ─────────────────────────────────────────────────────────────
+  const roadGeometry = useMemo(() => {
+    const N = points.length;
+    const positions: number[] = [];
+    const uvs: number[] = [];
+    const indices: number[] = [];
 
-  // Outer East Arc (Turn 1): 16 curved barrier blocks from -PI/2 to +PI/2
-  const outerEastSegments = useMemo(() => {
-    const segs = [];
-    const count = 16;
-    const dTheta = Math.PI / count;
-    const arcLength = outerR * dTheta;
-    for (let i = 0; i < count; i++) {
-      const theta = -Math.PI / 2 + (i + 0.5) * dTheta;
-      const x = straightLimit + outerR * Math.cos(theta);
-      const z = outerR * Math.sin(theta);
-      // Tangent rotation: facing inward towards the arena center
-      const rotY = -theta + Math.PI / 2;
-      segs.push({ id: i, x, z, rotY, isRed: i % 2 === 0, width: arcLength + 0.1 });
-    }
-    return segs;
-  }, [straightLimit, outerR]);
+    for (let i = 0; i <= N; i++) {
+      const pt = points[i % N];
+      // Left edge
+      const lx = pt.x + pt.nx * halfWidth;
+      const lz = pt.z + pt.nz * halfWidth;
+      // Right edge
+      const rx = pt.x - pt.nx * halfWidth;
+      const rz = pt.z - pt.nz * halfWidth;
 
-  // Outer West Arc (Hairpin): 16 curved barrier blocks from +PI/2 to +3PI/2
-  const outerWestSegments = useMemo(() => {
-    const segs = [];
-    const count = 16;
-    const dTheta = Math.PI / count;
-    const arcLength = outerR * dTheta;
-    for (let i = 0; i < count; i++) {
-      const theta = Math.PI / 2 + (i + 0.5) * dTheta;
-      const x = -straightLimit + outerR * Math.cos(theta);
-      const z = outerR * Math.sin(theta);
-      const rotY = -theta + Math.PI / 2;
-      segs.push({ id: i, x, z, rotY, isRed: i % 2 === 0, width: arcLength + 0.1 });
-    }
-    return segs;
-  }, [straightLimit, outerR]);
+      const v = (pt.distanceAlongTrack || i * 0.95) * 0.25;
 
-  // Infield Island East Semicircular Cap: 10 barrier blocks around (6.0, 0), radius 4.2
-  const islandEastSegments = useMemo(() => {
-    const segs = [];
-    const count = 10;
-    const dTheta = Math.PI / count;
-    const arcLength = islandR * dTheta;
-    for (let i = 0; i < count; i++) {
-      const theta = -Math.PI / 2 + (i + 0.5) * dTheta;
-      const x = islandStraight + islandR * Math.cos(theta);
-      const z = islandR * Math.sin(theta);
-      const rotY = -theta + Math.PI / 2;
-      segs.push({ id: i, x, z, rotY, isRed: i % 2 === 0, width: arcLength + 0.08 });
-    }
-    return segs;
-  }, [islandStraight, islandR]);
+      positions.push(lx, 0.005, lz);
+      uvs.push(0, v);
 
-  // Infield Island West Semicircular Cap: 10 barrier blocks around (-6.0, 0), radius 4.2
-  const islandWestSegments = useMemo(() => {
-    const segs = [];
-    const count = 10;
-    const dTheta = Math.PI / count;
-    const arcLength = islandR * dTheta;
-    for (let i = 0; i < count; i++) {
-      const theta = Math.PI / 2 + (i + 0.5) * dTheta;
-      const x = -islandStraight + islandR * Math.cos(theta);
-      const z = islandR * Math.sin(theta);
-      const rotY = -theta + Math.PI / 2;
-      segs.push({ id: i, x, z, rotY, isRed: i % 2 === 0, width: arcLength + 0.08 });
-    }
-    return segs;
-  }, [islandStraight, islandR]);
+      positions.push(rx, 0.005, rz);
+      uvs.push(1, v);
 
-  // Curved Apex Kerbs hugging the inner curve at island caps
-  const eastApexKerbs = useMemo(() => {
-    const kerbs = [];
-    const count = 8;
-    const dTheta = (Math.PI * 0.7) / count;
-    const kerbR = islandR + 0.45;
-    for (let i = 0; i < count; i++) {
-      const theta = -Math.PI * 0.35 + (i + 0.5) * dTheta;
-      const x = islandStraight + kerbR * Math.cos(theta);
-      const z = kerbR * Math.sin(theta);
-      const rotY = -theta + Math.PI / 2;
-      kerbs.push({ id: i, x, z, rotY, isRed: i % 2 === 0 });
+      if (i < N) {
+        const base = i * 2;
+        indices.push(base, base + 1, base + 2);
+        indices.push(base + 1, base + 3, base + 2);
+      }
     }
-    return kerbs;
-  }, [islandStraight, islandR]);
 
-  const westApexKerbs = useMemo(() => {
-    const kerbs = [];
-    const count = 8;
-    const dTheta = (Math.PI * 0.7) / count;
-    const kerbR = islandR + 0.45;
-    for (let i = 0; i < count; i++) {
-      const theta = Math.PI * 0.65 + (i + 0.5) * dTheta;
-      const x = -islandStraight + kerbR * Math.cos(theta);
-      const z = kerbR * Math.sin(theta);
-      const rotY = -theta + Math.PI / 2;
-      kerbs.push({ id: i, x, z, rotY, isRed: i % 2 === 0 });
-    }
-    return kerbs;
-  }, [islandStraight, islandR]);
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geom.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geom.setIndex(indices);
+    geom.computeVertexNormals();
+    return geom;
+  }, [points, halfWidth]);
 
-  // Curved Outer White Boundary Line Segments
-  const outerEastLines = useMemo(() => {
-    const lines = [];
-    const count = 18;
-    const dTheta = Math.PI / count;
-    const lineR = outerR - 0.55;
-    const length = lineR * dTheta;
-    for (let i = 0; i < count; i++) {
-      const theta = -Math.PI / 2 + (i + 0.5) * dTheta;
-      const x = straightLimit + lineR * Math.cos(theta);
-      const z = lineR * Math.sin(theta);
-      const rotY = -theta + Math.PI / 2;
-      lines.push({ id: i, x, z, rotY, length });
-    }
-    return lines;
-  }, [straightLimit, outerR]);
+  // ─────────────────────────────────────────────────────────────
+  // 3. WHITE BOUNDARY LINES GEOMETRY
+  // ─────────────────────────────────────────────────────────────
+  const boundaryLinesGeom = useMemo(() => {
+    const N = points.length;
+    const positions: number[] = [];
+    const indices: number[] = [];
+    const lineWidth = 0.14;
 
-  const outerWestLines = useMemo(() => {
-    const lines = [];
-    const count = 18;
-    const dTheta = Math.PI / count;
-    const lineR = outerR - 0.55;
-    const length = lineR * dTheta;
-    for (let i = 0; i < count; i++) {
-      const theta = Math.PI / 2 + (i + 0.5) * dTheta;
-      const x = -straightLimit + lineR * Math.cos(theta);
-      const z = lineR * Math.sin(theta);
-      const rotY = -theta + Math.PI / 2;
-      lines.push({ id: i, x, z, rotY, length });
+    let vIdx = 0;
+
+    // Outer Left white line
+    for (let i = 0; i <= N; i++) {
+      const pt = points[i % N];
+      const offsetL = halfWidth - 0.16;
+      const x1 = pt.x + pt.nx * offsetL;
+      const z1 = pt.z + pt.nz * offsetL;
+      const x2 = pt.x + pt.nx * (offsetL - lineWidth);
+      const z2 = pt.z + pt.nz * (offsetL - lineWidth);
+
+      positions.push(x1, 0.012, z1);
+      positions.push(x2, 0.012, z2);
+
+      if (i < N) {
+        indices.push(vIdx, vIdx + 1, vIdx + 2);
+        indices.push(vIdx + 1, vIdx + 3, vIdx + 2);
+      }
+      vIdx += 2;
     }
-    return lines;
-  }, [straightLimit, outerR]);
+
+    // Outer Right white line
+    for (let i = 0; i <= N; i++) {
+      const pt = points[i % N];
+      const offsetR = -halfWidth + 0.16;
+      const x1 = pt.x + pt.nx * offsetR;
+      const z1 = pt.z + pt.nz * offsetR;
+      const x2 = pt.x + pt.nx * (offsetR + lineWidth);
+      const z2 = pt.z + pt.nz * (offsetR + lineWidth);
+
+      positions.push(x1, 0.012, z1);
+      positions.push(x2, 0.012, z2);
+
+      if (i < N) {
+        indices.push(vIdx, vIdx + 1, vIdx + 2);
+        indices.push(vIdx + 1, vIdx + 3, vIdx + 2);
+      }
+      vIdx += 2;
+    }
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geom.setIndex(indices);
+    geom.computeVertexNormals();
+    return geom;
+  }, [points, halfWidth]);
+
+  // ─────────────────────────────────────────────────────────────
+  // 4. F1 RED & WHITE ALTERNATING KERBS ON CORNERS
+  // ─────────────────────────────────────────────────────────────
+  const kerbsGeom = useMemo(() => {
+    const N = points.length;
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const indices: number[] = [];
+    const kerbWidth = 0.75;
+    const kerbHeight = 0.04;
+
+    let vIdx = 0;
+
+    for (let i = 0; i < N; i++) {
+      const pt = points[i];
+      const nextPt = points[(i + 1) % N];
+
+      // Place kerbs wherever track is curving (chicanes, Lesmos, Parabolica)
+      if (pt.isCorner || nextPt.isCorner) {
+        // Red and white alternating pattern every 1.1 meters
+        const isRed = Math.floor(pt.distanceAlongTrack / 1.1) % 2 === 0;
+        const color = isRed ? [0.86, 0.15, 0.15] : [0.98, 0.98, 0.98];
+
+        // Inner Left Apex kerb
+        const lx1 = pt.x + pt.nx * halfWidth;
+        const lz1 = pt.z + pt.nz * halfWidth;
+        const lx2 = pt.x + pt.nx * (halfWidth + kerbWidth);
+        const lz2 = pt.z + pt.nz * (halfWidth + kerbWidth);
+
+        const nlx1 = nextPt.x + nextPt.nx * halfWidth;
+        const nlz1 = nextPt.z + nextPt.nz * halfWidth;
+        const nlx2 = nextPt.x + nextPt.nx * (halfWidth + kerbWidth);
+        const nlz2 = nextPt.z + nextPt.nz * (halfWidth + kerbWidth);
+
+        positions.push(lx1, kerbHeight, lz1, lx2, kerbHeight, lz2, nlx1, kerbHeight, nlz1, nlx2, kerbHeight, nlz2);
+        colors.push(...color, ...color, ...color, ...color);
+
+        indices.push(vIdx, vIdx + 1, vIdx + 2);
+        indices.push(vIdx + 1, vIdx + 3, vIdx + 2);
+        vIdx += 4;
+
+        // Inner Right Apex kerb
+        const rx1 = pt.x - pt.nx * halfWidth;
+        const rz1 = pt.z - pt.nz * halfWidth;
+        const rx2 = pt.x - pt.nx * (halfWidth + kerbWidth);
+        const rz2 = pt.z - pt.nz * (halfWidth + kerbWidth);
+
+        const nrx1 = nextPt.x - nextPt.nx * halfWidth;
+        const nrz1 = nextPt.z - nextPt.nz * halfWidth;
+        const nrx2 = nextPt.x - nextPt.nx * (halfWidth + kerbWidth);
+        const nrz2 = nextPt.z - nextPt.nz * (halfWidth + kerbWidth);
+
+        positions.push(rx1, kerbHeight, rz1, rx2, kerbHeight, rz2, nrx1, kerbHeight, nrz1, nrx2, kerbHeight, nrz2);
+        colors.push(...color, ...color, ...color, ...color);
+
+        indices.push(vIdx, vIdx + 1, vIdx + 2);
+        indices.push(vIdx + 1, vIdx + 3, vIdx + 2);
+        vIdx += 4;
+      }
+    }
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geom.setIndex(indices);
+    geom.computeVertexNormals();
+    return geom;
+  }, [points, halfWidth]);
+
+  // ─────────────────────────────────────────────────────────────
+  // 5. TECPRO SAFETY BARRIERS (Continuous F1 Safety Walls)
+  // ─────────────────────────────────────────────────────────────
+  const barriersGeom = useMemo(() => {
+    const N = points.length;
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const indices: number[] = [];
+    const barrierHeight = 0.88;
+    const barrierOffset = halfWidth + 0.55;
+
+    let vIdx = 0;
+
+    // Step every 2 points along track to generate barrier wall
+    const step = 2;
+    for (let i = 0; i < N; i += step) {
+      const pt = points[i];
+      const nextPt = points[(i + step) % N];
+
+      const isRed = Math.floor(pt.distanceAlongTrack / 2.2) % 2 === 0;
+      const wallColor = isRed ? [0.86, 0.15, 0.15] : [0.95, 0.95, 0.98];
+
+      // 1. Left Barrier Wall
+      const p1x = pt.x + pt.nx * barrierOffset;
+      const p1z = pt.z + pt.nz * barrierOffset;
+      const p2x = nextPt.x + nextPt.nx * barrierOffset;
+      const p2z = nextPt.z + nextPt.nz * barrierOffset;
+
+      // Bottom 2 vertices, Top 2 vertices
+      positions.push(p1x, 0, p1z, p2x, 0, p2z, p1x, barrierHeight, p1z, p2x, barrierHeight, p2z);
+      colors.push(...wallColor, ...wallColor, ...wallColor, ...wallColor);
+
+      indices.push(vIdx, vIdx + 2, vIdx + 1);
+      indices.push(vIdx + 1, vIdx + 2, vIdx + 3);
+      vIdx += 4;
+
+      // 2. Right Barrier Wall
+      const rp1x = pt.x - pt.nx * barrierOffset;
+      const rp1z = pt.z - pt.nz * barrierOffset;
+      const rp2x = nextPt.x - nextPt.nx * barrierOffset;
+      const rp2z = nextPt.z - nextPt.nz * barrierOffset;
+
+      positions.push(rp1x, 0, rp1z, rp2x, 0, rp2z, rp1x, barrierHeight, rp1z, rp2x, barrierHeight, rp2z);
+      colors.push(...wallColor, ...wallColor, ...wallColor, ...wallColor);
+
+      indices.push(vIdx, vIdx + 1, vIdx + 2);
+      indices.push(vIdx + 1, vIdx + 3, vIdx + 2);
+      vIdx += 4;
+    }
+
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geom.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geom.setIndex(indices);
+    geom.computeVertexNormals();
+    return geom;
+  }, [points, halfWidth]);
 
   return (
     <group position={[0, -0.01, 0]}>
       {/* ─────────────────────────────────────────────────────────────
-          1. CIRCUIT ASPHALT FLOOR & WHITE PAINTED TRACK LIMITS
+          1. CIRCUIT ASPHALT SURFACE & ARENA GROUND
       ───────────────────────────────────────────────────────────── */}
-      {/* Base Asphalt Surface */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, 0, 0]}>
-        <planeGeometry args={[boundsX * 2 + 16, boundsZ * 2 + 16]} />
+      {/* Expansive Surrounding Arena Floor */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow position={[0, -0.02, 5]}>
+        <planeGeometry args={[180, 110]} />
+        <meshStandardMaterial color="#050811" roughness={0.9} metalness={0.1} />
+      </mesh>
+
+      {/* Monza Dark Asphalt Ribbon */}
+      <mesh geometry={roadGeometry} receiveShadow>
         <meshStandardMaterial
           map={asphaltTexture || undefined}
-          color="#0d111a"
-          roughness={0.75}
-          metalness={0.2}
+          color="#0c101a"
+          roughness={0.7}
+          metalness={0.25}
         />
       </mesh>
 
-      {/* North Straight Track Limit Line */}
-      <mesh position={[0, 0.012, outerR - 0.55]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[straightLimit * 2, 0.14]} />
+      {/* White Painted Boundary Track Lines */}
+      <mesh geometry={boundaryLinesGeom}>
         <meshBasicMaterial color="#ffffff" />
       </mesh>
 
-      {/* South Straight Track Limit Line */}
-      <mesh position={[0, 0.012, -outerR + 0.55]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[straightLimit * 2, 0.14]} />
-        <meshBasicMaterial color="#ffffff" />
+      {/* F1 Red & White Alternating Kerbs */}
+      <mesh geometry={kerbsGeom} castShadow receiveShadow>
+        <meshStandardMaterial vertexColors roughness={0.35} metalness={0.15} />
       </mesh>
 
-      {/* East Curved Track Limit Line */}
-      {outerEastLines.map((line) => (
-        <mesh
-          key={`oel-${line.id}`}
-          position={[line.x, 0.012, line.z]}
-          rotation={[-Math.PI / 2, 0, line.rotY]}
-        >
-          <planeGeometry args={[line.length + 0.05, 0.14]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      ))}
-
-      {/* West Curved Track Limit Line */}
-      {outerWestLines.map((line) => (
-        <mesh
-          key={`owl-${line.id}`}
-          position={[line.x, 0.012, line.z]}
-          rotation={[-Math.PI / 2, 0, line.rotY]}
-        >
-          <planeGeometry args={[line.length + 0.05, 0.14]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      ))}
-
-      {/* Infield Capsule Boundary Lines */}
-      <mesh position={[0, 0.012, islandR + 0.25]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[islandStraight * 2, 0.12]} />
-        <meshBasicMaterial color="#ffffff" />
-      </mesh>
-      <mesh position={[0, 0.012, -islandR - 0.25]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[islandStraight * 2, 0.12]} />
-        <meshBasicMaterial color="#ffffff" />
+      {/* Continuous Tecpro Barriers */}
+      <mesh geometry={barriersGeom} castShadow receiveShadow>
+        <meshStandardMaterial vertexColors roughness={0.4} metalness={0.2} />
       </mesh>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. OUTER PERIMETER BARRIERS (CURVED STADIUM-OVAL RED & WHITE TECPRO)
+          2. RETTIFILO START / FINISH GANTRY ARCH & CHECKERED LINE
       ───────────────────────────────────────────────────────────── */}
-      {/* NORTH STRAIGHT WALL (Back Straight) */}
-      <group position={[0, 0.45, outerR]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[straightLimit * 2, 0.9, 0.4]} />
-          <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
-        </mesh>
-        <mesh position={[0, 0, -0.205]}>
-          <planeGeometry args={[straightLimit * 2, 0.88]} />
-          <meshStandardMaterial
-            map={straightWallTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        {/* Top White Edge Rail & Glowing Safety Strip */}
-        <mesh position={[0, 0.46, 0]}>
-          <boxGeometry args={[straightLimit * 2, 0.04, 0.44]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.2} />
-        </mesh>
-        <mesh position={[0, 0.44, -0.21]}>
-          <boxGeometry args={[straightLimit * 2, 0.06, 0.02]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      </group>
-
-      {/* SOUTH STRAIGHT WALL (Start/Finish Straight) */}
-      <group position={[0, 0.45, -outerR]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[straightLimit * 2, 0.9, 0.4]} />
-          <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
-        </mesh>
-        <mesh position={[0, 0, 0.205]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[straightLimit * 2, 0.88]} />
-          <meshStandardMaterial
-            map={straightWallTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        <mesh position={[0, 0.46, 0]}>
-          <boxGeometry args={[straightLimit * 2, 0.04, 0.44]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.2} />
-        </mesh>
-        <mesh position={[0, 0.44, 0.21]}>
-          <boxGeometry args={[straightLimit * 2, 0.06, 0.02]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      </group>
-
-      {/* EAST CURVED BARRIER (Turn 1 Sweeping Arc) */}
-      <group>
-        {outerEastSegments.map((seg) => (
-          <group key={`oes-${seg.id}`} position={[seg.x, 0.45, seg.z]} rotation={[0, seg.rotY, 0]}>
-            {/* Concrete Core Block */}
-            <mesh castShadow receiveShadow>
-              <boxGeometry args={[seg.width, 0.9, 0.4]} />
-              <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
-            </mesh>
-            {/* Inward-facing Red or White Tecpro Front Plate */}
-            <mesh position={[0, 0, -0.205]}>
-              <planeGeometry args={[seg.width, 0.88]} />
-              <meshStandardMaterial
-                color={seg.isRed ? '#dc2626' : '#ffffff'}
-                roughness={0.25}
-                metalness={0.15}
-              />
-            </mesh>
-            {/* Top White Edge Rail */}
-            <mesh position={[0, 0.46, 0]}>
-              <boxGeometry args={[seg.width + 0.02, 0.04, 0.44]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.2} />
-            </mesh>
-            {/* Glowing White LED Light Strip */}
-            <mesh position={[0, 0.44, -0.21]}>
-              <boxGeometry args={[seg.width, 0.06, 0.02]} />
-              <meshBasicMaterial color="#ffffff" />
-            </mesh>
-          </group>
-        ))}
-      </group>
-
-      {/* WEST CURVED BARRIER (Hairpin Sweeping Arc) */}
-      <group>
-        {outerWestSegments.map((seg) => (
-          <group key={`ows-${seg.id}`} position={[seg.x, 0.45, seg.z]} rotation={[0, seg.rotY, 0]}>
-            <mesh castShadow receiveShadow>
-              <boxGeometry args={[seg.width, 0.9, 0.4]} />
-              <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.2} />
-            </mesh>
-            <mesh position={[0, 0, -0.205]}>
-              <planeGeometry args={[seg.width, 0.88]} />
-              <meshStandardMaterial
-                color={seg.isRed ? '#dc2626' : '#ffffff'}
-                roughness={0.25}
-                metalness={0.15}
-              />
-            </mesh>
-            <mesh position={[0, 0.46, 0]}>
-              <boxGeometry args={[seg.width + 0.02, 0.04, 0.44]} />
-              <meshStandardMaterial color="#ffffff" roughness={0.2} />
-            </mesh>
-            <mesh position={[0, 0.44, -0.21]}>
-              <boxGeometry args={[seg.width, 0.06, 0.02]} />
-              <meshBasicMaterial color="#ffffff" />
-            </mesh>
-          </group>
-        ))}
-      </group>
-
-      {/* ─────────────────────────────────────────────────────────────
-          3. INFIELD CENTRAL ISLAND (ROUNDED CAPSULE BARRIER & PADDOCK)
-      ───────────────────────────────────────────────────────────── */}
-      {/* Central Straight Body */}
-      <group position={[0, 0.45, 0]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[islandStraight * 2, 0.9, islandR * 2]} />
-          <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.4} />
-        </mesh>
-        {/* South Face: Red & White Tecpro */}
-        <mesh position={[0, 0, -islandR - 0.005]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[islandStraight * 2, 0.88]} />
-          <meshStandardMaterial
-            map={islandStraightTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        {/* North Face: Red & White Tecpro */}
-        <mesh position={[0, 0, islandR + 0.005]}>
-          <planeGeometry args={[islandStraight * 2, 0.88]} />
-          <meshStandardMaterial
-            map={islandStraightTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        {/* Top Trim and LED Strips */}
-        <mesh position={[0, 0.46, 0]}>
-          <boxGeometry args={[islandStraight * 2 + 0.08, 0.04, islandR * 2 + 0.08]} />
-          <meshStandardMaterial color="#f8fafc" roughness={0.2} />
-        </mesh>
-        <mesh position={[0, 0.44, islandR + 0.02]}>
-          <boxGeometry args={[islandStraight * 2, 0.06, 0.02]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-        <mesh position={[0, 0.44, -islandR - 0.02]}>
-          <boxGeometry args={[islandStraight * 2, 0.06, 0.02]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      </group>
-
-      {/* Infield East Rounded Cap (Semicircular Cylinder Core) */}
-      <mesh
-        position={[islandStraight, 0.45, 0]}
-        rotation={[0, 0, 0]}
-        castShadow
-        receiveShadow
-      >
-        <cylinderGeometry args={[islandR, islandR, 0.9, 24, 1, false, -Math.PI / 2, Math.PI]} />
-        <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.4} />
-      </mesh>
-      {/* Semicircle Curved Barrier Blocks along East End */}
-      {islandEastSegments.map((seg) => (
-        <group key={`ies-${seg.id}`} position={[seg.x, 0.45, seg.z]} rotation={[0, seg.rotY, 0]}>
-          <mesh position={[0, 0, 0.15]} castShadow>
-            <boxGeometry args={[seg.width, 0.88, 0.3]} />
-            <meshStandardMaterial
-              color={seg.isRed ? '#dc2626' : '#ffffff'}
-              roughness={0.25}
-              metalness={0.15}
-            />
-          </mesh>
-          <mesh position={[0, 0.45, 0.15]}>
-            <boxGeometry args={[seg.width, 0.04, 0.32]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.2} />
-          </mesh>
-          <mesh position={[0, 0.44, 0.31]}>
-            <boxGeometry args={[seg.width, 0.06, 0.02]} />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-        </group>
-      ))}
-
-      {/* Infield West Rounded Cap (Semicircular Cylinder Core) */}
-      <mesh
-        position={[-islandStraight, 0.45, 0]}
-        rotation={[0, 0, 0]}
-        castShadow
-        receiveShadow
-      >
-        <cylinderGeometry args={[islandR, islandR, 0.9, 24, 1, false, Math.PI / 2, Math.PI]} />
-        <meshStandardMaterial color="#334155" roughness={0.4} metalness={0.4} />
-      </mesh>
-      {/* Semicircle Curved Barrier Blocks along West End */}
-      {islandWestSegments.map((seg) => (
-        <group key={`iws-${seg.id}`} position={[seg.x, 0.45, seg.z]} rotation={[0, seg.rotY, 0]}>
-          <mesh position={[0, 0, 0.15]} castShadow>
-            <boxGeometry args={[seg.width, 0.88, 0.3]} />
-            <meshStandardMaterial
-              color={seg.isRed ? '#dc2626' : '#ffffff'}
-              roughness={0.25}
-              metalness={0.15}
-            />
-          </mesh>
-          <mesh position={[0, 0.45, 0.15]}>
-            <boxGeometry args={[seg.width, 0.04, 0.32]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.2} />
-          </mesh>
-          <mesh position={[0, 0.44, 0.31]}>
-            <boxGeometry args={[seg.width, 0.06, 0.02]} />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-        </group>
-      ))}
-
-      {/* Center Paddock Tower & Telemetry Core */}
-      <group position={[0, 0, 0]}>
-        <mesh position={[0, 1.25, 0]} castShadow>
-          <cylinderGeometry args={[2.2, 2.6, 1.9, 20]} />
-          <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.2} />
-        </mesh>
-        <mesh position={[0, 2.2, 0]}>
-          <ringGeometry args={[1.7, 2.4, 32]} />
-          <meshBasicMaterial color="#06b6d4" side={THREE.DoubleSide} />
-        </mesh>
-        <mesh position={[0, 2.22, 0]}>
-          <ringGeometry args={[1.0, 1.4, 32]} />
-          <meshBasicMaterial color="#ffffff" side={THREE.DoubleSide} />
-        </mesh>
-        <pointLight position={[0, 6.0, 0]} color="#ffffff" intensity={3.5} distance={28} />
-      </group>
-
-      {/* ─────────────────────────────────────────────────────────────
-          4. CHICANE OBSTACLE ISLAND (Red & White F1 Chevrons on North Straight)
-      ───────────────────────────────────────────────────────────── */}
-      <group position={[0, 0.45, 9.1]}>
-        <mesh castShadow receiveShadow>
-          <boxGeometry args={[5.6, 0.9, 3.8]} />
-          <meshStandardMaterial color="#f8fafc" roughness={0.3} metalness={0.2} />
-        </mesh>
-        {/* South Face: Red & White Chevrons pointing LEFT <<< */}
-        <mesh position={[0, 0, -1.905]} rotation={[0, Math.PI, 0]}>
-          <planeGeometry args={[5.6, 0.88]} />
-          <meshStandardMaterial
-            map={chicaneFaceTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        {/* North Face */}
-        <mesh position={[0, 0, 1.905]}>
-          <planeGeometry args={[5.6, 0.88]} />
-          <meshStandardMaterial
-            map={chicaneFaceTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        {/* East Face */}
-        <mesh position={[2.805, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-          <planeGeometry args={[3.8, 0.88]} />
-          <meshStandardMaterial
-            map={chicaneSideTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        {/* West Face */}
-        <mesh position={[-2.805, 0, 0]} rotation={[0, -Math.PI / 2, 0]}>
-          <planeGeometry args={[3.8, 0.88]} />
-          <meshStandardMaterial
-            map={chicaneSideTex || undefined}
-            color="#ffffff"
-            roughness={0.2}
-            metalness={0.1}
-          />
-        </mesh>
-        {/* Chicane Top Cap */}
-        <mesh position={[0, 0.46, 0]}>
-          <boxGeometry args={[5.68, 0.04, 3.88]} />
-          <meshStandardMaterial color="#ffffff" roughness={0.2} />
-        </mesh>
-        <mesh position={[0, 0.485, 0]}>
-          <boxGeometry args={[5.5, 0.02, 3.7]} />
-          <meshStandardMaterial color="#dc2626" roughness={0.3} />
-        </mesh>
-
-        {/* 4 Corner Warning Beacons */}
-        {[
-          [-2.7, 1.8],
-          [2.7, 1.8],
-          [-2.7, -1.8],
-          [2.7, -1.8],
-        ].map(([px, pz], idx) => (
-          <group key={idx} position={[px, 0.55, pz]}>
-            <mesh>
-              <cylinderGeometry args={[0.06, 0.06, 0.35, 8]} />
-              <meshStandardMaterial color="#0f172a" />
-            </mesh>
-            <mesh position={[0, 0.22, 0]}>
-              <sphereGeometry args={[0.1, 12, 12]} />
-              <meshBasicMaterial color="#f59e0b" />
-            </mesh>
-          </group>
-        ))}
-
-        <pointLight position={[0, 5.0, 0]} color="#ffffff" intensity={3.8} distance={18} />
-      </group>
-
-      {/* ─────────────────────────────────────────────────────────────
-          5. 3D F1 RED & WHITE ALTERNATING KERBS (Curved Apex & Chicanes)
-      ───────────────────────────────────────────────────────────── */}
-      {/* Turn 1 Inner Apex Curved Kerbs */}
-      {eastApexKerbs.map((k) => (
-        <group key={`eak-${k.id}`} position={[k.x, 0.025, k.z]} rotation={[0, k.rotY, 0]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[1.1, 0.05, 0.5]} />
-            <meshStandardMaterial
-              color={k.isRed ? '#dc2626' : '#ffffff'}
-              roughness={0.3}
-              metalness={0.1}
-            />
-          </mesh>
-        </group>
-      ))}
-
-      {/* Hairpin Inner Apex Curved Kerbs */}
-      {westApexKerbs.map((k) => (
-        <group key={`wak-${k.id}`} position={[k.x, 0.025, k.z]} rotation={[0, k.rotY, 0]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[1.1, 0.05, 0.5]} />
-            <meshStandardMaterial
-              color={k.isRed ? '#dc2626' : '#ffffff'}
-              roughness={0.3}
-              metalness={0.1}
-            />
-          </mesh>
-        </group>
-      ))}
-
-      {/* Chicane S-Curve Kerbs */}
-      {[-4.5, -3.5, -2.5, 2.5, 3.5, 4.5].map((x, idx) => (
-        <group key={`chic-k1-${idx}`} position={[x, 0.025, 6.9]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[0.9, 0.05, 0.4]} />
-            <meshStandardMaterial
-              color={idx % 2 === 0 ? '#dc2626' : '#ffffff'}
-              roughness={0.3}
-              metalness={0.1}
-            />
-          </mesh>
-        </group>
-      ))}
-      {[-4.5, -3.5, -2.5, 2.5, 3.5, 4.5].map((x, idx) => (
-        <group key={`chic-k2-${idx}`} position={[x, 0.025, 11.3]}>
-          <mesh castShadow receiveShadow>
-            <boxGeometry args={[0.9, 0.05, 0.4]} />
-            <meshStandardMaterial
-              color={idx % 2 === 0 ? '#ffffff' : '#dc2626'}
-              roughness={0.3}
-              metalness={0.1}
-            />
-          </mesh>
-        </group>
-      ))}
-
-      {/* ─────────────────────────────────────────────────────────────
-          6. F1 STARTING GRID BOXES (Staggered Pole Position Slots)
-      ───────────────────────────────────────────────────────────── */}
-      {[
-        { slot: 1, x: -2.5, z: -9.8 },
-        { slot: 2, x: -5.5, z: -8.5 },
-        { slot: 3, x: -8.5, z: -9.8 },
-        { slot: 4, x: -11.5, z: -8.5 },
-      ].map((grid) => (
-        <group key={grid.slot} position={[grid.x, 0.012, grid.z]}>
-          <mesh position={[0.65, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[0.1, 1.2]} />
-            <meshBasicMaterial color="#facc15" />
-          </mesh>
-          <mesh position={[0, 0, 0.55]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[1.4, 0.08]} />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-          <mesh position={[0, 0, -0.55]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[1.4, 0.08]} />
-            <meshBasicMaterial color="#ffffff" />
-          </mesh>
-        </group>
-      ))}
-
-      {/* ─────────────────────────────────────────────────────────────
-          7. HOLOGRAM START / FINISH GANTRY ARCH & CHECKERED LINE
-      ───────────────────────────────────────────────────────────── */}
-      <group position={[0, 0, -9.1]}>
+      <group position={[0, 0, -25]}>
         {/* Left Truss Pillar */}
-        <mesh position={[0, 1.8, -4.8]} castShadow>
-          <boxGeometry args={[0.3, 3.6, 0.3]} />
+        <mesh position={[0, 2.0, -halfWidth - 0.6]} castShadow>
+          <boxGeometry args={[0.35, 4.0, 0.35]} />
           <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
         </mesh>
         {/* Right Truss Pillar */}
-        <mesh position={[0, 1.8, 4.8]} castShadow>
-          <boxGeometry args={[0.3, 3.6, 0.3]} />
+        <mesh position={[0, 2.0, halfWidth + 0.6]} castShadow>
+          <boxGeometry args={[0.35, 4.0, 0.35]} />
           <meshStandardMaterial color="#334155" metalness={0.9} roughness={0.2} />
         </mesh>
 
-        {/* Overhead Arch Crossbeam */}
-        <mesh position={[0, 3.6, 0]} castShadow>
-          <boxGeometry args={[0.4, 0.35, 9.9]} />
+        {/* Overhead Gantry Crossbeam */}
+        <mesh position={[0, 3.8, 0]} castShadow>
+          <boxGeometry args={[0.45, 0.4, MONZA_TRACK_WIDTH + 2.0]} />
           <meshStandardMaterial color="#0f172a" metalness={0.9} />
         </mesh>
-        {/* Overhead Glowing Hologram Sign Banner */}
-        <mesh position={[0, 3.25, 0]}>
-          <boxGeometry args={[0.08, 0.5, 8.4]} />
+
+        {/* Glowing Hologram Monza Signboard */}
+        <mesh position={[0, 3.3, 0]}>
+          <boxGeometry args={[0.08, 0.65, MONZA_TRACK_WIDTH + 0.5]} />
           <meshStandardMaterial
             color="#06b6d4"
             emissive="#06b6d4"
-            emissiveIntensity={2.5}
+            emissiveIntensity={2.8}
             transparent
-            opacity={0.85}
+            opacity={0.88}
           />
         </mesh>
 
-        <pointLight position={[0, 3.2, 0]} color="#ffffff" intensity={3.5} distance={12} />
+        {/* Gantry Overhead Lighting */}
+        <pointLight position={[0, 3.4, 0]} color="#ffffff" intensity={4.2} distance={16} />
 
         {/* Checkered Hologram Finish Line on Asphalt Surface */}
-        {[-4.0, -3.0, -2.0, -1.0, 0, 1.0, 2.0, 3.0, 4.0].map((z, idx) => (
-          <group key={idx} position={[0, 0.015, z]}>
+        {[-2.0, -1.0, 0, 1.0, 2.0].map((offsetZ, idx) => (
+          <group key={idx} position={[0, 0.016, offsetZ]}>
             <mesh rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[0.45, 0.5]} />
+              <planeGeometry args={[0.55, 0.55]} />
               <meshBasicMaterial color={idx % 2 === 0 ? '#f8fafc' : '#0284c7'} />
             </mesh>
-            <mesh position={[0.45, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <planeGeometry args={[0.45, 0.5]} />
+            <mesh position={[0.55, 0, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <planeGeometry args={[0.55, 0.55]} />
               <meshBasicMaterial color={idx % 2 === 0 ? '#0284c7' : '#f8fafc'} />
             </mesh>
           </group>
         ))}
 
-        {/* Start / Finish Glowing Hologram Line Projection */}
+        {/* Glowing Hologram Start / Finish Laser Beam Projection */}
         <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[1.2, 9.5]} />
+          <planeGeometry args={[1.5, MONZA_TRACK_WIDTH + 0.4]} />
           <meshBasicMaterial color="#06b6d4" transparent opacity={0.35} depthWrite={false} />
         </mesh>
       </group>
 
       {/* ─────────────────────────────────────────────────────────────
-          8. TRANSPARENT HOLOGRAPHIC CHECKPOINT GATES
+          3. HOLOGRAPHIC SECTOR TIMING GATES
       ───────────────────────────────────────────────────────────── */}
-      {RACE_CHECKPOINTS.map((cp) => {
+      {MONZA_CHECKPOINTS.map((cp) => {
         const isCurrentTarget = activeCheckpoint === cp.id;
         const beamColor = isCurrentTarget ? '#22d3ee' : '#a855f7';
         return (
           <group key={cp.id} position={[cp.center[0], 0.015, cp.center[1]]}>
             {/* Ground Checkpoint Ring */}
             <mesh rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[1.2, 1.45, 32]} />
+              <ringGeometry args={[1.4, 1.75, 32]} />
               <meshBasicMaterial
                 color={beamColor}
                 transparent
-                opacity={isCurrentTarget ? 0.9 : 0.4}
+                opacity={isCurrentTarget ? 0.95 : 0.4}
                 depthWrite={false}
               />
             </mesh>
 
-            {/* Vertical Hologram Laser Beacon Beam */}
-            <mesh position={[0, 1.5, 0]}>
-              <cylinderGeometry args={[0.04, 0.04, 3.0, 12]} />
+            {/* Vertical Hologram Sector Timing Laser Beacon */}
+            <mesh position={[0, 1.8, 0]}>
+              <cylinderGeometry args={[0.04, 0.04, 3.6, 12]} />
               <meshBasicMaterial
                 color={beamColor}
                 transparent
-                opacity={isCurrentTarget ? 0.85 : 0.3}
+                opacity={isCurrentTarget ? 0.88 : 0.3}
                 depthWrite={false}
               />
             </mesh>
@@ -890,18 +442,30 @@ export default function NeonCircuitArena({
       })}
 
       {/* ─────────────────────────────────────────────────────────────
-          9. PIT STOP ENTRY LANE MARKERS
+          4. STADIUM FLOODLIGHTS ACROSS MONZA
       ───────────────────────────────────────────────────────────── */}
-      <group position={[12.5, 0.015, -4.5]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[2.5, 0.16]} />
-          <meshBasicMaterial color="#facc15" />
-        </mesh>
-        <mesh position={[0, 0, 0.35]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[2.5, 0.16]} />
-          <meshBasicMaterial color="#ffffff" />
-        </mesh>
-      </group>
+      {/* Rettifilo Straight */}
+      <pointLight position={[20, 12, -25]} color="#ffffff" intensity={3.5} distance={38} />
+      <pointLight position={[-25, 12, -25]} color="#ffffff" intensity={3.5} distance={38} />
+
+      {/* Prima Variante Chicane */}
+      <pointLight position={[48, 10, -18]} color="#38bdf8" intensity={4.2} distance={32} />
+
+      {/* Curva Grande */}
+      <pointLight position={[56, 12, 6]} color="#ffffff" intensity={3.8} distance={36} />
+
+      {/* Variante della Roggia & Lesmo */}
+      <pointLight position={[30, 11, 36]} color="#a855f7" intensity={4.0} distance={35} />
+      <pointLight position={[0, 11, 35]} color="#38bdf8" intensity={3.8} distance={35} />
+
+      {/* Curva del Serraglio & Variante Ascari */}
+      <pointLight position={[-28, 12, 3]} color="#ffffff" intensity={4.2} distance={36} />
+
+      {/* Curva Parabolica */}
+      <pointLight position={[-64, 12, -10]} color="#38bdf8" intensity={4.5} distance={38} />
+
+      {/* Paddock Area */}
+      <pointLight position={[0, 10, 0]} color="#ffffff" intensity={2.2} distance={30} />
     </group>
   );
 }

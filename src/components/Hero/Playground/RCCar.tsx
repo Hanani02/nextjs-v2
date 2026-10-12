@@ -9,7 +9,6 @@ import CarBodyMesh from './CarBodyMesh';
 import CarWheels from './CarWheels';
 import CarUsernameBadge from './CarUsernameBadge';
 import TireSkidmarks from './TireSkidmarks';
-import { NITRO_BOOST_PADS } from './NeonCircuitArena';
 import {
   createInitialPhysicsState,
   stepCarPhysics,
@@ -24,7 +23,7 @@ interface RCCarProps {
   color?: string;
   username?: string;
   activeEmote?: string | null;
-  onPositionUpdate?: (pos: THREE.Vector3) => void;
+  onPositionUpdate?: (pos: THREE.Vector3, heading?: number, speed?: number) => void;
   onPhysicsBroadcast?: (state: {
     x: number;
     z: number;
@@ -62,19 +61,17 @@ export default function RCCar({
   onPositionUpdate,
   onPhysicsBroadcast,
   raceTelemetry,
-  parkingPosition = [12.5, 0.08, -4.5],
-  parkingAngle = -Math.PI / 2,
-  boundsX = 22.2,
-  boundsZ = 14.0,
+  parkingPosition = [12, 0.08, -20],
+  parkingAngle = Math.PI / 2,
 }: RCCarProps) {
   const carGroup = useRef<THREE.Group>(null!);
   const carBody = useRef<THREE.Group>(null!);
 
-  // Physics simulation state stored in mutable ref
-  const physics = useRef<CarPhysicsState>(createInitialPhysicsState([0, 0.08, -9.2]));
+  // Physics simulation state initialized on Monza Start/Finish Line facing East (+X)
+  const physics = useRef<CarPhysicsState>(createInitialPhysicsState([0, 0.08, -25]));
 
   // Refs for TireSkidmarks
-  const carPosRef = useRef(new THREE.Vector3(0, 0.08, -9.2));
+  const carPosRef = useRef(new THREE.Vector3(0, 0.08, -25));
   const headingRef = useRef(Math.PI / 2);
   const speedRef = useRef(0);
   const isDriftingRef = useRef(false);
@@ -82,7 +79,6 @@ export default function RCCar({
   // Particles system (48 instances for drift smoke and sparks)
   const maxParticles = 48;
   const particlesRef = useRef<THREE.InstancedMesh>(null!);
-  const particleColorsRef = useRef<THREE.InstancedBufferAttribute>(null!);
   const particleData = useMemo(() => {
     return Array.from({ length: maxParticles }, () => ({
       pos: new THREE.Vector3(0, -100, 0),
@@ -96,11 +92,11 @@ export default function RCCar({
   const dummyMatrix = useMemo(() => new THREE.Matrix4(), []);
   const dummyColor = useMemo(() => new THREE.Color(), []);
 
-  // Handle manual reset signal from HUD or Key R (teleport to Start/Finish line facing East)
+  // Handle manual reset signal from HUD or Key R (teleport to Monza Rettifilo Start/Finish)
   useEffect(() => {
     if (controls.reset) {
       const p = physics.current;
-      p.position.set(0, 0.08, -9.2);
+      p.position.set(0, 0.08, -25);
       p.vx = 0;
       p.vz = 0;
       p.speed = 0;
@@ -109,8 +105,9 @@ export default function RCCar({
       p.pitch = 0;
       p.roll = 0;
       p.isDrifting = false;
+      p.hintIndex = 0;
       if (carGroup.current) {
-        carGroup.current.position.set(0, 0.08, -9.2);
+        carGroup.current.position.set(0, 0.08, -25);
         carGroup.current.rotation.y = Math.PI / 2;
       }
       setTireScreech(false);
@@ -129,7 +126,7 @@ export default function RCCar({
     const p = physics.current;
 
     // ─────────────────────────────────────────────────────────────
-    // 1. AUTO-PARKING MODE (When user scrolls into Hero Room)
+    // 1. AUTO-PARKING MODE (When user scrolls down into Hero Room)
     // ─────────────────────────────────────────────────────────────
     if (isAutoParking) {
       const targetPos = new THREE.Vector3(...parkingPosition);
@@ -154,7 +151,7 @@ export default function RCCar({
       // ─────────────────────────────────────────────────────────────
       // 2. ACTIVE DRIFT PLAYGROUND PHYSICS STEP
       // ─────────────────────────────────────────────────────────────
-      stepCarPhysics(p, controls, dt, boundsX, boundsZ);
+      stepCarPhysics(p, controls, dt);
 
       // Procedural Web Audio engine sound and drift tire screech
       updateEngineSound(p.speed, controls.forward);
@@ -180,9 +177,9 @@ export default function RCCar({
       carBody.current.rotation.z = p.roll;
     }
 
-    // Forward position to parent for camera tracking and gem pickup
+    // Forward position and heading to parent for camera tracking and radar
     if (onPositionUpdate) {
-      onPositionUpdate(p.position);
+      onPositionUpdate(p.position, p.heading, p.speed);
     }
 
     // Broadcast state to multiplayer peers
@@ -207,7 +204,7 @@ export default function RCCar({
     // 4. MULTI-LAYER PARTICLES: DRIFT SMOKE & SPARKS
     // ─────────────────────────────────────────────────────────────
     if (particlesRef.current) {
-      const isEmitting = p.isDrifting || (Math.abs(p.speed) > 4.0 && Math.random() < 0.35);
+      const isEmitting = p.isDrifting || (Math.abs(p.speed) > 4.5 && Math.random() < 0.35);
 
       for (let i = 0; i < maxParticles; i++) {
         const pt = particleData[i];
@@ -304,7 +301,7 @@ export default function RCCar({
 
   return (
     <>
-      <group ref={carGroup} position={[0, 0.08, -9.2]} rotation={[0, Math.PI / 2, 0]}>
+      <group ref={carGroup} position={[0, 0.08, -25]} rotation={[0, Math.PI / 2, 0]}>
         {/* Floating Username, Drift Status, & Emote Badge */}
         <CarUsernameBadge
           username={username}
@@ -334,34 +331,28 @@ export default function RCCar({
           wheelSpin={physics.current.wheelSpin}
         />
 
-        {/* ─────────────────────────────────────────────────────────────
-            FEATURE: DYNAMIC DUAL HEADLIGHT SPOTLIGHTS
-        ───────────────────────────────────────────────────────────── */}
-        {/* Left Headlight Spotlight */}
+        {/* Dynamic Dual Headlight Spotlights */}
         <spotLight
           position={[-0.32, 0.28, 0.85]}
-          target-position={[-0.15, 0, 7.5]}
+          target-position={[-0.15, 0, 8.5]}
           color="#f0f9ff"
-          intensity={2.6}
+          intensity={2.8}
           angle={0.52}
           penumbra={0.65}
-          distance={8.5}
+          distance={10.0}
         />
-        {/* Right Headlight Spotlight */}
         <spotLight
           position={[0.32, 0.28, 0.85]}
-          target-position={[0.15, 0, 7.5]}
+          target-position={[0.15, 0, 8.5]}
           color="#f0f9ff"
-          intensity={2.6}
+          intensity={2.8}
           angle={0.52}
           penumbra={0.65}
-          distance={8.5}
+          distance={10.0}
         />
       </group>
 
-      {/* ─────────────────────────────────────────────────────────────
-          FEATURE: DYNAMIC TIRE SKIDMARKS (Fading Rubber Trails on Asphalt)
-      ───────────────────────────────────────────────────────────── */}
+      {/* Dynamic Tire Skidmarks (Fading Rubber Trails on Monza Asphalt) */}
       <TireSkidmarks
         carPosRef={carPosRef}
         headingRef={headingRef}
@@ -369,7 +360,7 @@ export default function RCCar({
         isDriftingRef={isDriftingRef}
       />
 
-      {/* Instanced Drift Smoke, Neon Nitro Flames & Sparks */}
+      {/* Instanced Drift Smoke & Sparks */}
       <instancedMesh
         ref={particlesRef}
         args={[undefined, undefined, maxParticles]}

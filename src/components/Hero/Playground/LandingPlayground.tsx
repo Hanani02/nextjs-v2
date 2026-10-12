@@ -1,11 +1,14 @@
 'use client';
 
 import { Suspense, useState, useRef, useEffect, useCallback } from 'react';
-import { Canvas, useThree, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import toast from 'react-hot-toast';
 import { LuChevronDown, LuSparkles } from 'react-icons/lu';
-import NeonCircuitArena, { RACE_CHECKPOINTS } from './NeonCircuitArena';
+import NeonCircuitArena from './NeonCircuitArena';
+import { MONZA_CHECKPOINTS } from './monzaTrack';
+import FollowCamera from './FollowCamera';
+import Minimap from './Minimap';
 import RCCar from './RCCar';
 import OtherPlayers from './OtherPlayers';
 import RaceLeaderboard from './RaceLeaderboard';
@@ -19,135 +22,32 @@ import type { LeaderboardEntry } from '@/types/vehicle';
 import { saveRaceRecord } from '@/lib/circuitLeaderboard';
 
 /**
- * Responsive Camera Controller for the Expansive Arcade Playground:
- * Dynamically adjusts vertical FOV, elevation, and trailing distance
- * based on viewport aspect ratio so mobile portrait screens have a wide,
- * comfortable view without clipping the arena or the car.
- * Includes dynamic FOV punch (+8 deg) whenever nitro boost is active.
+ * Check if the car has passed or triggered the given Monza checkpoint gate.
  */
-function WidePlaygroundCamera({
-  carPosRef,
-}: {
-  carPosRef: React.RefObject<THREE.Vector3>;
-}) {
-  const { camera, size } = useThree();
-  const currentLookAt = useRef(new THREE.Vector3(0, 0, 0));
-
-  useFrame((_, delta) => {
-    const dt = Math.min(delta, 0.05);
-    const carPos = carPosRef.current;
-    if (!carPos) return;
-
-    // Detect aspect ratio: mobile portrait (< 1) vs desktop landscape (>= 1)
-    const aspect = size.width / Math.max(size.height, 1);
-    const isPortrait = aspect < 1;
-
-    // Responsive FOV: on portrait screens, widen vertical FOV to 68deg
-    const targetFov = isPortrait ? 68 : 46;
-    if (camera instanceof THREE.PerspectiveCamera) {
-      if (Math.abs(camera.fov - targetFov) > 0.4) {
-        camera.fov = targetFov;
-        camera.updateProjectionMatrix();
-      }
-    }
-
-    // Camera height & distance dynamically tailored for mobile
-    const targetCamY = isPortrait ? 25 : 18;
-    const targetCamZOffset = isPortrait ? 22 : 19;
-    const trackingFactor = isPortrait ? 0.6 : 0.45;
-
-    const targetCamX = carPos.x * trackingFactor;
-    const targetCamZ = carPos.z * trackingFactor + targetCamZOffset;
-
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, targetCamX, dt * 3.8);
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, targetCamY, dt * 3.8);
-    camera.position.z = THREE.MathUtils.lerp(camera.position.z, targetCamZ, dt * 3.8);
-
-    const targetLookX = carPos.x * 0.7;
-    const targetLookZ = carPos.z * 0.7;
-    currentLookAt.current.x = THREE.MathUtils.lerp(currentLookAt.current.x, targetLookX, dt * 4.5);
-    currentLookAt.current.z = THREE.MathUtils.lerp(currentLookAt.current.z, targetLookZ, dt * 4.5);
-    currentLookAt.current.y = 0.2;
-
-    camera.lookAt(currentLookAt.current);
-  });
-
-  return null;
-}
-
-/**
- * Evaluates whether the car has passed through or is currently inside the given gate.
- * Combines Continuous Collision Detection (CCD line crossing) with an expanded bounding box
- * so high speed or low frame rates never tunnel through the start/finish line or apex gates.
- */
-function checkGatePass(
+function checkMonzaGatePass(
   gateId: number,
   prevPos: THREE.Vector3,
   currPos: THREE.Vector3,
-  cp: (typeof RACE_CHECKPOINTS)[0]
+  cp: (typeof MONZA_CHECKPOINTS)[0]
 ): boolean {
-  // 1. Proximity bounding box check (with generous threshold)
-  const dx = Math.abs(currPos.x - cp.center[0]);
-  const dz = Math.abs(currPos.z - cp.center[1]);
-  if (dx <= cp.width * 0.65 && dz <= cp.depth * 0.65) {
+  // 1. Proximity bounding radius check
+  const dist = Math.hypot(currPos.x - cp.center[0], currPos.z - cp.center[1]);
+  if (dist <= 4.2) {
     return true;
   }
 
-  // 2. Continuous Collision Detection (crossing the gate trigger plane between frames)
-  // Distance check: ignore if car was teleported or reset (> 8 units in one frame)
-  const dist = prevPos.distanceTo(currPos);
-  if (dist > 8.0) return false;
+  // 2. Continuous Collision Detection (CCD plane crossing)
+  const prevDist = prevPos.distanceTo(currPos);
+  if (prevDist > 12.0) return false; // Ignore teleport/reset
 
-  switch (gateId) {
-    case 0: {
-      // Gate 0: Start / Finish Line at X = 0, Z spanning across the bottom straight ([-16.0, -2.5])
-      // Detects whenever the car crosses X = 0 in either direction
-      const crossedX = (prevPos.x <= 0 && currPos.x >= 0) || (prevPos.x >= 0 && currPos.x <= 0);
-      if (crossedX && Math.abs(currPos.x - prevPos.x) > 0.0001) {
-        const t = (0 - prevPos.x) / (currPos.x - prevPos.x);
-        const zAtCross = prevPos.z + t * (currPos.z - prevPos.z);
-        if (zAtCross >= -16.0 && zAtCross <= -2.5) {
-          return true;
-        }
-      }
-      break;
-    }
-    case 1: {
-      // Gate 1: Turn 1 Apex at Z = 0, X spanning across the eastern curve ([9.5, 24.5])
-      const crossedZ = (prevPos.z <= 0 && currPos.z >= 0) || (prevPos.z >= 0 && currPos.z <= 0);
-      if (crossedZ && Math.abs(currPos.z - prevPos.z) > 0.0001) {
-        const t = (0 - prevPos.z) / (currPos.z - prevPos.z);
-        const xAtCross = prevPos.x + t * (currPos.x - prevPos.x);
-        if (xAtCross >= 9.5 && xAtCross <= 24.5) {
-          return true;
-        }
-      }
-      break;
-    }
-    case 2: {
-      // Gate 2: Chicane Entry / Back straight at X = 0, Z spanning across the top straight ([2.5, 16.0])
-      const crossedX = (prevPos.x >= 0 && currPos.x <= 0) || (prevPos.x <= 0 && currPos.x >= 0);
-      if (crossedX && Math.abs(currPos.x - prevPos.x) > 0.0001) {
-        const t = (0 - prevPos.x) / (currPos.x - prevPos.x);
-        const zAtCross = prevPos.z + t * (currPos.z - prevPos.z);
-        if (zAtCross >= 2.5 && zAtCross <= 16.0) {
-          return true;
-        }
-      }
-      break;
-    }
-    case 3: {
-      // Gate 3: Hairpin Apex at Z = 0, X spanning across the western curve ([-24.5, -9.5])
-      const crossedZ = (prevPos.z >= 0 && currPos.z <= 0) || (prevPos.z <= 0 && currPos.z >= 0);
-      if (crossedZ && Math.abs(currPos.z - prevPos.z) > 0.0001) {
-        const t = (0 - prevPos.z) / (currPos.z - prevPos.z);
-        const xAtCross = prevPos.x + t * (currPos.x - prevPos.x);
-        if (xAtCross >= -24.5 && xAtCross <= -9.5) {
-          return true;
-        }
-      }
-      break;
-    }
+  const nx = cp.normal[0];
+  const nz = cp.normal[1];
+
+  const dotPrev = (prevPos.x - cp.center[0]) * nx + (prevPos.z - cp.center[1]) * nz;
+  const dotCurr = (currPos.x - cp.center[0]) * nx + (currPos.z - cp.center[1]) * nz;
+
+  if (dotPrev <= 0.25 && dotCurr >= -0.25 && dist <= 8.5) {
+    return true;
   }
 
   return false;
@@ -155,10 +55,10 @@ function checkGatePass(
 
 /**
  * Real-time Lap & Checkpoint collision tracker running inside the R3F render loop.
- * Detects checkpoint passes (1 -> 2 -> 3 -> 0) with strict sequential clearance,
- * accumulates both current lap time and total race time across all 3 laps.
+ * Detects sequential clearance across all 6 Monza sector gates:
+ * Gate 1 (Prima Variante) -> Gate 2 (Roggia) -> Gate 3 (Lesmo) -> Gate 4 (Ascari) -> Gate 5 (Parabolica) -> Gate 0 (Start/Finish)
  */
-function CircuitRaceTracker({
+function MonzaRaceTracker({
   carPosRef,
   isAtPlayground,
   resetTrigger,
@@ -176,7 +76,7 @@ function CircuitRaceTracker({
   isFinished: boolean;
 }) {
   const currentLapRef = useRef(1);
-  const targetCheckpointRef = useRef(1); // 0: Start/Finish, 1: Turn 1, 2: Chicane, 3: Hairpin
+  const targetCheckpointRef = useRef(1); // 0: Start/Finish, 1: Prima Variante, 2: Roggia, 3: Lesmo, 4: Ascari, 5: Parabolica
   const lapTimeRef = useRef(0);
   const totalRaceTimeRef = useRef(0);
   const lastTickTime = useRef(0);
@@ -196,94 +96,102 @@ function CircuitRaceTracker({
     prevCarPosRef.current = null;
   }, [resetTrigger]);
 
-  useFrame((_, delta) => {
-    if (raceEndedRef.current || isFinished || !isAtPlayground) return;
-    const dt = Math.min(delta, 0.05);
-    const carPos = carPosRef.current;
-    if (!carPos) return;
+  const totalGates = MONZA_CHECKPOINTS.length; // 6 gates
 
-    if (!prevCarPosRef.current) {
-      prevCarPosRef.current = carPos.clone();
-      return;
-    }
-    const prevPos = prevCarPosRef.current;
+  // Update loop
+  useEffect(() => {
+    let animId: number;
+    let lastTime = performance.now();
 
-    // Accumulate lap timer and total race timer
-    lapTimeRef.current += dt;
-    totalRaceTimeRef.current += dt;
+    const loop = (now: number) => {
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
 
-    // Throttle React timer state update to ~15 FPS for smooth UI
-    const now = performance.now();
-    if (now - lastTickTime.current > 65) {
-      lastTickTime.current = now;
-      onTimerTick(lapTimeRef.current, totalRaceTimeRef.current);
-    }
+      if (!raceEndedRef.current && !isFinished && isAtPlayground) {
+        const carPos = carPosRef.current;
+        if (carPos) {
+          if (!prevCarPosRef.current) {
+            prevCarPosRef.current = carPos.clone();
+          } else {
+            const prevPos = prevCarPosRef.current;
 
-    const currentTarget = targetCheckpointRef.current;
-    if (currentTarget < 0) {
-      prevPos.copy(carPos);
-      return;
-    }
+            lapTimeRef.current += dt;
+            totalRaceTimeRef.current += dt;
 
-    const cp = RACE_CHECKPOINTS[currentTarget];
-    if (!cp) {
-      prevPos.copy(carPos);
-      return;
-    }
+            // Throttle UI timer state ticks to ~15 FPS
+            if (now - lastTickTime.current > 65) {
+              lastTickTime.current = now;
+              onTimerTick(lapTimeRef.current, totalRaceTimeRef.current);
+            }
 
-    // Accurate Continuous Collision + Proximity detection
-    const hit = checkGatePass(currentTarget, prevPos, carPos, cp);
+            const currentTarget = targetCheckpointRef.current;
+            if (currentTarget >= 0) {
+              const cp = MONZA_CHECKPOINTS[currentTarget];
+              if (cp) {
+                const hit = checkMonzaGatePass(currentTarget, prevPos, carPos, cp);
 
-    // Responsive debouncing (150ms) to prevent multi-triggering within consecutive frames
-    if (hit && now - lastCheckpointPassTime.current > 150) {
-      if (currentTarget === 0) {
-        // Enforce that Gates 1, 2, and 3 MUST have been cleared on this lap
-        const hasClearedAllGates =
-          clearedCheckpointsRef.current.has(1) &&
-          clearedCheckpointsRef.current.has(2) &&
-          clearedCheckpointsRef.current.has(3);
+                if (hit && now - lastCheckpointPassTime.current > 200) {
+                  if (currentTarget === 0) {
+                    // Check if all sectors 1 through 5 were cleared
+                    let allCleared = true;
+                    for (let g = 1; g < totalGates; g++) {
+                      if (!clearedCheckpointsRef.current.has(g)) {
+                        allCleared = false;
+                        break;
+                      }
+                    }
 
-        // Minimum lap time threshold: 0.5s to prevent immediate double-tap on the exact same frame
-        // Allows fast laps under 4 seconds to be detected immediately!
-        if (!hasClearedAllGates || lapTimeRef.current < 0.5) {
-          prevPos.copy(carPos);
-          return;
+                    if (allCleared && lapTimeRef.current >= 2.0) {
+                      lastCheckpointPassTime.current = now;
+
+                      const finishedLap = currentLapRef.current;
+                      const lapTime = lapTimeRef.current;
+                      const totalTime = totalRaceTimeRef.current;
+
+                      if (finishedLap >= 3) {
+                        raceEndedRef.current = true;
+                        targetCheckpointRef.current = -1;
+                        onLapUpdate(finishedLap, lapTime, totalTime, true);
+                      } else {
+                        currentLapRef.current += 1;
+                        targetCheckpointRef.current = 1;
+                        lapTimeRef.current = 0;
+                        clearedCheckpointsRef.current.clear();
+                        onLapUpdate(finishedLap, lapTime, totalTime, false);
+                        onCheckpointTrigger(1);
+                      }
+                    }
+                  } else {
+                    lastCheckpointPassTime.current = now;
+                    clearedCheckpointsRef.current.add(currentTarget);
+
+                    const nextCp = (currentTarget + 1) % totalGates;
+                    targetCheckpointRef.current = nextCp;
+                    onCheckpointTrigger(nextCp);
+                  }
+                }
+              }
+            }
+
+            prevPos.copy(carPos);
+          }
         }
-
-        lastCheckpointPassTime.current = now;
-
-        // Lap Completed!
-        const finishedLap = currentLapRef.current;
-        const lapTime = lapTimeRef.current;
-        const totalTime = totalRaceTimeRef.current;
-
-        if (finishedLap >= 3) {
-          // Immediately set synchronous lock so subsequent frames cannot re-trigger
-          raceEndedRef.current = true;
-          targetCheckpointRef.current = -1;
-          onLapUpdate(finishedLap, lapTime, totalTime, true);
-        } else {
-          currentLapRef.current += 1;
-          targetCheckpointRef.current = 1;
-          lapTimeRef.current = 0;
-          clearedCheckpointsRef.current.clear();
-          onLapUpdate(finishedLap, lapTime, totalTime, false);
-          onCheckpointTrigger(1);
-        }
-      } else {
-        lastCheckpointPassTime.current = now;
-        // Mark this intermediate checkpoint as cleared
-        clearedCheckpointsRef.current.add(currentTarget);
-
-        // Advance to next checkpoint: 1 -> 2, 2 -> 3, 3 -> 0
-        const nextCp = (currentTarget + 1) % 4;
-        targetCheckpointRef.current = nextCp;
-        onCheckpointTrigger(nextCp);
       }
-    }
 
-    prevPos.copy(carPos);
-  });
+      animId = requestAnimationFrame(loop);
+    };
+
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [
+    carPosRef,
+    isAtPlayground,
+    isFinished,
+    totalGates,
+    onLapUpdate,
+    onCheckpointTrigger,
+    onTimerTick,
+  ]);
 
   return null;
 }
@@ -291,8 +199,9 @@ function CircuitRaceTracker({
 export default function LandingPlayground() {
   const [mounted, setMounted] = useState(false);
   const [isAtPlayground, setIsAtPlayground] = useState(true);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Mini Racing Circuit & Lap System State
+  // Monza Racing Circuit & Lap System State
   const [currentLap, setCurrentLap] = useState(1);
   const [activeCheckpoint, setActiveCheckpoint] = useState(1);
   const [currentLapTime, setCurrentLapTime] = useState(0);
@@ -302,8 +211,11 @@ export default function LandingPlayground() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [resetRaceTrigger, setResetRaceTrigger] = useState(0);
 
-  // Start/Finish grid position: [0, 0.08, -9.2]
-  const carPositionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.08, -9.2));
+  // Start/Finish grid position on Rettifilo Straight: [0, 0.08, -25]
+  const carPositionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.08, -25));
+  const carHeadingRef = useRef<number>(Math.PI / 2);
+  const carSpeedRef = useRef<number>(0);
+
   const { controls, setControlState, triggerReset } = useKeyboardControls(true);
 
   // Real-time multiplayer hook (Supabase Realtime Broadcast & Presence)
@@ -329,8 +241,10 @@ export default function LandingPlayground() {
     setMounted(true);
 
     const handleScroll = () => {
-      // Playground HUD & Garage UI only visible at Scroll = 0 (Pre-hero phase)
-      setIsAtPlayground(window.scrollY < 80);
+      const scrollY = window.scrollY;
+      setIsAtPlayground(scrollY < 80);
+      const prog = Math.min(Math.max(scrollY / 450, 0), 1);
+      setScrollProgress(prog);
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
@@ -338,6 +252,15 @@ export default function LandingPlayground() {
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleCarPositionUpdate = useCallback(
+    (pos: THREE.Vector3, heading?: number, speed?: number) => {
+      carPositionRef.current.copy(pos);
+      if (heading !== undefined) carHeadingRef.current = heading;
+      if (speed !== undefined) carSpeedRef.current = speed;
+    },
+    []
+  );
 
   // Lap progression and finish logic
   const handleLapUpdate = useCallback(
@@ -357,7 +280,6 @@ export default function LandingPlayground() {
         setIsFinished(true);
         playFinishChime();
 
-        // Catat rekor balapan secara permanen ke Supabase database
         saveRaceRecord({
           player_id: playerId || 'self',
           username,
@@ -369,12 +291,12 @@ export default function LandingPlayground() {
         }).then((res) => {
           if (res.success) {
             if (res.isNewBest === false) {
-              toast('⏱️ Rekor balapan tercatat! (Rekor sebelumnya masih lebih cepat)', {
+              toast('⏱️ Rekor Monza tercatat! (Rekor sebelumnya masih lebih cepat)', {
                 id: 'db-saved',
                 duration: 3500,
               });
             } else {
-              toast.success('🏆 Rekor terbaikmu berhasil disimpan ke Supabase!', {
+              toast.success('🏆 Rekor terbaik Monza berhasil disimpan!', {
                 id: 'db-saved',
                 duration: 3500,
               });
@@ -383,14 +305,14 @@ export default function LandingPlayground() {
         });
 
         toast.success(
-          `🎉 FINISH! 3 Lap Selesai!\nTotal Waktu: ${formatMinSec(totalTime)} (Best: ${lapTime.toFixed(2)}s) 🏆`,
+          `🎉 FINISH! 3 Lap Monza Selesai!\nTotal Waktu: ${formatMinSec(totalTime)} (Best: ${lapTime.toFixed(2)}s) 🏆`,
           { id: 'race-complete', duration: 5500 }
         );
       } else {
         setCurrentLap((prev) => Math.min(prev + 1, 3));
         playCheckpointChime();
         toast.success(
-          `Lap ${finishedLap}/3 Selesai! (${lapTime.toFixed(2)}s) ⏱️`,
+          `Lap ${finishedLap}/3 Monza Selesai! (${lapTime.toFixed(2)}s) ⏱️`,
           { id: 'lap-completed', duration: 2500 }
         );
       }
@@ -416,10 +338,10 @@ export default function LandingPlayground() {
     setIsFinished(false);
     setResetRaceTrigger((prev) => prev + 1);
     triggerReset();
-    toast('Balapan di-reset ke garis Start! 🚦', { id: 'race-reset' });
+    toast('Balapan di-reset ke garis Start Monza! 🚦', { id: 'race-reset' });
   }, [triggerReset]);
 
-  // Real-time synchronization of leaderboard with multiplayer room peers
+  // Synchronize leaderboard with multiplayer room peers
   useEffect(() => {
     const updateLeaderboard = () => {
       const liveList = getLeaderboard({
@@ -468,10 +390,10 @@ export default function LandingPlayground() {
           style={{ pointerEvents: 'none' }}
           shadows
           camera={{
-            position: [0, 18, 19],
-            fov: 46,
+            position: [0, 4, -30],
+            fov: 50,
             near: 0.1,
-            far: 140,
+            far: 220,
           }}
           dpr={[1, typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1.5]}
           gl={{
@@ -486,48 +408,42 @@ export default function LandingPlayground() {
           }}
         >
           <Suspense fallback={null}>
-            {/* Adaptive camera tracking car in wide arena */}
-            <WidePlaygroundCamera carPosRef={carPositionRef} />
+            {/* Third-Person Follow Camera with Smooth Lerp Damping */}
+            <FollowCamera
+              carPosRef={carPositionRef}
+              carHeadingRef={carHeadingRef}
+              carSpeedRef={carSpeedRef}
+              scrollProgress={scrollProgress}
+            />
 
             {/* Post-Processing Bloom for vibrant neon glow */}
             <ArenaBloom strength={0.65} radius={0.35} threshold={0.82} />
 
-            {/* Ambient Lighting - bright enough to see track and barriers clearly */}
-            <ambientLight intensity={1.1} color="#334155" />
+            {/* Ambient Stadium Lighting */}
+            <ambientLight intensity={1.15} color="#334155" />
 
-            {/* Stadium Key Floodlight */}
+            {/* Main Floodlight */}
             <directionalLight
-              position={[15, 28, 15]}
-              intensity={2.2}
+              position={[25, 45, -10]}
+              intensity={2.4}
               color="#ffffff"
               castShadow
               shadow-mapSize-width={1024}
               shadow-mapSize-height={1024}
               shadow-camera-near={0.5}
-              shadow-camera-far={60}
-              shadow-camera-left={-26}
-              shadow-camera-right={26}
-              shadow-camera-top={18}
-              shadow-camera-bottom={-18}
+              shadow-camera-far={120}
+              shadow-camera-left={-70}
+              shadow-camera-right={70}
+              shadow-camera-top={50}
+              shadow-camera-bottom={-50}
               shadow-bias={-0.0005}
             />
 
-            {/* Stadium Spotlights: Corners, Chicane & Straightaways */}
-            <pointLight position={[-16, 9, -10]} color="#38bdf8" intensity={2.8} distance={32} />
-            <pointLight position={[16, 9, 10]} color="#a855f7" intensity={2.8} distance={32} />
-            <pointLight position={[0, 9, 9.5]} color="#ffffff" intensity={3.2} distance={25} />
-            <pointLight position={[0, 9, -9.2]} color="#ffffff" intensity={2.8} distance={25} />
-            <pointLight position={[0, 9, 0]} color="#38bdf8" intensity={2.0} distance={22} />
-
-            {/* Enclosed Neon Circuit Racetrack with Hologram Gantry & Barriers */}
-            <NeonCircuitArena
-              boundsX={22.2}
-              boundsZ={14.0}
-              activeCheckpoint={activeCheckpoint}
-            />
+            {/* Full 3D Autodromo Nazionale Monza Circuit */}
+            <NeonCircuitArena activeCheckpoint={activeCheckpoint} />
 
             {/* Checkpoint & Lap Progress Tracker */}
-            <CircuitRaceTracker
+            <MonzaRaceTracker
               carPosRef={carPositionRef}
               isAtPlayground={isAtPlayground}
               resetTrigger={resetRaceTrigger}
@@ -537,7 +453,7 @@ export default function LandingPlayground() {
               isFinished={isFinished}
             />
 
-            {/* Other Remote Multiplayer Players */}
+            {/* Remote Multiplayer Players */}
             <OtherPlayers
               activePlayerIds={activePlayerIds}
               remotePlayersRef={remotePlayersRef}
@@ -552,7 +468,7 @@ export default function LandingPlayground() {
               color={carColor}
               username={username}
               activeEmote={selfEmote && selfEmote.expiresAt > Date.now() ? selfEmote.text : null}
-              onPositionUpdate={(pos) => carPositionRef.current.copy(pos)}
+              onPositionUpdate={handleCarPositionUpdate}
               onPhysicsBroadcast={broadcastCarState}
               raceTelemetry={{
                 currentLap,
@@ -561,17 +477,27 @@ export default function LandingPlayground() {
                 bestLapTime,
                 isFinished,
               }}
-              parkingPosition={[12.5, 0.08, -4.5]}
-              parkingAngle={-Math.PI / 2}
-              boundsX={22.2}
-              boundsZ={14.0}
+              parkingPosition={[12, 0.08, -20]}
+              parkingAngle={Math.PI / 2}
             />
           </Suspense>
         </Canvas>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. RESPONSIVE HUD OVERLAY (Instructions, Keys, Mobile Controls)
+          2. 2D RADAR MINIMAP HUD (Top Left Corner)
+      ───────────────────────────────────────────────────────────── */}
+      <Minimap
+        carPosRef={carPositionRef}
+        carHeadingRef={carHeadingRef}
+        remotePlayersRef={remotePlayersRef}
+        activePlayerIds={activePlayerIds}
+        activeCheckpoint={activeCheckpoint}
+        visible={isAtPlayground}
+      />
+
+      {/* ─────────────────────────────────────────────────────────────
+          3. RESPONSIVE HUD OVERLAY (Instructions, Keys, Mobile Controls)
       ───────────────────────────────────────────────────────────── */}
       <PlaygroundHUD
         controls={controls}
@@ -582,7 +508,7 @@ export default function LandingPlayground() {
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          3. REAL-TIME MINI-LEADERBOARD & LAP TELEMETRY (Top Right)
+          4. REAL-TIME MINI-LEADERBOARD & LAP TELEMETRY (Top Right Corner)
       ───────────────────────────────────────────────────────────── */}
       <RaceLeaderboard
         currentLap={currentLap}
@@ -597,8 +523,7 @@ export default function LandingPlayground() {
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          3. GARAGE MENU UI (Vehicle Model, Neon Palette, Username)
-             Only visible in Pre-Hero phase (Scroll = 0)
+          5. GARAGE MENU UI (Vehicle Model, Neon Palette, Username)
       ───────────────────────────────────────────────────────────── */}
       <GarageMenu
         currentModel={carModel}
@@ -615,7 +540,7 @@ export default function LandingPlayground() {
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          4. SCROLL DOWN TO HOME CTA BUTTON
+          6. SCROLL DOWN TO HOME CTA BUTTON
       ───────────────────────────────────────────────────────────── */}
       <div
         className={`absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto transition-all duration-500 ${
