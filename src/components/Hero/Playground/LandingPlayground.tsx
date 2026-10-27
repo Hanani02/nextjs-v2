@@ -4,7 +4,8 @@ import { Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import toast from 'react-hot-toast';
-import { LuChevronDown, LuSparkles } from 'react-icons/lu';
+import { LuSparkles, LuArrowLeft, LuHouse } from 'react-icons/lu';
+import Link from 'next/link';
 import NeonCircuitArena from './NeonCircuitArena';
 import { MONZA_CHECKPOINTS } from './monzaTrack';
 import FollowCamera from './FollowCamera';
@@ -276,17 +277,8 @@ export default function LandingPlayground() {
       // ignore
     }
 
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      setIsAtPlayground(scrollY < 80);
-      const prog = Math.min(Math.max(scrollY / 450, 0), 1);
-      setScrollProgress(prog);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
-
-    return () => window.removeEventListener('scroll', handleScroll);
+    setIsAtPlayground(true);
+    setScrollProgress(0);
   }, []);
 
   const handleUpdateSensitivity = useCallback((val: number) => {
@@ -421,13 +413,6 @@ export default function LandingPlayground() {
     const interval = setInterval(updateLeaderboard, 250);
     return () => clearInterval(interval);
   }, [getLeaderboard, currentLap, activeCheckpoint, currentLapTime, bestLapTime, isFinished]);
-
-  const handleScrollToHome = () => {
-    const homeEl = document.getElementById('home');
-    if (homeEl) {
-      homeEl.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   if (!mounted) {
     return (
@@ -645,21 +630,28 @@ export default function LandingPlayground() {
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          6. SCROLL DOWN TO HOME CTA BUTTON
+          7. TOMBOL KEMBALI KE BERANDA (TOP & BOTTOM)
       ───────────────────────────────────────────────────────────── */}
-      <div
-        className={`absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto transition-all duration-500 ${
-          isAtPlayground ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'
-        }`}
-      >
-        <button
-          onClick={handleScrollToHome}
-          className="group flex items-center gap-1.5 sm:gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-neutral-950/90 hover:bg-neutral-900 border border-cyan-500/50 hover:border-cyan-400 text-white text-[11px] sm:text-xs md:text-sm font-semibold shadow-[0_0_20px_rgba(6,182,212,0.35)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
+      {/* Top Left Return Button (Above Minimap) */}
+      <div className="absolute top-3 sm:top-4 left-3 sm:left-6 z-50 pointer-events-auto">
+        <Link
+          href="/"
+          className="group flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-neutral-950/90 hover:bg-neutral-900 border border-cyan-500/50 hover:border-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(6,182,212,0.3)] backdrop-blur-xl transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
         >
-          <LuSparkles className="w-3.5 h-3.5 text-cyan-400 animate-spin duration-3000" />
-          <span>Masuk ke Portofolio (Home)</span>
-          <LuChevronDown className="w-3.5 h-3.5 text-cyan-400 group-hover:translate-y-0.5 transition-transform" />
-        </button>
+          <LuArrowLeft className="w-4 h-4 text-cyan-400 group-hover:-translate-x-1 transition-transform" />
+          <span>Kembali ke Beranda</span>
+        </Link>
+      </div>
+
+      {/* Bottom Center Return Button */}
+      <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto transition-all duration-300">
+        <Link
+          href="/"
+          className="group flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-neutral-950/90 hover:bg-neutral-900 border border-cyan-500/50 hover:border-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(6,182,212,0.35)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
+        >
+          <LuHouse className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
+          <span>Kembali ke Halaman Awal</span>
+        </Link>
       </div>
     </section>
   );

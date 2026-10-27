@@ -1,4 +1,3 @@
-import LandingPlayground from "@/components/Hero/Playground/LandingPlayground";
 import ExperienceSection from "@/components/section/ExperienceSection";
 import HeroSections from "@/components/section/HeroSections";
 import AboutSection from "@/components/section/aboutSection";
@@ -17,7 +16,6 @@ export default async function Home() {
 
   return (
     <AnimationLayout>
-      <LandingPlayground />
       <HeroSections initialHero={config.hero} />
       <Marquee />
       <AboutSection initialAbout={config.about} />

@@ -48,7 +48,7 @@ export default function SoundToggle({
       onClick={() => toggleAudioMute()}
       aria-label={tooltipText}
       title={tooltipText}
-      className={`group relative inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface/70 text-text backdrop-blur-md transition-all duration-300 hover:border-cyan-400/50 hover:bg-surface hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] active:scale-95 cursor-pointer ${
+      className={`group relative inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface/70 text-text backdrop-blur-md transition-all duration-300 ease-out transform hover:scale-105 hover:border-cyan-400/50 hover:bg-surface hover:text-cyan-400 hover:shadow-[0_0_20px_rgba(6,182,212,0.2)] active:scale-95 cursor-pointer ${
         showLabel ? 'px-3.5 py-2 w-auto' : sizeClasses
       } ${className}`}
     >

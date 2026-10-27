@@ -18,9 +18,10 @@ const navIcons = {
 interface MobileNavProps {
   navOpen: boolean;
   onClose?: () => void;
+  activeSection?: string;
 }
 
-export default function MobileNavbar({ navOpen, onClose }: MobileNavProps) {
+export default function MobileNavbar({ navOpen, onClose, activeSection = "home" }: MobileNavProps) {
   return (
     <>
       {/* overlay */}
@@ -40,24 +41,36 @@ export default function MobileNavbar({ navOpen, onClose }: MobileNavProps) {
       >
         <div className="pt-16 space-y-6">
           <p className="text-xs font-semibold uppercase tracking-wider text-primary">Menu</p>
-          <ul className="space-y-1">
-            {navLinks.map((link, index) => (
-              <li key={index}>
-                <Link
-                  href={link.href}
-                  onClick={onClose}
-                  className="w-full flex items-center gap-4 py-3 px-4 rounded-xl text-base font-medium text-text border border-transparent transition-all duration-300 hover:bg-primary/10 hover:text-primary hover:border-border"
-                >
-                  <Icon
-                    icon={navIcons[link.label as keyof typeof navIcons]}
-                    width="20"
-                    height="20"
-                    className="text-primary"
-                  />
-                  {link.label}
-                </Link>
-              </li>
-            ))}
+          <ul className="space-y-1.5">
+            {navLinks.map((link, index) => {
+              const isActive = activeSection === link.id;
+              return (
+                <li key={index}>
+                  <Link
+                    href={link.href}
+                    onClick={onClose}
+                    className={`w-full flex items-center justify-between py-3 px-4 rounded-xl text-base font-medium transition-all duration-300 ease-out transform hover:scale-[1.02] active:scale-[0.98] ${
+                      isActive
+                        ? "bg-primary/15 text-primary border border-primary/35 shadow-[0_0_15px_rgba(59,130,246,0.2)] font-semibold"
+                        : "text-text border border-transparent hover:bg-surface/80 hover:text-primary"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <Icon
+                        icon={navIcons[link.label as keyof typeof navIcons]}
+                        width="20"
+                        height="20"
+                        className={isActive ? "text-primary" : "text-text/70"}
+                      />
+                      <span>{link.label}</span>
+                    </div>
+                    {isActive && (
+                      <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_var(--color-primary)]" />
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
 
