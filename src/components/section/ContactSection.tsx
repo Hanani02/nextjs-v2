@@ -27,9 +27,9 @@ export default function ContactSection({ initialContact }: ContactSectionProps) 
     ? initialContact.badge
     : dictionary.contact_badge;
 
-  const title = initialContact?.title && initialContact.title !== "Let's build something great"
+  const title = initialContact?.title && initialContact.title !== "Let's build"
     ? initialContact.title
-    : (isId ? dictionary.contact_title : "Let's build something great");
+    : (isId ? dictionary.contact_title : "Let's build");
 
   const highlight = initialContact?.highlight && initialContact.highlight !== "something great"
     ? initialContact.highlight
@@ -201,19 +201,6 @@ export default function ContactSection({ initialContact }: ContactSectionProps) 
                   </a>
                 ))}
               </div>
-            </div>
-
-            {/* Note about fast response */}
-            <div className="mt-8 p-4 rounded-2xl bg-primary/5 border border-primary/20 text-text/80 text-xs sm:text-sm leading-relaxed">
-              {isId ? (
-                <p>
-                  🚀 Terbuka untuk diskusi proyek freelance, magang, maupun kerja sama jangka panjang. Respon tercepat melalui WhatsApp atau Email.
-                </p>
-              ) : (
-                <p>
-                  🚀 Open for freelance projects, internships, and long-term collaborations. Fastest response via WhatsApp or Email.
-                </p>
-              )}
             </div>
           </div>
         </div>
