@@ -34,12 +34,18 @@ export default function ContactPreview({ contact, onEdit }: ContactPreviewProps)
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           {/* Left Preview Form Card */}
           <div className="p-6 rounded-2xl bg-card border border-border space-y-4">
+            {contact?.badge && (
+              <span className="inline-block text-[11px] font-semibold text-primary bg-primary/10 px-2.5 py-1 rounded-full border border-primary/20">
+                {contact.badge}
+              </span>
+            )}
             <h3 className="text-lg font-semibold text-text">
-              {contact?.title || "Let's build something great"}
+              {contact?.title || "Mari bangun sesuatu yang"}{" "}
+              <span className="text-primary">{contact?.highlight || "luar biasa bersama"}</span>
             </h3>
             <p className="text-xs text-gray-400">
               {contact?.description ||
-                "Have a project in mind? I'd love to hear about it. Let's connect."}
+                "Punya ide proyek, tawaran kolaborasi, atau ingin berdiskusi? Saya siap mendengarnya. Mari terhubung!"}
             </p>
             <div className="space-y-3 opacity-70 pointer-events-none">
               <input

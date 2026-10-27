@@ -24,21 +24,15 @@ export default function AboutSection({ initialAbout }: AboutSectionProps = {}) {
     highlights: [],
   };
 
-  const badge = about.badge && !about.badge.includes("About Me")
-    ? about.badge
-    : dictionary.about_badge;
+  const isDefaultBadge = !about.badge || ['tentang saya', 'about me'].includes(about.badge.trim().toLowerCase());
+  const isDefaultTitle = !about.title || about.title.includes("Membangun aplikasi web") || about.title.includes("I build scalable");
+  const isDefaultDesc1 = !about.description1 || about.description1.includes("Saya siswa kelas 11") || about.description1.includes("I'm a Grade 11");
+  const isDefaultDesc2 = !about.description2 || about.description2.includes("Saya sering bekerja") || about.description2.includes("I frequently work");
 
-  const title = about.title && !about.title.includes("I build scalable")
-    ? about.title
-    : (isId ? dictionary.about_title : "I build scalable and user-focused web applications");
-
-  const desc1 = about.description1 && !about.description1.includes("I'm a Grade 11 Software Engineering")
-    ? about.description1
-    : (isId ? dictionary.about_desc1 : "I'm a Grade 11 Software Engineering (RPL) student at SMKN 1 Kota Pasuruan, passionate about building smooth, modern, and user-friendly web applications. I enjoy turning ideas into functional digital experiences while continuously improving my development and design skills through school and personal projects.");
-
-  const desc2 = about.description2 && !about.description2.includes("I frequently work with")
-    ? about.description2
-    : (isId ? dictionary.about_desc2 : "I frequently work with HTML, CSS, JavaScript, TypeScript, React, Next.js, and Tailwind CSS, along with MySQL and basic Python. For design and interface development, I often use Figma and shadcn/ui to create clean, responsive, and consistent experiences.");
+  const badge = isDefaultBadge ? dictionary.about_badge : (isId ? about.badge : dictionary.about_badge);
+  const title = isDefaultTitle ? dictionary.about_title : (isId ? about.title : dictionary.about_title);
+  const desc1 = isDefaultDesc1 ? dictionary.about_desc1 : (isId ? about.description1 : dictionary.about_desc1);
+  const desc2 = isDefaultDesc2 ? dictionary.about_desc2 : (isId ? about.description2 : dictionary.about_desc2);
 
   const highlightItems = [
     { title: dictionary.about_highlight_code, icon: "code" },

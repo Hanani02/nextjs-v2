@@ -7,7 +7,13 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const config = await getSiteConfigAsync();
-    return NextResponse.json(config);
+    return NextResponse.json(config, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+    });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Gagal memuat konfigurasi';
     return NextResponse.json({ success: false, error: message }, { status: 500 });

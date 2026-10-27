@@ -69,7 +69,7 @@ export default function ContactEditModal({
                 type="text"
                 value={form.badge}
                 onChange={(e) => setForm({ ...form, badge: e.target.value })}
-                placeholder="Contact"
+                placeholder="Kontak"
                 className="w-full px-3 py-2 rounded-lg bg-surface border border-border outline-none focus:border-primary text-text transition"
               />
             </div>
@@ -79,7 +79,7 @@ export default function ContactEditModal({
                 type="text"
                 value={form.highlight}
                 onChange={(e) => setForm({ ...form, highlight: e.target.value })}
-                placeholder="something great"
+                placeholder="luar biasa bersama"
                 className="w-full px-3 py-2 rounded-lg bg-surface border border-border outline-none focus:border-primary text-text transition"
               />
             </div>
@@ -91,7 +91,7 @@ export default function ContactEditModal({
               type="text"
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
-              placeholder="Let's build something great"
+              placeholder="Mari bangun sesuatu yang"
               className="w-full px-3 py-2 rounded-lg bg-surface border border-border outline-none focus:border-primary text-text transition"
             />
           </div>

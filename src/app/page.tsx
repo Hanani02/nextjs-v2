@@ -9,7 +9,8 @@ import AnimationLayout from "@/components/layouts/animationsLayout";
 import Marquee from "@/components/Hero/marquee";
 import { getSiteConfigAsync } from "@/lib/site-config";
 
-export const revalidate = 60;
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function Home() {
   const config = await getSiteConfigAsync();

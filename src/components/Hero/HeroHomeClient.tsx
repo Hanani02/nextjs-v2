@@ -16,29 +16,19 @@ export default function HeroHomeClient({ hero }: HeroHomeClientProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const { dictionary, isId } = useLanguage();
 
-  const greeting = hero.greeting && !hero.greeting.includes("Hello I'm")
-    ? hero.greeting
-    : (isId ? dictionary.hero_greeting : "── Hello I'm M. Akbar Hanani");
+  const isDefaultGreeting = !hero.greeting || hero.greeting.includes("Halo, saya") || hero.greeting.includes("Hello I'm");
+  const isDefaultHeadline = !hero.headline || hero.headline.includes("Membangun pengalaman") || hero.headline.includes("Building modern web");
+  const isDefaultHighlight = !hero.headlineHighlight || ['kode bersih', 'clean code'].includes(hero.headlineHighlight.trim().toLowerCase());
+  const isDefaultDesc = !hero.description || hero.description.includes("Saya merancang") || hero.description.includes("I design and build");
+  const isDefaultCtaContact = !hero.ctaContactText || ['hubungi saya', 'get in touch'].includes(hero.ctaContactText.trim().toLowerCase());
+  const isDefaultCtaProjects = !hero.ctaProjectsText || ['lihat proyek', 'view projects'].includes(hero.ctaProjectsText.trim().toLowerCase());
 
-  const headline = hero.headline && !hero.headline.includes("Building modern web")
-    ? hero.headline
-    : (isId ? dictionary.hero_headline : "Building modern web experience with");
-
-  const headlineHighlight = hero.headlineHighlight && hero.headlineHighlight !== "clean code"
-    ? hero.headlineHighlight
-    : (isId ? dictionary.hero_headline_highlight : "clean code");
-
-  const description = hero.description && !hero.description.includes("I design and build scalable fullstack")
-    ? hero.description
-    : (isId ? dictionary.hero_description : "I design and build scalable fullstack applications using modern technologies like Next.js, TypeScript, and Supabase. Focused on performance, clean UI.");
-
-  const ctaContact = hero.ctaContactText && hero.ctaContactText.toLowerCase() !== "get in touch"
-    ? hero.ctaContactText
-    : dictionary.hero_cta_contact;
-
-  const ctaProjects = hero.ctaProjectsText && hero.ctaProjectsText.toLowerCase() !== "view projects"
-    ? hero.ctaProjectsText
-    : dictionary.hero_cta_projects;
+  const greeting = isDefaultGreeting ? dictionary.hero_greeting : (isId ? hero.greeting : dictionary.hero_greeting);
+  const headline = isDefaultHeadline ? dictionary.hero_headline : (isId ? hero.headline : dictionary.hero_headline);
+  const headlineHighlight = isDefaultHighlight ? dictionary.hero_headline_highlight : (isId ? hero.headlineHighlight : dictionary.hero_headline_highlight);
+  const description = isDefaultDesc ? dictionary.hero_description : (isId ? hero.description : dictionary.hero_description);
+  const ctaContact = isDefaultCtaContact ? dictionary.hero_cta_contact : (isId ? hero.ctaContactText : dictionary.hero_cta_contact);
+  const ctaProjects = isDefaultCtaProjects ? dictionary.hero_cta_projects : (isId ? hero.ctaProjectsText : dictionary.hero_cta_projects);
 
   return (
     <section

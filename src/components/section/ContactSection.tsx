@@ -22,22 +22,58 @@ export default function ContactSection({ initialContact }: ContactSectionProps) 
   const { dictionary, isId } = useLanguage();
   const [loading, setLoading] = useState(false);
 
-  // If user has customized their title/badge via admin, use it, otherwise use localized defaults
-  const badge = initialContact?.badge && initialContact.badge !== "Contact"
-    ? initialContact.badge
-    : dictionary.contact_badge;
+  // Check if contact content is one of the default localized strings
+  const isDefaultBadge = !initialContact?.badge ||
+    ['kontak', 'contact'].includes(initialContact.badge.trim().toLowerCase());
 
-  const title = initialContact?.title && initialContact.title !== "Let's build"
-    ? initialContact.title
-    : (isId ? dictionary.contact_title : "Let's build");
+  const isDefaultTitle = !initialContact?.title ||
+    [
+      'mari bangun sesuatu yang hebat',
+      'mari bangun sesuatu yang',
+      'mari bangun',
+      "let's build something great",
+      "let's build something",
+      "let's build"
+    ].includes(initialContact.title.trim().toLowerCase());
 
-  const highlight = initialContact?.highlight && initialContact.highlight !== "something great"
-    ? initialContact.highlight
-    : (isId ? dictionary.contact_title_highlight : "something great");
+  const isDefaultHighlight = !initialContact?.highlight ||
+    [
+      'sesuatu yang hebat',
+      'luar biasa bersama',
+      'great together',
+      'something great'
+    ].includes(initialContact.highlight.trim().toLowerCase());
 
-  const description = initialContact?.description && !initialContact.description.includes("Have a project in mind?")
-    ? initialContact.description
-    : (isId ? dictionary.contact_description : "Have a project in mind? I'd love to hear about it. Let's connect.");
+  const isDefaultDescription = !initialContact?.description ||
+    initialContact.description.toLowerCase().includes('punya ide proyek') ||
+    initialContact.description.toLowerCase().includes('have a project in mind');
+
+  const isIndonesianWord = (text?: string) => {
+    if (!text) return false;
+    const lower = text.toLowerCase();
+    return ['mari', 'bangun', 'kontak', 'hubungi', 'bersama', 'proyek', 'sesuatu', 'hebat', 'tentang', 'pesan'].some(w => lower.includes(w));
+  };
+
+  const badge = isDefaultBadge
+    ? dictionary.contact_badge
+    : (isId ? initialContact.badge : (isIndonesianWord(initialContact.badge) ? dictionary.contact_badge : initialContact.badge));
+
+  let title = isDefaultTitle
+    ? dictionary.contact_title
+    : (isId ? initialContact.title : (isIndonesianWord(initialContact.title) ? dictionary.contact_title : initialContact.title));
+
+  const highlight = isDefaultHighlight
+    ? dictionary.contact_title_highlight
+    : (isId ? initialContact.highlight : (isIndonesianWord(initialContact.highlight) ? dictionary.contact_title_highlight : initialContact.highlight));
+
+  const description = isDefaultDescription
+    ? dictionary.contact_description
+    : (isId ? initialContact.description : (isIndonesianWord(initialContact.description) ? dictionary.contact_description : initialContact.description));
+
+  // Prevent title from duplicating the highlight word if title already contains the highlight
+  if (highlight && title.toLowerCase().includes(highlight.toLowerCase())) {
+    title = title.replace(new RegExp(highlight, 'gi'), '').trim();
+  }
 
   const email = initialContact?.email || "akbarhanani02@gmail.com";
   const phone = initialContact?.phone || "+62 817 5204 440";
