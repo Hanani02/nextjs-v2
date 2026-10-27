@@ -9,11 +9,13 @@ import CarUsernameBadge from '../Playground/CarUsernameBadge';
 interface ParkedHeroCarProps {
   position?: [number, number, number];
   rotationY?: number;
+  isModalOpen?: boolean;
 }
 
 export default function ParkedHeroCar({
   position = [2.0, -0.74, 0.9],
   rotationY = -0.75, // Angled toward the isometric center
+  isModalOpen = false,
 }: ParkedHeroCarProps) {
   const [model, setModel] = useState<CarModelType>('sport');
   const [color, setColor] = useState<string>('#06b6d4');
@@ -51,15 +53,17 @@ export default function ParkedHeroCar({
 
       {/* Volumetric Miniature Scale Group (Uniform 3D Proportions) */}
       <group scale={[0.92, 0.92, 0.92]}>
-        {/* Floating Badge (Parked Status) */}
-        <CarUsernameBadge
-          username={username}
-          isSelf={true}
-          color={color}
-          model={model}
-          isDrifting={false}
-          speed={0}
-        />
+        {/* Floating Badge (Parked Status) - only shown when no modal is open */}
+        {!isModalOpen && (
+          <CarUsernameBadge
+            username={username}
+            isSelf={true}
+            color={color}
+            model={model}
+            isDrifting={false}
+            speed={0}
+          />
+        )}
 
         {/* 3D Car Body Mesh */}
         <CarBodyMesh

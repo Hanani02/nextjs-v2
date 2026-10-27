@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { LuX, LuMonitor, LuBookOpen, LuCode, LuArrowRight, LuSparkles } from 'react-icons/lu';
+import { smoothScrollToSection } from '@/lib/smoothScroll';
+import { useLanguage } from '@/context/LanguageContext';
 import type { HotspotType } from './Hotspots';
 
 interface HotspotModalProps {
   type: HotspotType | null;
   onClose: () => void;
+  onSelectType?: (type: HotspotType) => void;
 }
 
 interface HotspotContent {
@@ -20,43 +24,14 @@ interface HotspotContent {
   actionHref: string;
 }
 
-const HOTSPOT_DATA: Record<HotspotType, HotspotContent> = {
-  about: {
-    title: 'Workstation & Developer Setup',
-    badge: 'Core Environment',
-    icon: LuMonitor,
-    subtitle: 'High-performance Fullstack Engineering Station',
-    description:
-      'Pusat kerja pengembangan aplikasi modern dengan arsitektur Next.js 16 App Router, React 19, TypeScript, dan Tailwind CSS. Dioptimalkan untuk performa tinggi, UI interaktif, dan arsitektur yang skalabel.',
-    techStack: ['Next.js 16', 'React 19', 'TypeScript', 'Tailwind CSS v4', 'Node.js', 'Vercel'],
-    actionText: 'Lihat Profil & Bio',
-    actionHref: '#about'
-  },
-  projects: {
-    title: 'Showcase Proyek & Karya Nyata',
-    badge: 'Production Apps',
-    icon: LuCode,
-    subtitle: 'Katalog Aplikasi Web & Solusi Digital',
-    description:
-      'Kumpulan proyek web interaktif, platform e-commerce, dashboard analitik, dan tools kustom yang dibangun dengan fokus pada user experience (UX) memukau dan clean code.',
-    techStack: ['Fullstack Apps', 'E-Commerce', 'Interactive 3D', 'Supabase', 'REST / GraphQL'],
-    actionText: 'Jelajahi Semua Proyek',
-    actionHref: '#projects'
-  },
-  tech: {
-    title: 'Tech Stack & Perpustakaan Digital',
-    badge: 'Skills & Tools',
-    icon: LuBookOpen,
-    subtitle: 'Alat & Framework Pilihan',
-    description:
-      'Eksplorasi ekosistem teknologi yang digunakan sehari-hari, mencakup 3D graphics (Three.js/R3F), animasi fluid (GSAP/Framer Motion), database relasional (PostgreSQL/Supabase), dan modern DevOps.',
-    techStack: ['Three.js', 'React Three Fiber', 'GSAP', 'Framer Motion', 'PostgreSQL', 'Docker'],
-    actionText: 'Lihat Pengalaman & Keahlian',
-    actionHref: '#experience'
-  }
-};
+export default function HotspotModal({ type, onClose, onSelectType }: HotspotModalProps) {
+  const { isId } = useLanguage();
+  const [mounted, setMounted] = useState(false);
 
-export default function HotspotModal({ type, onClose }: HotspotModalProps) {
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!type) return;
 
@@ -70,7 +45,46 @@ export default function HotspotModal({ type, onClose }: HotspotModalProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [type, onClose]);
 
-  if (!type) return null;
+  if (!type || !mounted) return null;
+
+  const HOTSPOT_DATA: Record<HotspotType, HotspotContent> = {
+    about: {
+      title: isId ? 'Workstation & Developer Setup' : 'Workstation & Developer Setup',
+      badge: isId ? 'Core Environment' : 'Core Environment',
+      icon: LuMonitor,
+      subtitle: isId ? 'High-performance Fullstack Engineering Station' : 'High-performance Fullstack Engineering Station',
+      description: isId
+        ? 'Pusat kerja pengembangan aplikasi modern dengan arsitektur Next.js 16 App Router, React 19, TypeScript, dan Tailwind CSS. Dioptimalkan untuk performa tinggi, UI interaktif, dan arsitektur yang skalabel.'
+        : 'Modern application development workspace powered by Next.js 16 App Router, React 19, TypeScript, and Tailwind CSS. Optimized for blazing performance, fluid interactivity, and scalable architecture.',
+      techStack: ['Next.js 16', 'React 19', 'TypeScript', 'Tailwind CSS v4', 'Node.js', 'Vercel'],
+      actionText: isId ? 'Lihat Profil & Bio' : 'View Profile & Bio',
+      actionHref: '#about',
+    },
+    projects: {
+      title: isId ? 'Showcase Proyek & Karya Nyata' : 'Project Showcase & Real Works',
+      badge: isId ? 'Production Apps' : 'Production Apps',
+      icon: LuCode,
+      subtitle: isId ? 'Katalog Aplikasi Web & Solusi Digital' : 'Web Applications & Digital Solutions Catalog',
+      description: isId
+        ? 'Kumpulan proyek web interaktif, platform e-commerce, dashboard analitik, dan tools kustom yang dibangun dengan fokus pada user experience (UX) memukau dan clean code.'
+        : 'A curated collection of interactive web apps, fullstack platforms, analytics dashboards, and custom tools built with a strict focus on stunning UX and clean code.',
+      techStack: ['Fullstack Apps', 'E-Commerce', 'Interactive 3D', 'Supabase', 'REST / GraphQL'],
+      actionText: isId ? 'Jelajahi Semua Proyek' : 'Explore All Projects',
+      actionHref: '#projects',
+    },
+    tech: {
+      title: isId ? 'Tech Stack & Perpustakaan Digital' : 'Tech Stack & Digital Library',
+      badge: isId ? 'Skills & Tools' : 'Skills & Tools',
+      icon: LuBookOpen,
+      subtitle: isId ? 'Alat & Framework Pilihan' : 'Curated Tools & Modern Frameworks',
+      description: isId
+        ? 'Eksplorasi ekosistem teknologi yang digunakan sehari-hari, mencakup 3D graphics (Three.js/R3F), animasi fluid (GSAP/Framer Motion), database relasional (PostgreSQL/Supabase), dan modern DevOps.'
+        : 'Exploration of core technologies used daily, including 3D graphics (Three.js/R3F), fluid animations (GSAP/Framer Motion), relational databases (PostgreSQL/Supabase), and modern DevOps.',
+      techStack: ['Three.js', 'React Three Fiber', 'GSAP', 'Framer Motion', 'PostgreSQL', 'Docker'],
+      actionText: isId ? 'Lihat Pengalaman & Keahlian' : 'View Experience & Skills',
+      actionHref: '#experience',
+    },
+  };
 
   const data = HOTSPOT_DATA[type];
   if (!data) return null;
@@ -79,22 +93,19 @@ export default function HotspotModal({ type, onClose }: HotspotModalProps) {
 
   const handleAction = () => {
     onClose();
-    const el = document.querySelector(data.actionHref);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
+    smoothScrollToSection(data.actionHref);
   };
 
-  return (
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-70 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
       onClick={onClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-lg rounded-3xl bg-neutral-950/95 border border-cyan-500/40 p-6 sm:p-8 shadow-[0_0_50px_rgba(6,182,212,0.25)] text-text backdrop-blur-2xl transition-all scale-100 animate-in fade-in zoom-in-95 duration-200"
+        className="relative w-full max-w-lg rounded-3xl bg-neutral-950/95 border border-cyan-500/40 p-6 sm:p-8 shadow-[0_0_60px_rgba(6,182,212,0.3)] text-text backdrop-blur-2xl transition-all scale-100 animate-in fade-in zoom-in-95 duration-200"
       >
         {/* Glow ambient accent */}
         <div className="absolute top-0 right-0 w-36 h-36 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -109,9 +120,51 @@ export default function HotspotModal({ type, onClose }: HotspotModalProps) {
           <LuX className="w-5 h-5" />
         </button>
 
+        {/* Quick Hotspot Tabs Switcher */}
+        <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-neutral-900/90 border border-cyan-500/25 mb-5 max-w-[calc(100%-48px)]">
+          <button
+            type="button"
+            onClick={() => onSelectType?.('about')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-xs transition-all cursor-pointer ${
+              type === 'about'
+                ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/30 font-bold'
+                : 'text-gray-400 hover:text-white hover:bg-surface/50 font-medium'
+            }`}
+          >
+            <LuMonitor className="w-3.5 h-3.5" />
+            <span className="truncate">Workspace</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onSelectType?.('projects')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-xs transition-all cursor-pointer ${
+              type === 'projects'
+                ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/30 font-bold'
+                : 'text-gray-400 hover:text-white hover:bg-surface/50 font-medium'
+            }`}
+          >
+            <LuCode className="w-3.5 h-3.5" />
+            <span className="truncate">Projects</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onSelectType?.('tech')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl text-xs transition-all cursor-pointer ${
+              type === 'tech'
+                ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/30 font-bold'
+                : 'text-gray-400 hover:text-white hover:bg-surface/50 font-medium'
+            }`}
+          >
+            <LuBookOpen className="w-3.5 h-3.5" />
+            <span className="truncate">Tech Stack</span>
+          </button>
+        </div>
+
         {/* Header with Icon and Badge */}
         <div className="flex items-center gap-3.5 mb-4">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-400/40 text-cyan-400 shadow-md">
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-cyan-500/20 to-purple-500/20 border border-cyan-400/40 text-cyan-400 shadow-md shrink-0">
             <Icon className="w-6 h-6" />
           </div>
           <div>
@@ -142,7 +195,7 @@ export default function HotspotModal({ type, onClose }: HotspotModalProps) {
         {/* Tech Stack Tags */}
         <div className="mb-6">
           <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">
-            Teknologi & Fitur Terkait:
+            {isId ? 'Teknologi & Fitur Terkait:' : 'Related Tech & Features:'}
           </span>
           <div className="flex flex-wrap gap-1.5">
             {data.techStack.map((tech, i) => (
@@ -162,7 +215,7 @@ export default function HotspotModal({ type, onClose }: HotspotModalProps) {
             onClick={onClose}
             className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-400 hover:text-white transition cursor-pointer"
           >
-            Tutup
+            {isId ? 'Tutup' : 'Close'}
           </button>
           <button
             onClick={handleAction}
@@ -173,6 +226,7 @@ export default function HotspotModal({ type, onClose }: HotspotModalProps) {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

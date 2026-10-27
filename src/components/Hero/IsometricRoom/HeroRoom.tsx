@@ -45,6 +45,7 @@ export default function HeroRoom({ profileImage = '/image/profil.jpeg' }: HeroRo
         <IsometricRoom
           profileImage={profileImage}
           onSelectHotspot={handleSelectHotspot}
+          activeModal={activeModal}
           className="w-full h-full"
         />
       </div>
@@ -53,6 +54,7 @@ export default function HeroRoom({ profileImage = '/image/profil.jpeg' }: HeroRo
       <HotspotModal
         type={activeModal}
         onClose={() => setActiveModal(null)}
+        onSelectType={setActiveModal}
       />
     </div>
   );

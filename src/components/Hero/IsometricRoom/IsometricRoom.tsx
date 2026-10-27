@@ -12,6 +12,7 @@ interface IsometricRoomProps {
   onSelectHotspot: (type: HotspotType) => void;
   className?: string;
   profileImage?: string;
+  activeModal?: HotspotType | null;
 }
 
 /**
@@ -53,7 +54,8 @@ function ResponsiveCamera() {
 export default function IsometricRoom({
   onSelectHotspot,
   className = '',
-  profileImage = '/image/profil.jpeg'
+  profileImage = '/image/profil.jpeg',
+  activeModal = null,
 }: IsometricRoomProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -110,13 +112,13 @@ export default function IsometricRoom({
             maxAzimuthAngle={Math.PI / 2.1} // ~85 deg
             enableDamping
             dampingFactor={0.06}
-            autoRotate
+            autoRotate={!activeModal}
             autoRotateSpeed={0.4}
           />
 
           <RoomMeshes profileImage={profileImage} onSelectHotspot={onSelectHotspot} />
-          <Hotspots onSelect={onSelectHotspot} />
-          <ParkedHeroCar position={[2.0, -0.73, 0.9]} rotationY={-0.75} />
+          <Hotspots onSelect={onSelectHotspot} isModalOpen={!!activeModal} />
+          <ParkedHeroCar position={[2.0, -0.73, 0.9]} rotationY={-0.75} isModalOpen={!!activeModal} />
         </Suspense>
       </Canvas>
     </div>

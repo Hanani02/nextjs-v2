@@ -11,13 +11,25 @@ interface HotspotProps {
   subtitle?: string;
   type: HotspotType;
   onSelect: (type: HotspotType) => void;
+  isModalOpen?: boolean;
 }
 
-function HotspotMarker({ position, title, subtitle, type, onSelect }: HotspotProps) {
+function HotspotMarker({ position, title, subtitle, type, onSelect, isModalOpen }: HotspotProps) {
   const [hovered, setHovered] = useState(false);
 
   return (
-    <Html position={position} center distanceFactor={18} zIndexRange={[100, 0]}>
+    <Html
+      position={position}
+      center
+      distanceFactor={18}
+      zIndexRange={[40, 0]}
+      style={{
+        transition: 'opacity 0.25s ease-out, transform 0.25s ease-out',
+        opacity: isModalOpen ? 0 : 1,
+        pointerEvents: isModalOpen ? 'none' : 'auto',
+        transform: isModalOpen ? 'scale(0.8)' : 'scale(1)',
+      }}
+    >
       <div
         className="group relative flex items-center select-none cursor-pointer transition-transform duration-200 hover:scale-105 active:scale-95"
         onMouseEnter={() => setHovered(true)}
@@ -58,9 +70,10 @@ function HotspotMarker({ position, title, subtitle, type, onSelect }: HotspotPro
 
 interface HotspotsProps {
   onSelect: (type: HotspotType) => void;
+  isModalOpen?: boolean;
 }
 
-export default function Hotspots({ onSelect }: HotspotsProps) {
+export default function Hotspots({ onSelect, isModalOpen }: HotspotsProps) {
   return (
     <>
       {/* 1. Projects Hotspot (On the Left Wall Bookshelf / Rak Buku) */}
@@ -70,6 +83,7 @@ export default function Hotspots({ onSelect }: HotspotsProps) {
         subtitle="Rak Buku • Klik untuk lihat proyek"
         type="projects"
         onSelect={onSelect}
+        isModalOpen={isModalOpen}
       />
 
       {/* 2. About Me Hotspot (On the Desk / Center Workspace) */}
@@ -79,6 +93,7 @@ export default function Hotspots({ onSelect }: HotspotsProps) {
         subtitle="Workspace • Klik untuk profil"
         type="about"
         onSelect={onSelect}
+        isModalOpen={isModalOpen}
       />
 
       {/* 3. Tech Stack Hotspot (On the Upper Right Wall Shelf) */}
@@ -88,6 +103,7 @@ export default function Hotspots({ onSelect }: HotspotsProps) {
         subtitle="Tech Shelf • Klik untuk keahlian"
         type="tech"
         onSelect={onSelect}
+        isModalOpen={isModalOpen}
       />
     </>
   );
