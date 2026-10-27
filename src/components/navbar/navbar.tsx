@@ -11,6 +11,7 @@ import SoundToggle from "../theme/SoundToggle";
 import LanguageToggle from "../theme/LanguageToggle";
 import { useLanguage } from "@/context/LanguageContext";
 import { LuDownload, LuX, LuMenu } from "react-icons/lu";
+import { smoothScrollToSection } from "@/lib/smoothScroll";
 
 export const navLinks = [
   { href: "/#home", id: "home", label: "Home", key: "nav_home" as const },
@@ -80,20 +81,12 @@ export default function Navbar() {
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, id: string) => {
     if (pathname === "/" || pathname === "") {
       e.preventDefault();
-      const target = document.getElementById(id);
-      if (target) {
-        const navOffset = 90;
-        const elementPosition = target.getBoundingClientRect().top;
-        const offsetPosition = id === "home" ? 0 : elementPosition + window.pageYOffset - navOffset;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-
-        window.history.pushState(null, "", href);
-        setActiveSection(id);
-      }
+      setActiveSection(id);
+      smoothScrollToSection(id, {
+        onComplete: () => {
+          window.history.replaceState(null, "", href);
+        },
+      });
     }
   };
 
@@ -103,18 +96,9 @@ export default function Navbar() {
       const hash = window.location.hash.replace("#", "");
       if (hash) {
         const timer = setTimeout(() => {
-          const target = document.getElementById(hash);
-          if (target) {
-            const navOffset = 90;
-            const elementPosition = target.getBoundingClientRect().top;
-            const offsetPosition = hash === "home" ? 0 : elementPosition + window.pageYOffset - navOffset;
-            window.scrollTo({
-              top: offsetPosition,
-              behavior: "smooth",
-            });
-            setActiveSection(hash);
-          }
-        }, 150);
+          smoothScrollToSection(hash);
+          setActiveSection(hash);
+        }, 120);
         return () => clearTimeout(timer);
       }
     }
@@ -144,6 +128,7 @@ export default function Navbar() {
                 <li key={link.id}>
                   <Link
                     href={link.href}
+                    scroll={false}
                     onClick={(e) => handleNavClick(e, link.href, link.id)}
                     className={`relative px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 ease-out inline-flex items-center justify-center transform hover:scale-105 active:scale-95 cursor-pointer ${
                       isActive

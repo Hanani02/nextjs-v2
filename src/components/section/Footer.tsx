@@ -5,6 +5,7 @@ import { LuGithub, LuInstagram } from "react-icons/lu";
 import { FaDiscord } from "react-icons/fa6";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
+import { smoothScrollToSection } from "@/lib/smoothScroll";
 
 const socials = [
   { icon: LuGithub, href: "https://github.com/Hanani02", label: "GitHub" },
@@ -16,12 +17,27 @@ export default function Footer() {
   const { dictionary } = useLanguage();
 
   const quickLinks = [
-    { label: dictionary.nav_home, href: "/#home" },
-    { label: dictionary.nav_about, href: "/#about" },
-    { label: dictionary.nav_projects, href: "/Project" },
-    { label: dictionary.nav_experience, href: "/#experience" },
-    { label: dictionary.nav_contact, href: "/#contact" },
+    { label: dictionary.nav_home, href: "/#home", id: "home" },
+    { label: dictionary.nav_about, href: "/#about", id: "about" },
+    { label: dictionary.nav_projects, href: "/Project", id: "" },
+    { label: dictionary.nav_experience, href: "/#experience", id: "experience" },
+    { label: dictionary.nav_contact, href: "/#contact", id: "contact" },
   ];
+
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string, id?: string) => {
+    if (
+      id &&
+      typeof window !== "undefined" &&
+      (window.location.pathname === "/" || window.location.pathname === "")
+    ) {
+      e.preventDefault();
+      smoothScrollToSection(id, {
+        onComplete: () => {
+          window.history.replaceState(null, "", href);
+        },
+      });
+    }
+  };
 
   return (
     <footer className="relative border-t border-border bg-background overflow-hidden">
@@ -42,7 +58,13 @@ export default function Footer() {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{dictionary.footer_navigation}</p>
             <div className="flex flex-col gap-2.5 text-sm text-text/75">
               {quickLinks.map((link, idx) => (
-                <Link key={idx} href={link.href} className="transition hover:text-primary">
+                <Link
+                  key={idx}
+                  href={link.href}
+                  scroll={false}
+                  onClick={(e) => handleLinkClick(e, link.href, link.id)}
+                  className="transition hover:text-primary cursor-pointer"
+                >
                   {link.label}
                 </Link>
               ))}

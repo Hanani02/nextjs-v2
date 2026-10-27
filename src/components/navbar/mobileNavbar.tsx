@@ -9,6 +9,7 @@ import SoundToggle from "../theme/SoundToggle";
 import LanguageToggle from "../theme/LanguageToggle";
 import { useLanguage } from "@/context/LanguageContext";
 import { LuDownload } from "react-icons/lu";
+import { smoothScrollToSection } from "@/lib/smoothScroll";
 
 const navIcons = {
   Home: "akar-icons:home-alt1",
@@ -32,19 +33,11 @@ export default function MobileNavbar({ navOpen, onClose, activeSection = "home" 
     if (onClose) onClose();
     if (pathname === "/" || pathname === "") {
       e.preventDefault();
-      const target = document.getElementById(id);
-      if (target) {
-        const navOffset = 90;
-        const elementPosition = target.getBoundingClientRect().top;
-        const offsetPosition = id === "home" ? 0 : elementPosition + window.pageYOffset - navOffset;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: "smooth",
-        });
-
-        window.history.pushState(null, "", href);
-      }
+      smoothScrollToSection(id, {
+        onComplete: () => {
+          window.history.replaceState(null, "", href);
+        },
+      });
     }
   };
   return (
@@ -74,6 +67,7 @@ export default function MobileNavbar({ navOpen, onClose, activeSection = "home" 
                 <li key={index}>
                   <Link
                     href={link.href}
+                    scroll={false}
                     onClick={(e) => handleMobileNavClick(e, link.href, link.id)}
                     className={`w-full flex items-center justify-between py-3 px-4 rounded-xl text-base font-medium transition-all duration-300 ease-out transform hover:scale-[1.02] active:scale-[0.98] ${
                       isActive
