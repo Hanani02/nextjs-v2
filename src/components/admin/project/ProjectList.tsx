@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { LuPlus, LuLayers, LuSearch, LuFilter } from 'react-icons/lu';
+import { LuPlus, LuLayers, LuSearch } from 'react-icons/lu';
 import type { ProjectItem } from '@/types/admin';
 import ProjectCard from './ProjectCard';
 

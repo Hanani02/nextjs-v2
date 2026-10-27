@@ -70,6 +70,35 @@ VALUES (
 ) ON CONFLICT (id) DO NOTHING;
 
 -- ==========================================
+-- 3. TABEL CONTACT SECTION
+-- ==========================================
+CREATE TABLE IF NOT EXISTS contact (
+  id bigint PRIMARY KEY DEFAULT 1,
+  badge varchar(100) NOT NULL DEFAULT 'Kontak',
+  title varchar(500) NOT NULL DEFAULT 'Mari bangun sesuatu yang hebat',
+  highlight varchar(500) NOT NULL DEFAULT 'sesuatu yang hebat',
+  description text NOT NULL DEFAULT 'Punya ide proyek atau ingin berdiskusi? Saya siap mendengarnya. Mari terhubung!',
+  email varchar(255) NOT NULL DEFAULT 'akbarhanani02@gmail.com',
+  phone varchar(100) NOT NULL DEFAULT '+62 817 5204 440',
+  location varchar(500) NOT NULL DEFAULT 'Pasuruan, Jawa Timur, Indonesia',
+  updated_at timestamptz DEFAULT now(),
+  CONSTRAINT single_contact_row CHECK (id = 1)
+);
+
+-- Data Default Contact (Insert jika belum ada)
+INSERT INTO contact (id, badge, title, highlight, description, email, phone, location)
+VALUES (
+  1,
+  'Kontak',
+  'Mari bangun sesuatu yang hebat',
+  'sesuatu yang hebat',
+  'Punya ide proyek atau ingin berdiskusi? Saya siap mendengarnya. Mari terhubung!',
+  'akbarhanani02@gmail.com',
+  '+62 817 5204 440',
+  'Pasuruan, Jawa Timur, Indonesia'
+) ON CONFLICT (id) DO NOTHING;
+
+-- ==========================================
 -- 3. TABEL PROJECT
 -- ==========================================
 CREATE TABLE IF NOT EXISTS project (
@@ -138,6 +167,7 @@ CREATE INDEX IF NOT EXISTS idx_circuit_leaderboard_username ON circuit_leaderboa
 -- ==========================================
 ALTER TABLE hero DISABLE ROW LEVEL SECURITY;
 ALTER TABLE about DISABLE ROW LEVEL SECURITY;
+ALTER TABLE contact DISABLE ROW LEVEL SECURITY;
 ALTER TABLE project DISABLE ROW LEVEL SECURITY;
 ALTER TABLE experience DISABLE ROW LEVEL SECURITY;
 ALTER TABLE detail DISABLE ROW LEVEL SECURITY;

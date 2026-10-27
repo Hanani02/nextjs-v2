@@ -1,8 +1,11 @@
+"use client";
+
 import  Link  from "next/link";
 import Image from "next/image";
 import { LuExternalLink, LuEye, LuGithub } from "react-icons/lu";
 import LinkButton from "../ui/LinkButton";
 import { resolveImageUrl } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface ProjectCardProps {
     slug: string,
@@ -23,6 +26,7 @@ export default function ProjectCard({
     image,
     tags
 }: ProjectCardProps) {
+  const { dictionary } = useLanguage();
   const safeLiveUrl = liveUrl && liveUrl.trim() ? liveUrl : "";
   const safeGithubUrl = githubUrl && githubUrl.trim() ? githubUrl : "";
 
@@ -63,7 +67,7 @@ export default function ProjectCard({
 
                 <div className="flex items-center gap-4 pt-3">
                     <LinkButton
-                        text="Detail"
+                        text={dictionary.projects_view_detail}
                         href={`/Project/${slug}`}
                         rounded
                         icon={LuEye}
@@ -76,7 +80,7 @@ export default function ProjectCard({
                             rel="noreferrer"
                             className="flex items-center gap-1 text-sm text-text-muted hover:text-primary transition">
                                 <LuExternalLink className="w-4 h-4" />
-                                Live
+                                {dictionary.projects_live_demo}
                         </Link>
                     )}
 

@@ -41,38 +41,38 @@ export interface SiteConfig {
 
 export const defaultSiteConfig: SiteConfig = {
   hero: {
-    greeting: "── Hello I'm M. Akbar Hanani",
+    greeting: "── Halo, saya M. Akbar Hanani",
     roles: "Fullstack Developer | Web Developer | Mobile Developer",
-    headline: "Building modern web experience with",
-    headlineHighlight: "clean code",
-    description: "I design and build scalable fullstack applications using modern technologies like Next.js, TypeScript, and Supabase. Focused on performance, clean UI.",
+    headline: "Membangun pengalaman web modern dengan",
+    headlineHighlight: "kode bersih",
+    description: "Saya merancang dan membangun aplikasi fullstack yang scalable menggunakan teknologi modern seperti Next.js, TypeScript, dan Supabase. Berfokus pada performa tinggi dan UI yang bersih.",
     profileImage: "/image/profil.jpeg",
     profileImagePosition: "center",
     profileImageScale: 1,
     profileImageFit: "cover",
-    ctaContactText: "get in touch",
-    ctaProjectsText: "View projects",
+    ctaContactText: "Hubungi Saya",
+    ctaProjectsText: "Lihat Proyek",
   },
   about: {
-    badge: "About Me",
-    title: "I build scalable and user-focused web applications",
-    description1: "I'm a Grade 11 Software Engineering (RPL) student at SMKN 1 Kota Pasuruan, passionate about building smooth, modern, and user-friendly web applications. I enjoy turning ideas into functional digital experiences while continuously improving my development and design skills through school and personal projects.",
-    description2: "I frequently work with HTML, CSS, JavaScript, TypeScript, React, Next.js, and Tailwind CSS, along with MySQL and basic Python. For design and interface development, I often use Figma and shadcn/ui to create clean, responsive, and consistent experiences.",
+    badge: "Tentang Saya",
+    title: "Membangun aplikasi web yang scalable dan berorientasi pada pengguna",
+    description1: "Saya siswa kelas 11 Rekayasa Perangkat Lunak (RPL) di SMKN 1 Kota Pasuruan, bersemangat membangun aplikasi web yang lancar, modern, dan ramah pengguna. Saya senang mengubah ide menjadi pengalaman digital yang fungsional sembari terus meningkatkan keterampilan pengembangan dan desain melalui proyek sekolah dan pribadi.",
+    description2: "Saya sering bekerja dengan HTML, CSS, JavaScript, TypeScript, React, Next.js, dan Tailwind CSS, serta MySQL dan dasar Python. Untuk desain dan pembuatan antarmuka, saya biasa menggunakan Figma dan shadcn/ui demi menciptakan pengalaman yang bersih, responsif, dan konsisten.",
     aboutImage: "/image/about.jpeg",
     aboutImagePosition: "center",
     aboutImageScale: 1,
     aboutImageFit: "cover",
     highlights: [
-      { title: "Clean code", icon: "code" },
-      { title: "Fullstack Apps", icon: "database" },
-      { title: "Performance", icon: "rocket" },
+      { title: "Kode Bersih", icon: "code" },
+      { title: "Aplikasi Fullstack", icon: "database" },
+      { title: "Performa Tinggi", icon: "rocket" },
     ],
   },
   contact: {
-    badge: "Contact",
-    title: "Let's build something great",
-    highlight: "something great",
-    description: "Have a project in mind? I'd love to hear about it. Let's connect.",
+    badge: "Kontak",
+    title: "Mari bangun sesuatu yang hebat",
+    highlight: "sesuatu yang hebat",
+    description: "Punya ide proyek atau ingin berdiskusi? Saya siap mendengarnya. Mari terhubung!",
     email: "akbarhanani02@gmail.com",
     phone: "+62 817 5204 440",
     location: "Pasuruan, Jawa Timur, Indonesia",
@@ -223,19 +223,55 @@ export async function getDynamicAbout(): Promise<SiteConfig['about']> {
 }
 
 /**
+ * Mengambil data Contact secara dinamis dari tabel Supabase `contact` (id = 1).
+ * Jika tabel belum ada atau kosong, otomatis fallback ke data lokal/default.
+ */
+export async function getDynamicContact(): Promise<SiteConfig['contact']> {
+  const fallback = getSiteConfig().contact;
+  try {
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('contact')
+      .select('*')
+      .eq('id', 1)
+      .maybeSingle();
+
+    if (error || !data) {
+      if (error && error.code !== 'PGRST116' && error.code !== 'PGRST205') {
+        console.warn('Supabase contact fetch warning:', error.message);
+      }
+      return fallback;
+    }
+
+    return {
+      badge: data.badge ?? fallback.badge,
+      title: data.title ?? fallback.title,
+      highlight: data.highlight ?? fallback.highlight,
+      description: data.description ?? fallback.description,
+      email: data.email ?? fallback.email,
+      phone: data.phone ?? fallback.phone,
+      location: data.location ?? fallback.location,
+    };
+  } catch (err) {
+    console.error('getDynamicContact exception, falling back:', err);
+    return fallback;
+  }
+}
+
+/**
  * Mengambil konfigurasi lengkap secara asynchronous dari Supabase
  */
 export async function getSiteConfigAsync(): Promise<SiteConfig> {
-  const localConfig = getSiteConfig();
-  const [hero, about] = await Promise.all([
+  const [hero, about, contact] = await Promise.all([
     getDynamicHero(),
     getDynamicAbout(),
+    getDynamicContact(),
   ]);
 
   return {
     hero,
     about,
-    contact: localConfig.contact,
+    contact,
   };
 }
 
@@ -302,6 +338,33 @@ export async function saveAboutToSupabase(aboutData: Partial<SiteConfig['about']
 }
 
 /**
+ * Menyimpan data contact ke Supabase (tabel `contact`)
+ */
+export async function saveContactToSupabase(contactData: Partial<SiteConfig['contact']>): Promise<void> {
+  const adminSupabase = getAdminSupabase();
+  const payload: Record<string, unknown> = {
+    id: 1,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (contactData.badge !== undefined) payload.badge = contactData.badge;
+  if (contactData.title !== undefined) payload.title = contactData.title;
+  if (contactData.highlight !== undefined) payload.highlight = contactData.highlight;
+  if (contactData.description !== undefined) payload.description = contactData.description;
+  if (contactData.email !== undefined) payload.email = contactData.email;
+  if (contactData.phone !== undefined) payload.phone = contactData.phone;
+  if (contactData.location !== undefined) payload.location = contactData.location;
+
+  const { error } = await adminSupabase
+    .from('contact')
+    .upsert(payload, { onConflict: 'id' });
+
+  if (error) {
+    console.warn('Catatan: Supabase contact upsert warning (tabel belum ada di database):', error.message);
+  }
+}
+
+/**
  * Menyimpan konfigurasi secara asynchronous baik ke Supabase maupun ke file lokal
  */
 export async function saveSiteConfigAsync(newConfig: Partial<SiteConfig>): Promise<SiteConfig> {
@@ -319,6 +382,14 @@ export async function saveSiteConfigAsync(newConfig: Partial<SiteConfig>): Promi
       await saveAboutToSupabase(newConfig.about);
     } catch (err) {
       console.warn('Catatan: Supabase about upsert fallback ke local storage:', err);
+    }
+  }
+
+  if (newConfig.contact) {
+    try {
+      await saveContactToSupabase(newConfig.contact);
+    } catch (err) {
+      console.warn('Catatan: Supabase contact upsert fallback ke local storage:', err);
     }
   }
 

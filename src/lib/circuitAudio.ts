@@ -321,3 +321,35 @@ export function playFinishChime() {
     // Ignore
   }
 }
+
+/**
+ * Plays a subtle, gentle click sound on UI tab or language switch
+ */
+export function playTabClickSound() {
+  if (muted) return;
+  const ctx = getAudioContext();
+  if (!ctx || !masterGain) return;
+
+  try {
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, now);
+    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.04);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.12, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+    osc.connect(gain);
+    gain.connect(masterGain);
+
+    osc.start(now);
+    osc.stop(now + 0.06);
+  } catch {
+    // Ignore
+  }
+}
+

@@ -1,6 +1,5 @@
 'use client';
 
-import { forwardRef } from 'react';
 import * as THREE from 'three';
 import type { CarModelType } from '@/types/vehicle';
 

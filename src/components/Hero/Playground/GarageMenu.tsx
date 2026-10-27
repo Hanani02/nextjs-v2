@@ -9,7 +9,6 @@ import {
   LuMinimize2,
   LuPalette,
   LuUser,
-  LuSlidersHorizontal,
   LuFlame,
   LuGauge,
   LuMonitor,

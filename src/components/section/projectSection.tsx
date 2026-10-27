@@ -1,4 +1,4 @@
-import SectionHeader from "@/components/ui/sectionHeader";
+import ProjectSectionHeader from "@/components/project/ProjectSectionHeader";
 import ProjectBrowser, { type BrowserProject } from "@/components/project/ProjectBrowser";
 import { getSupabase } from '@/lib/supabase';
 import { resolveImageUrl } from '@/lib/utils';
@@ -29,18 +29,12 @@ export default async function projectSection() {
         githubUrl: project.github_url ?? '',
     }));
 
-
     return (
         <section id="projects" className="py-24 relative">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full blur-3xl bg-primary/10"/>
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full blur-3xl bg-primary/10 pointer-events-none"/>
             <div className="w-[90%] max-w-6xl mx-auto space-y-12">
                 <div className="flex flex-col items-center gap-5 md:flex-row md:items-end md:justify-between">
-                    <SectionHeader
-                        title="some of my recent"
-                        highlight="work"
-                        badge="Projects"
-                        description="A selection of projects showcasing my ability to design, build, and scale modern fullstack applications"
-                    />
+                    <ProjectSectionHeader />
                 </div>
 
                 <ProjectBrowser projects={projects} limit={4} showViewAll />

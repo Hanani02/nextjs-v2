@@ -1,4 +1,4 @@
-import SectionHeader from "@/components/ui/sectionHeader";
+import ExperienceSectionHeader from "@/components/experience/ExperienceSectionHeader";
 import ExperienceTimeline, { type Experience } from "@/components/experience/ExperienceTimeline";
 import { getSupabase } from '@/lib/supabase';
 
@@ -26,14 +26,9 @@ export default async function ExperienceSection() {
 
   return (
     <section id="experience" className="py-32 relative overflow-hidden">
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full blur-3xl bg-primary/10" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full blur-3xl bg-primary/10 pointer-events-none" />
       <div className="container mx-auto px-6 relative z-10">
-        <SectionHeader
-          title="Experience that"
-          highlight="speaks volume"
-          badge="Experience"
-          description="Exploring my journey as a developer, from learning the fundamentals to building full-stack applications"
-        />
+        <ExperienceSectionHeader />
 
         <ExperienceTimeline experiences={experiences} />
       </div>

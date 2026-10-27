@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { LuArrowLeft, LuLoader, LuFileText } from 'react-icons/lu';
-import { toast, Toaster } from 'react-hot-toast';
+import { LuArrowLeft, LuFileText } from 'react-icons/lu';
+import { Toaster } from 'react-hot-toast';
 import type { DetailFormData } from '@/types/admin';
 import DetailAdmin from '@/components/admin/detail/detailAdmin';
 

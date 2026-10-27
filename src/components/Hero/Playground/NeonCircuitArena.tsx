@@ -7,7 +7,6 @@ import {
   MONZA_SAMPLED_POINTS,
   MONZA_CHECKPOINTS,
   MONZA_TRACK_WIDTH,
-  type TrackPoint,
 } from './monzaTrack';
 
 interface NeonCircuitArenaProps {

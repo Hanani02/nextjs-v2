@@ -1,6 +1,5 @@
-import Link from "next/link";
 import ProjectBrowser, { type BrowserProject } from "@/components/project/ProjectBrowser";
-import { LuArrowRight } from "react-icons/lu";
+import ProjectPageHeader from "@/components/project/ProjectPageHeader";
 import Footer from '@/components/section/Footer';
 import { getSupabase } from '@/lib/supabase';
 import { resolveImageUrl } from '@/lib/utils';
@@ -43,33 +42,7 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
         <div className="flex min-h-screen flex-col">
         <main className="flex-1 pt-24 pb-12">
             <div className="mx-auto w-[90%] max-w-6xl space-y-12 pb-10">
-                <div className="grid grid-cols-1 items-end gap-8 border-b border-border pb-10 lg:grid-cols-[1fr_auto]">
-                    <div className="space-y-5">
-                        <span className="inline-block rounded-full border border-border bg-primary/10 px-4 py-1.5 text-sm text-primary">
-                            Projects
-                        </span>
-                        <h1 className="max-w-2xl text-4xl font-bold leading-tight text-text md:text-6xl">
-                            A collection of works that I&apos;ve made.
-                        </h1>
-                        <p className="max-w-2xl text-sm leading-7 text-gray-400 md:text-base">
-                            Explore all the projects I&apos;ve built to learn, experiment, and create better digital experiences.
-                        </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-border bg-surface/70 px-8 py-6 lg:min-w-44 lg:text-right">
-                        <p className="text-center text-sm text-gray-400">Total project</p>
-                        <p className="mt-1 text-center text-5xl font-bold text-primary">{projects.length}</p>
-                    </div>
-                </div>
-
-                <div className="flex justify-end">
-                    <Link
-                        href="/#projects"
-                        className="inline-flex items-center gap-2 self-start rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-text transition hover:border-primary hover:text-primary sm:self-auto"
-                    >
-                        Back to Home <LuArrowRight aria-hidden="true" className="h-4 w-4" />
-                    </Link>
-                </div>
+                <ProjectPageHeader totalProjects={projects.length} />
 
                 <ProjectBrowser projects={projects} initialCategory={category} initialSearch={search} />
             </div>

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getSupabase, getAdminSupabase } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -53,6 +56,10 @@ export async function POST(req: NextRequest) {
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
+
+    try {
+      revalidatePath('/', 'page');
+    } catch {}
 
     return NextResponse.json({
       success: true,
@@ -108,6 +115,10 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    try {
+      revalidatePath('/', 'page');
+    } catch {}
+
     return NextResponse.json({
       success: true,
       message: 'Experience berhasil diperbarui!',
@@ -134,6 +145,10 @@ export async function DELETE(req: NextRequest) {
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
+
+    try {
+      revalidatePath('/', 'page');
+    } catch {}
 
     return NextResponse.json({ success: true, message: 'Experience berhasil dihapus!' });
   } catch (err: unknown) {

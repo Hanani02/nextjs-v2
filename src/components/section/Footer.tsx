@@ -1,14 +1,10 @@
+"use client";
+
 import Logo from "@/components/navbar/logo";
 import { LuGithub, LuInstagram } from "react-icons/lu";
 import { FaDiscord } from "react-icons/fa6";
 import Link from "next/link";
-
-const quickLinks = [
-  { label: "Home", href: "/#home" },
-  { label: "About", href: "/#about" },
-  { label: "Projects", href: "/Project" },
-  { label: "Experience", href: "/#experience" },
-];
+import { useLanguage } from "@/context/LanguageContext";
 
 const socials = [
   { icon: LuGithub, href: "https://github.com/Hanani02", label: "GitHub" },
@@ -17,9 +13,19 @@ const socials = [
 ];
 
 export default function Footer() {
+  const { dictionary } = useLanguage();
+
+  const quickLinks = [
+    { label: dictionary.nav_home, href: "/#home" },
+    { label: dictionary.nav_about, href: "/#about" },
+    { label: dictionary.nav_projects, href: "/Project" },
+    { label: dictionary.nav_experience, href: "/#experience" },
+    { label: dictionary.nav_contact, href: "/#contact" },
+  ];
+
   return (
     <footer className="relative border-t border-border bg-background overflow-hidden">
-      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full blur-3xl bg-primary/10"/>
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full blur-3xl bg-primary/10 pointer-events-none"/>
 
       <div className="w-[90%] max-w-6xl mx-auto py-14 space-y-10 relative z-10">
         <div className="grid gap-10 md:grid-cols-[1.2fr_0.8fr_1fr] md:items-start">
@@ -27,16 +33,16 @@ export default function Footer() {
             <div className="flex justify-center md:justify-start">
               <Logo />
             </div>
-            <p className="text-sm text-text/75">
-              Crafting modern, scalable web experiences with clean code and thoughtful design.
+            <p className="text-sm text-text/75 leading-relaxed">
+              {dictionary.footer_tagline}
             </p>
           </div>
 
           <div className="space-y-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Navigasi</p>
-            <div className="flex flex-col gap-2 text-sm text-text/75">
-              {quickLinks.map((link) => (
-                <Link key={link.label} href={link.href} className="transition hover:text-primary">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{dictionary.footer_navigation}</p>
+            <div className="flex flex-col gap-2.5 text-sm text-text/75">
+              {quickLinks.map((link, idx) => (
+                <Link key={idx} href={link.href} className="transition hover:text-primary">
                   {link.label}
                 </Link>
               ))}
@@ -44,7 +50,7 @@ export default function Footer() {
           </div>
 
           <div className="space-y-4">
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Social</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{dictionary.footer_social}</p>
             <div className="flex items-center gap-3">
               {socials.map(({ icon: Icon, href, label }) => (
                 <Link
@@ -53,7 +59,7 @@ export default function Footer() {
                   target="_blank"
                   rel="noreferrer"
                   aria-label={label}
-                  className="w-10 h-10 rounded-full flex items-center justify-center border border-border text-text/75 hover:text-primary hover:border-primary hover:shadow-[0_0_20px_rgba(32,178,166,0.2)] transition-all duration-300"
+                  className="w-10 h-10 rounded-full flex items-center justify-center border border-border text-text/75 hover:text-primary hover:border-primary hover:shadow-[0_0_20px_rgba(59,130,246,0.25)] transition-all duration-300"
                 >
                   <Icon className="w-5 h-5" />
                 </Link>
@@ -64,8 +70,8 @@ export default function Footer() {
 
         <div className="h-px bg-border" />
 
-        <p className="text-center text-text/60 text-sm">
-          &copy; {new Date().getFullYear()} Kanagara Studio. All rights reserved.
+        <p className="text-center text-text/60 text-xs sm:text-sm">
+          &copy; {new Date().getFullYear()} Muhammad Akbar Hanani. {dictionary.footer_copyright}
         </p>
       </div>
     </footer>

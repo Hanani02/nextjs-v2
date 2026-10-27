@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { LuArrowLeft, LuLoader, LuShieldCheck } from 'react-icons/lu';
+import { LuArrowLeft, LuLoader } from 'react-icons/lu';
 import { toast, Toaster } from 'react-hot-toast';
 import type { ProjectItem, DetailFormData } from '@/types/admin';
 import ProjectAdmin from '@/components/admin/project/projectAdmin';

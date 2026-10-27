@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getSiteConfigAsync, saveSiteConfigAsync } from '@/lib/site-config';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -15,6 +18,19 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const updated = await saveSiteConfigAsync(body);
+
+    // Revalidate paths agar teks yang diedit langsung ter-update di tampilan web
+    try {
+      revalidatePath('/', 'layout');
+      revalidatePath('/', 'page');
+      revalidatePath('/Admin', 'page');
+      revalidatePath('/Admin/Contact', 'page');
+      revalidatePath('/Admin/Hero', 'page');
+      revalidatePath('/Admin/About', 'page');
+    } catch (e) {
+      console.warn('revalidatePath warning:', e);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Konfigurasi berhasil disimpan!',

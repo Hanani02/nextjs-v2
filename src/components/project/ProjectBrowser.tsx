@@ -6,6 +6,8 @@ import { useMemo, useState } from "react";
 import { LuArrowRight, LuSearch } from "react-icons/lu";
 import ProjectCard from "@/components/project/ProjectCard";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export type BrowserProject = {
   slug: string;
   title: string;
@@ -36,6 +38,7 @@ export default function ProjectBrowser({
 }: ProjectBrowserProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { dictionary, isId } = useLanguage();
   const [category, setCategory] = useState(initialCategory);
   const [search, setSearch] = useState(initialSearch);
 
@@ -106,7 +109,7 @@ export default function ProjectBrowser({
               aria-label="Cari project"
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
-              placeholder="Cari project berdasarkan judul atau teknologi..."
+              placeholder={dictionary.projects_search_placeholder}
               className="min-w-0 flex-1 bg-transparent py-2.5 pl-3 pr-2 text-sm text-text outline-none placeholder:text-gray-500"
             />
             {search && (
@@ -124,6 +127,7 @@ export default function ProjectBrowser({
 
         <div className="flex flex-wrap gap-2">
           {categories.map((item) => {
+            const displayLabel = item === "Semua" ? dictionary.projects_filter_all : item;
             const isActive = item === "Semua" ? !category : category.toLowerCase() === item.toLowerCase();
             return (
               <button
@@ -136,7 +140,7 @@ export default function ProjectBrowser({
                     : "border-border bg-surface/70 text-text/80 hover:border-primary hover:text-primary"
                 }`}
               >
-                {item}
+                {displayLabel}
               </button>
             );
           })}
@@ -144,7 +148,9 @@ export default function ProjectBrowser({
       </div>
 
       <p className="text-sm text-gray-400">
-        Showing {visibleProjects.length} of {filteredProjects.length} matching projects.
+        {isId
+          ? `Menampilkan ${visibleProjects.length} dari ${filteredProjects.length} proyek yang cocok.`
+          : `Showing ${visibleProjects.length} of ${filteredProjects.length} matching projects.`}
       </p>
 
       {visibleProjects.length > 0 ? (
@@ -162,7 +168,7 @@ export default function ProjectBrowser({
         </div>
       ) : (
         <div className="rounded-2xl border border-dashed border-border px-6 py-12 text-center text-gray-400">
-          Project not found. Try another keyword or category.
+          {dictionary.projects_empty}
         </div>
       )}
 
@@ -172,7 +178,7 @@ export default function ProjectBrowser({
             href="/Project"
             className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border px-4 py-2.5 text-sm font-semibold text-text transition hover:border-primary hover:text-primary"
           >
-            See more details <LuArrowRight aria-hidden="true" className="h-4 w-4" />
+            {dictionary.projects_view_all} <LuArrowRight aria-hidden="true" className="h-4 w-4" />
           </Link>
         </div>
       )}

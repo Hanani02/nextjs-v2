@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   LuTrophy,
-  LuTimer,
   LuFlag,
   LuMinimize2,
   LuRotateCcw,

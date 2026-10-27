@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/navbar/navbar";
 import FloatingGameButton from "@/components/game/FloatingGameButton";
+import SplashScreen from "@/components/SplashScreen/SplashScreen";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -18,11 +19,16 @@ export default function AppShell({ children }: AppShellProps) {
   const isGamePage = pathname?.toLowerCase().startsWith("/game");
 
   return (
-    <div className="flex min-h-screen flex-col">
-      {!isAuthOrAdmin && !isGamePage && <Navbar />}
-      <div className="flex-1">{children}</div>
-      {!isAuthOrAdmin && !isGamePage && <FloatingGameButton />}
-    </div>
+    <>
+      {/* Interactive Splash Screen: Completely isolated, hydration-safe, session persistent */}
+      {!isAuthOrAdmin && <SplashScreen />}
+
+      {/* Main Portfolio Layout */}
+      <div className="flex min-h-screen flex-col">
+        {!isAuthOrAdmin && !isGamePage && <Navbar />}
+        <main className="flex-1">{children}</main>
+        {!isAuthOrAdmin && !isGamePage && <FloatingGameButton />}
+      </div>
+    </>
   );
 }
-

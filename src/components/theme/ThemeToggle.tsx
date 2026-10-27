@@ -15,7 +15,7 @@ export default function ThemeToggle({
   size = "md",
   showLabel = false,
 }: ThemeToggleProps) {
-  const { theme, toggleTheme, isDark } = useTheme();
+  const { toggleTheme, isDark } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

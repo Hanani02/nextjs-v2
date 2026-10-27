@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { LuMapPin, LuMinimize2, LuCompass } from 'react-icons/lu';
+import { LuMinimize2, LuCompass } from 'react-icons/lu';
 import {
   MONZA_SAMPLED_POINTS,
   MONZA_BOUNDS,

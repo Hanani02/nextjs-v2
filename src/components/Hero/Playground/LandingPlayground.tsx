@@ -4,8 +4,9 @@ import { Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import toast from 'react-hot-toast';
-import { LuSparkles, LuArrowLeft, LuHouse } from 'react-icons/lu';
+import { LuArrowLeft, LuHouse } from 'react-icons/lu';
 import Link from 'next/link';
+import { useLanguage } from '@/context/LanguageContext';
 import NeonCircuitArena from './NeonCircuitArena';
 import { MONZA_CHECKPOINTS } from './monzaTrack';
 import FollowCamera from './FollowCamera';
@@ -200,6 +201,7 @@ function MonzaRaceTracker({
 }
 
 export default function LandingPlayground() {
+  const { dictionary } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const [isAtPlayground, setIsAtPlayground] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -638,8 +640,8 @@ export default function LandingPlayground() {
           href="/"
           className="group flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl bg-neutral-950/90 hover:bg-neutral-900 border border-cyan-500/50 hover:border-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(6,182,212,0.3)] backdrop-blur-xl transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer"
         >
-          <LuArrowLeft className="w-4 h-4 text-cyan-400 group-hover:-translate-x-1 transition-transform" />
-          <span>Kembali ke Beranda</span>
+          <LuArrowLeft className="w-4 h-4 text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.9)] group-hover:-translate-x-1 transition-transform" />
+          <span>{dictionary.game_return_home}</span>
         </Link>
       </div>
 
@@ -650,7 +652,7 @@ export default function LandingPlayground() {
           className="group flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-neutral-950/90 hover:bg-neutral-900 border border-cyan-500/50 hover:border-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(6,182,212,0.35)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"
         >
           <LuHouse className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-          <span>Kembali ke Halaman Awal</span>
+          <span>{dictionary.game_return_home_long}</span>
         </Link>
       </div>
     </section>

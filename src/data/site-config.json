@@ -1,48 +1,48 @@
 {
   "hero": {
-    "greeting": "── Hello I'm M. Akbar Hanani",
+    "greeting": "── Halo, saya M. Akbar Hanani",
     "roles": "Fullstack Developer | Web Developer | Mobile Developer",
-    "headline": "Building modern web experience with",
-    "headlineHighlight": "clean code",
-    "description": "I design and build scalable fullstack applications using modern technologies like Next.js, TypeScript, and Supabase. Focused on performance, clean UI.",
+    "headline": "Membangun pengalaman web modern dengan",
+    "headlineHighlight": "kode bersih",
+    "description": "Saya merancang dan membangun aplikasi fullstack yang scalable menggunakan teknologi modern seperti Next.js, TypeScript, dan Supabase. Berfokus pada performa tinggi dan UI yang bersih.",
     "profileImage": "https://mrkuximhcfynnihdqmsy.supabase.co/storage/v1/object/public/portfolio/1790770030487-profil.jpeg",
     "profileImagePosition": "top",
     "profileImageScale": 1,
     "profileImageFit": "cover",
-    "ctaContactText": "get in touch",
-    "ctaProjectsText": "View projects"
+    "ctaContactText": "Hubungi Saya",
+    "ctaProjectsText": "Lihat Proyek"
   },
   "about": {
-    "badge": "About Me",
-    "title": "I build scalable and user-focused web applications",
-    "description1": "I'm a Grade 11 Software Engineering (RPL) student at SMKN 1 Kota Pasuruan, passionate about building smooth, modern, and user-friendly web applications. I enjoy turning ideas into functional digital experiences while continuously improving my development and design skills through school and personal projects.",
-    "description2": "I frequently work with HTML, CSS, JavaScript, TypeScript, React, Next.js, and Tailwind CSS, along with MySQL and basic Python. For design and interface development, I often use Figma and shadcn/ui to create clean, responsive, and consistent experiences.",
+    "badge": "Tentang Saya",
+    "title": "Membangun aplikasi web yang scalable dan berorientasi pada pengguna",
+    "description1": "Saya siswa kelas 11 Rekayasa Perangkat Lunak (RPL) di SMKN 1 Kota Pasuruan, bersemangat membangun aplikasi web yang lancar, modern, dan ramah pengguna. Saya senang mengubah ide menjadi pengalaman digital yang fungsional sembari terus meningkatkan keterampilan pengembangan dan desain melalui proyek sekolah dan pribadi.",
+    "description2": "Saya sering bekerja dengan HTML, CSS, JavaScript, TypeScript, React, Next.js, dan Tailwind CSS, serta MySQL dan dasar Python. Untuk desain dan pembuatan antarmuka, saya biasa menggunakan Figma dan shadcn/ui demi menciptakan pengalaman yang bersih, responsif, dan konsisten.",
     "aboutImage": "/image/about.jpeg",
     "aboutImagePosition": "center",
     "aboutImageScale": 1,
     "aboutImageFit": "cover",
     "highlights": [
       {
-        "title": "Clean code",
+        "title": "Kode Bersih",
         "icon": "code"
       },
       {
-        "title": "Fullstack Apps",
+        "title": "Aplikasi Fullstack",
         "icon": "database"
       },
       {
-        "title": "Performance",
+        "title": "Performa Tinggi",
         "icon": "rocket"
       }
     ]
   },
   "contact": {
-    "badge": "Contact",
-    "title": "Let's build something great",
-    "highlight": "something great",
-    "description": "Have a project in mind? I'd love to hear about it. Let's connect.",
+    "badge": "Kontak",
+    "title": "Mari bangun sesuatu yang hebat",
+    "highlight": "sesuatu yang hebat",
+    "description": "Punya ide proyek atau ingin berdiskusi? Saya siap mendengarnya. Mari terhubung!",
     "email": "akbarhanani02@gmail.com",
-    "phone": "+62 XXX-XXXX-XXX",
+    "phone": "+62 817 5204 440",
     "location": "Pasuruan, Jawa Timur, Indonesia"
   }
 }

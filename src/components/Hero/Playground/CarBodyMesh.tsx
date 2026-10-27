@@ -1,7 +1,5 @@
 'use client';
 
-import { useRef } from 'react';
-import * as THREE from 'three';
 import type { CarModelType, GraphicsQuality } from '@/types/vehicle';
 
 interface CarBodyMeshProps {

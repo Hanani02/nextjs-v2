@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { getSupabase, getAdminSupabase } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -101,6 +104,12 @@ export async function POST(req: NextRequest) {
       await supabase.from('detail').insert(detailPayload);
     }
 
+    // Revalidate halaman project dan homepage
+    try {
+      revalidatePath('/', 'page');
+      revalidatePath('/Project', 'page');
+    } catch {}
+
     return NextResponse.json({
       success: true,
       message: 'Project berhasil ditambahkan!',
@@ -160,6 +169,12 @@ export async function PUT(req: NextRequest) {
       );
     }
 
+    // Revalidate halaman project dan homepage
+    try {
+      revalidatePath('/', 'page');
+      revalidatePath('/Project', 'page');
+    } catch {}
+
     return NextResponse.json({
       success: true,
       message: 'Project berhasil diperbarui!',
@@ -191,6 +206,12 @@ export async function DELETE(req: NextRequest) {
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
+
+    // Revalidate halaman project dan homepage
+    try {
+      revalidatePath('/', 'page');
+      revalidatePath('/Project', 'page');
+    } catch {}
 
     return NextResponse.json({ success: true, message: 'Project berhasil dihapus!' });
   } catch (err: unknown) {

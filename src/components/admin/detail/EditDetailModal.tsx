@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LuFileText, LuSave, LuX, LuLoader, LuLayers } from 'react-icons/lu';
+import { LuFileText, LuSave, LuX, LuLoader } from 'react-icons/lu';
 import type { DetailFormData } from '@/types/admin';
 
 interface EditDetailModalProps {

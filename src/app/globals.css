@@ -39,11 +39,22 @@
   --color-text-muted: var(--theme-text-muted);
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
+}
+
 html,
 body {
   background-color: var(--color-background);
   color: var(--color-text);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Ensure any anchor navigation stops with headroom below the floating navbar */
+section[id],
+div[id] {
+  scroll-margin-top: 5.5rem;
 }
 
 /* Light mode adjustments for text-gray utilities to maintain high contrast and readability */
