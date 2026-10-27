@@ -363,10 +363,10 @@ export default function PlaygroundHUD({
       )}
 
       {/* ─────────────────────────────────────────────────────────────
-          QUICK CHAT & EMOTES BAR (Accessible via Click or Keys 1-4)
+          QUICK CHAT & EMOTES BAR (Desktop only, hidden on mobile to avoid covering pedals)
       ───────────────────────────────────────────────────────────── */}
-      <div className="absolute bottom-13 sm:bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto z-30 flex items-center gap-1 sm:gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-neutral-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-2xl">
-        <span className="hidden sm:inline text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider mr-1">
+      <div className="hidden md:flex absolute bottom-16 left-1/2 -translate-x-1/2 pointer-events-auto z-30 items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-2xl">
+        <span className="text-[10px] font-mono font-bold text-gray-400 uppercase tracking-wider mr-1">
           Emotes:
         </span>
         {QUICK_EMOTES.map((item) => (
@@ -374,12 +374,12 @@ export default function PlaygroundHUD({
             key={item.key}
             onClick={() => onSendEmote?.(item.text)}
             title={`Tekan [${item.key}] untuk kirim ${item.label}`}
-            className="flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-border/50 hover:border-cyan-400 text-xs sm:text-sm text-gray-200 hover:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm select-none"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-neutral-900/90 hover:bg-neutral-800 border border-border/50 hover:border-cyan-400 text-xs text-gray-200 hover:text-white transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-sm select-none"
           >
-            <span className="hidden sm:flex w-3.5 h-3.5 rounded-full bg-cyan-950/70 text-[9px] font-mono font-bold text-cyan-400 items-center justify-center border border-cyan-500/30">
+            <span className="flex w-3.5 h-3.5 rounded-full bg-cyan-950/70 text-[9px] font-mono font-bold text-cyan-400 items-center justify-center border border-cyan-500/30">
               {item.key}
             </span>
-            <span className="font-semibold text-[11px] sm:text-xs">{item.label}</span>
+            <span className="font-semibold text-xs">{item.label}</span>
           </button>
         ))}
       </div>
@@ -451,41 +451,45 @@ export default function PlaygroundHUD({
 
       {/* ─────────────────────────────────────────────────────────────
           3. MOBILE ON-SCREEN TOUCH CONTROLS (D-Pad Left, Gas & Drift Right)
+          Unobstructed, high-priority z-50 with comfortable touch zones
       ───────────────────────────────────────────────────────────── */}
-      <div className="flex md:hidden items-end justify-between w-full pointer-events-auto select-none pb-2 sm:pb-4">
+      <div className="flex md:hidden items-end justify-between w-full pointer-events-auto select-none touch-none pb-3 px-1 z-50">
         {/* Left Touch Pad: Steer Left & Right */}
         <div className="flex items-center gap-2">
           <button
             {...bindTouchHandlers('left')}
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
+            aria-label="Belok Kiri"
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none shadow-lg ${
               controls.left
-                ? 'bg-cyan-500 text-black border-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.8)]'
-                : 'bg-neutral-950/80 border-cyan-500/30 text-white'
+                ? 'bg-cyan-500 text-black border-cyan-300 shadow-[0_0_24px_rgba(6,182,212,0.85)] scale-95'
+                : 'bg-neutral-950/85 border-cyan-500/40 text-cyan-300'
             }`}
           >
             ◀
           </button>
           <button
             {...bindTouchHandlers('right')}
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
+            aria-label="Belok Kanan"
+            className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none shadow-lg ${
               controls.right
-                ? 'bg-cyan-500 text-black border-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.8)]'
-                : 'bg-neutral-950/80 border-cyan-500/30 text-white'
+                ? 'bg-cyan-500 text-black border-cyan-300 shadow-[0_0_24px_rgba(6,182,212,0.85)] scale-95'
+                : 'bg-neutral-950/85 border-cyan-500/40 text-cyan-300'
             }`}
           >
             ▶
           </button>
         </div>
 
-        {/* Right Touch Pad: Gas (W), Reverse (S), and Handbrake (Space) */}
+        {/* Right Touch Pad: Gas (▲), Reverse (▼), and Handbrake (DRIFT) */}
         <div className="flex items-center gap-2">
           {/* Handbrake Drift Button */}
           <button
             {...bindTouchHandlers('brake')}
-            className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-bold text-[10px] backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
+            aria-label="Rem Tangan Drift"
+            className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-bold text-[10px] backdrop-blur-xl border transition-all active:scale-90 select-none touch-none shadow-lg ${
               controls.brake
-                ? 'bg-rose-500 text-white border-rose-300 shadow-[0_0_24px_rgba(244,63,94,0.9)]'
-                : 'bg-neutral-950/80 border-rose-500/40 text-rose-400'
+                ? 'bg-rose-500 text-white border-rose-300 shadow-[0_0_24px_rgba(244,63,94,0.9)] scale-95'
+                : 'bg-neutral-950/85 border-rose-500/40 text-rose-400'
             }`}
           >
             <LuFlame className="w-4 h-4 mb-0.5" />
@@ -495,22 +499,24 @@ export default function PlaygroundHUD({
           {/* Reverse Button */}
           <button
             {...bindTouchHandlers('backward')}
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center text-base font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
+            aria-label="Mundur"
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none shadow-lg ${
               controls.backward
-                ? 'bg-neutral-700 text-white border-white shadow-lg'
-                : 'bg-neutral-950/80 border-border/60 text-gray-400'
+                ? 'bg-neutral-600 text-white border-white shadow-lg scale-95'
+                : 'bg-neutral-950/85 border-border/70 text-gray-400'
             }`}
           >
             ▼
           </button>
 
-          {/* Gas Button */}
+          {/* Gas Button (Primary accelerator) */}
           <button
             {...bindTouchHandlers('forward')}
-            className={`w-15 h-15 rounded-2xl flex items-center justify-center text-xl font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none ${
+            aria-label="Gas Maju"
+            className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black backdrop-blur-xl border transition-all active:scale-90 select-none touch-none shadow-xl ${
               controls.forward
-                ? 'bg-cyan-500 text-black border-cyan-300 shadow-[0_0_24px_rgba(6,182,212,0.8)]'
-                : 'bg-neutral-950/80 border-cyan-500/40 text-cyan-400'
+                ? 'bg-cyan-400 text-black border-cyan-200 shadow-[0_0_28px_rgba(6,182,212,0.95)] scale-95'
+                : 'bg-cyan-950/80 border-cyan-400/60 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
             }`}
           >
             ▲

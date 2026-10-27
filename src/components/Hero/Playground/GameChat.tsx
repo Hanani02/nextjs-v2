@@ -181,7 +181,7 @@ export default function GameChat({
     <div
       onMouseEnter={handleBoxInteraction}
       onTouchStart={handleBoxInteraction}
-      className={`absolute bottom-22 sm:bottom-26 left-3 sm:left-6 z-40 flex flex-col pointer-events-auto transition-opacity duration-700 ease-out select-none ${
+      className={`hidden md:flex absolute bottom-22 sm:bottom-26 left-3 sm:left-6 z-40 flex-col pointer-events-auto transition-opacity duration-700 ease-out select-none ${
         isDimmed && !isChatFocused ? 'opacity-30 hover:opacity-100' : 'opacity-100'
       }`}
       style={{

@@ -270,8 +270,8 @@ export default function LineWaves({
     if (!containerRef.current) return;
     const container = containerRef.current;
 
-    // On mobile screens (<768px) or hidden containers, use the lightweight SVG fallback to save CPU and maximize performance
-    if (window.innerWidth < 768 || container.offsetWidth === 0) {
+    // Check if container has valid dimensions
+    if (container.offsetWidth === 0 && container.offsetHeight === 0) {
       setWebglSupported(false);
       return;
     }
@@ -292,7 +292,8 @@ export default function LineWaves({
         canvas: webglInfo.canvas,
         webgl: webglInfo.version,
         alpha: true,
-        premultipliedAlpha: false
+        premultipliedAlpha: false,
+        dpr: typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 1.5) : 1
       });
 
       const gl: OGLRenderingContext = renderer.gl;
@@ -317,6 +318,21 @@ export default function LineWaves({
       };
 
       const handleMouseLeave = () => {
+        targetMouse = [0.5, 0.5];
+      };
+
+      const handleTouch = (e: TouchEvent) => {
+        if (!e.touches || e.touches.length === 0) return;
+        const rect = canvas.getBoundingClientRect();
+        if (rect.width === 0 || rect.height === 0) return;
+        const touch = e.touches[0];
+        targetMouse = [
+          (touch.clientX - rect.left) / rect.width,
+          1.0 - (touch.clientY - rect.top) / rect.height
+        ];
+      };
+
+      const handleTouchEnd = () => {
         targetMouse = [0.5, 0.5];
       };
 
@@ -386,6 +402,9 @@ export default function LineWaves({
       if (enableMouseInteraction) {
         canvas.addEventListener('mousemove', handleMouseMove);
         canvas.addEventListener('mouseleave', handleMouseLeave);
+        canvas.addEventListener('touchstart', handleTouch, { passive: true });
+        canvas.addEventListener('touchmove', handleTouch, { passive: true });
+        canvas.addEventListener('touchend', handleTouchEnd, { passive: true });
       }
 
       function update(time: number) {
@@ -424,6 +443,9 @@ export default function LineWaves({
         if (enableMouseInteraction) {
           canvas.removeEventListener('mousemove', handleMouseMove);
           canvas.removeEventListener('mouseleave', handleMouseLeave);
+          canvas.removeEventListener('touchstart', handleTouch);
+          canvas.removeEventListener('touchmove', handleTouch);
+          canvas.removeEventListener('touchend', handleTouchEnd);
         }
         if (container.contains(canvas)) {
           container.removeChild(canvas);

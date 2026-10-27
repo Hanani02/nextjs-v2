@@ -31,6 +31,12 @@ export default function Minimap({
   const [minimized, setMinimized] = useState(false);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setMinimized(true);
+    }
+  }, []);
+
+  useEffect(() => {
     let animId: number;
 
     const render = () => {

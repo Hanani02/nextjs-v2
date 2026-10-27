@@ -128,7 +128,7 @@ export default function GarageMenu({
 
   return (
     <div
-      className={`fixed bottom-20 sm:bottom-6 right-3 sm:right-6 z-40 transition-all duration-500 ease-out pointer-events-auto ${
+      className={`fixed top-3 sm:top-auto sm:bottom-6 right-3 sm:right-6 z-40 transition-all duration-500 ease-out pointer-events-auto ${
         visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'
       }`}
     >

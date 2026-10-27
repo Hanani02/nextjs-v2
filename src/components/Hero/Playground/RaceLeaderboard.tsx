@@ -54,6 +54,12 @@ export default function RaceLeaderboard({
   const [globalRecords, setGlobalRecords] = useState<CircuitLeaderboardRecord[]>([]);
   const [isLoadingGlobal, setIsLoadingGlobal] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      setMinimized(true);
+    }
+  }, []);
+
   // Mengambil daftar top rekor dari Supabase (Top 5 unik, best record)
   const loadGlobalRecords = useCallback(async () => {
     setIsLoadingGlobal(true);

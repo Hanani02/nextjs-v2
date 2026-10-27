@@ -643,8 +643,8 @@ export default function LandingPlayground() {
         </Link>
       </div>
 
-      {/* Bottom Center Return Button */}
-      <div className="absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto transition-all duration-300">
+      {/* Bottom Center Return Button (Desktop only, hidden on mobile to avoid covering touch controls) */}
+      <div className="hidden md:flex absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto transition-all duration-300">
         <Link
           href="/"
           className="group flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-neutral-950/90 hover:bg-neutral-900 border border-cyan-500/50 hover:border-cyan-400 text-white text-xs sm:text-sm font-semibold shadow-[0_0_20px_rgba(6,182,212,0.35)] backdrop-blur-xl transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer whitespace-nowrap"

@@ -17,7 +17,7 @@ export default function HeroBackground() {
       />
 
       {/* Main LineWaves with theme-reactive colors and shader uniforms */}
-      <div className="inset-0 absolute [mask-image:linear-gradient(to_bottom,black_88%,transparent_100%)]">
+      <div className="inset-0 absolute [mask-image:linear-gradient(to_bottom,black_88%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_bottom,black_88%,transparent_100%)]">
         <LineWaves
           speed={0.3}
           innerLineCount={32}
