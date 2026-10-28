@@ -7,7 +7,7 @@ export default async function projectSection() {
     const { data: daftarProyek, error } = await getSupabase()
         .from('project')
         .select('*')
-        .order('id', { ascending: true });
+        .order('id', { ascending: false });
 
     if (error) {
         console.error('Supabase projectSection error:', error);

@@ -16,7 +16,7 @@ export default async function ProjectsPage({ searchParams }: ProjectPageProps) {
     const { data: projectData, error } = await getSupabase()
         .from('project')
         .select('*')
-        .order('id', { ascending: true });
+        .order('id', { ascending: false });
 
     if (error) {
         console.error('Supabase ProjectsPage error:', error);

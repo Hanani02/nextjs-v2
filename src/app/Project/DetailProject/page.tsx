@@ -19,6 +19,7 @@ export default async function DetailProjectPage({ searchParams }: DetailProjectP
   const { data } = await getSupabase()
     .from("project")
     .select("slug, id")
+    .order("id", { ascending: false })
     .limit(1)
     .maybeSingle();
 
