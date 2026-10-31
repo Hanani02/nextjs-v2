@@ -29,13 +29,13 @@ export default function HeroRoom({ profileImage = '/image/profil.jpeg' }: HeroRo
   }, []);
 
   return (
-    <div className="relative w-full h-[480px] sm:h-[540px] md:h-[600px] lg:h-[660px] xl:h-[720px] max-h-[85vh] flex items-center justify-center select-none overflow-visible">
+    <div className="relative w-full h-[370px] xs:h-[410px] sm:h-[480px] md:h-[560px] lg:h-[640px] xl:h-[700px] max-h-[85vh] flex items-center justify-center select-none overflow-visible">
       {/* Background Neon Atmosphere Aura */}
       <div className="absolute w-[360px] h-[360px] md:w-[520px] md:h-[520px] rounded-full bg-cyan-500/15 dark:bg-cyan-500/15 blur-[130px] pointer-events-none -z-10" />
       <div className="absolute w-[300px] h-[300px] md:w-[460px] md:h-[460px] rounded-full bg-purple-500/15 dark:bg-purple-500/20 blur-[110px] pointer-events-none -z-10 translate-x-12 translate-y-8" />
 
       {/* Top Floating Badge */}
-      <div className="absolute top-2 right-2 sm:right-4 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface/70 dark:bg-surface/80 border border-border/60 backdrop-blur-md shadow-md text-cyan-400 text-[10px] font-semibold tracking-wider uppercase">
+      <div className="absolute top-2 right-2 sm:right-4 z-20 flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1 rounded-full bg-surface/80 dark:bg-surface/80 border border-border/60 backdrop-blur-md shadow-md text-cyan-400 text-[9px] sm:text-[10px] font-semibold tracking-wider uppercase">
         <LuRotate3D className="w-3.5 h-3.5 animate-spin duration-3000" />
         <span>Isometric 3D Room</span>
       </div>

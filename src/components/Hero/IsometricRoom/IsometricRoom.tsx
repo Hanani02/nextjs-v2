@@ -27,20 +27,21 @@ function ResponsiveCamera() {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
 
     const aspect = size.width / Math.max(size.height, 1);
-    const target = new THREE.Vector3(0, 1.2, 0);
-    const D = camera.position.distanceTo(target) || 18.26;
+    const target = new THREE.Vector3(0, 1.0, 0);
+    const D = camera.position.distanceTo(target) || 18.35;
 
     // Target visible bounds with comfortable padding so hotspot labels and diorama base never clip:
-    // Vertical span: 11.2 units (pedestal base Y=-1.6 to top art Y=+5.8 + margin)
-    // Horizontal span: 15.2 units (left plant corner to right shelf corner + margin)
-    const vFactor = 11.2 / (2 * D);
-    const hFactor = 15.2 / (2 * D * aspect);
+    // Vertical span: 11.6 units (pedestal base Y=-1.6 to top art Y=+5.8 + margin)
+    // Horizontal span: 17.5 units (left plant corner to right shelf corner + margin)
+    const vFactor = 11.6 / (2 * D);
+    const hFactor = 17.5 / (2 * D * aspect);
 
     const maxTan = Math.max(vFactor, hFactor);
     const targetFov = 2 * Math.atan(maxTan) * (180 / Math.PI);
 
-    // Clamp between comfortable limits
-    const clampedFov = Math.min(Math.max(targetFov, 28), 56);
+    // Dynamic clamp: allow wider FOV on narrow/portrait screens (up to 70 deg) so diorama never clips
+    const maxFov = aspect < 1 ? 70 : 54;
+    const clampedFov = Math.min(Math.max(targetFov, 28), maxFov);
 
     if (Math.abs(camera.fov - clampedFov) > 0.05) {
       camera.fov = clampedFov;
@@ -142,7 +143,7 @@ export default function IsometricRoom({
           <ResponsiveCamera />
 
           <OrbitControls
-            target={[0, 1.2, 0]}
+            target={[0, 1.0, 0]}
             enableZoom={false}
             enablePan={false}
             minPolarAngle={Math.PI / 4.5} // ~40 deg
