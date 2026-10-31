@@ -455,7 +455,7 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
                 }`}
                 style={{ animationDuration: '3s' }}
               />
-              <span>{progress >= 100 ? 'Semua sistem siap! ✨' : activeChar.message}</span>
+              <span>{progress >= 100 ? 'Semua sistem siap! ' : activeChar.message}</span>
             </span>
 
             {/* Percentage Counter */}
@@ -532,11 +532,6 @@ export default function SplashScreen({ onFinish }: SplashScreenProps) {
             }`}
           >
             <LuZap className="w-3 h-3 text-amber-400 animate-bounce" />
-            <span>
-              {clickCount > 0
-                ? `Boost x${clickCount}! ⚡ (+6% per tap)`
-                : 'Ketuk layar untuk mempercepat ⚡'}
-            </span>
           </motion.div>
         </div>
       </motion.div>

@@ -2,9 +2,10 @@
 
 import SectionHeader from "@/components/ui/sectionHeader";
 import { LuMail, LuPhone, LuMapPin, LuSend } from "react-icons/lu";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { toast } from "react-hot-toast";
 import { useLanguage } from "@/context/LanguageContext";
+import AOS from "aos";
 
 type ContactSectionProps = {
   initialContact?: {
@@ -21,6 +22,10 @@ type ContactSectionProps = {
 export default function ContactSection({ initialContact }: ContactSectionProps) {
   const { dictionary, isId } = useLanguage();
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    AOS.refresh();
+  }, []);
 
   // Check if contact content is one of the default localized strings
   const isDefaultBadge = !initialContact?.badge ||
@@ -131,12 +136,14 @@ export default function ContactSection({ initialContact }: ContactSectionProps) 
     <section id="contact" className="py-24 relative overflow-hidden">
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full blur-3xl bg-primary/10 mb-12 pointer-events-none" />
       <div className="w-[90%] max-w-6xl mx-auto relative z-10 space-y-16">
-        <SectionHeader
-          title={title}
-          highlight={highlight}
-          badge={badge}
-          description={description}
-        />
+        <div data-aos="fade-up" data-aos-anchor-placement="top-bottom" data-aos-offset="50">
+          <SectionHeader
+            title={title}
+            highlight={highlight}
+            badge={badge}
+            description={description}
+          />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
           {/* left - form */}
@@ -145,7 +152,8 @@ export default function ContactSection({ initialContact }: ContactSectionProps) 
             className="p-6 sm:p-8 rounded-2xl bg-surface border border-border space-y-5 shadow-lg"
             data-aos="fade-right"
             data-aos-delay="100"
-            data-aos-anchor-placement="top-center"
+            data-aos-anchor-placement="top-bottom"
+            data-aos-offset="50"
           >
             <h3 className="text-lg font-bold text-text">{dictionary.contact_form_title}</h3>
 
@@ -213,8 +221,9 @@ export default function ContactSection({ initialContact }: ContactSectionProps) 
           {/* right - contact info */}
           <div
             data-aos="fade-left"
-            data-aos-delay="100"
-            data-aos-anchor-placement="top-center"
+            data-aos-delay="200"
+            data-aos-anchor-placement="top-bottom"
+            data-aos-offset="50"
             className="p-2 sm:p-4 flex flex-col justify-between"
           >
             <div>
