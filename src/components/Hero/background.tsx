@@ -407,7 +407,29 @@ export default function LineWaves({
         canvas.addEventListener('touchend', handleTouchEnd, { passive: true });
       }
 
+      let isVisible = true;
+      let isRunning = false;
+
+      function startLoop() {
+        if (!isRunning && isVisible && !document.hidden) {
+          isRunning = true;
+          animationFrameId = requestAnimationFrame(update);
+        }
+      }
+
+      function stopLoop() {
+        isRunning = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = 0;
+        }
+      }
+
       function update(time: number) {
+        if (!isVisible || document.hidden) {
+          isRunning = false;
+          return;
+        }
         animationFrameId = requestAnimationFrame(update);
         if (!program || !renderer) return;
         program.uniforms.uTime.value = time * 0.001;
@@ -431,11 +453,35 @@ export default function LineWaves({
         renderer.render({ scene: mesh });
       }
 
-      animationFrameId = requestAnimationFrame(update);
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          isVisible = entry.isIntersecting;
+          if (isVisible) {
+            startLoop();
+          } else {
+            stopLoop();
+          }
+        },
+        { rootMargin: '120px 0px 120px 0px', threshold: 0 }
+      );
+      observer.observe(container);
+
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          stopLoop();
+        } else if (isVisible) {
+          startLoop();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      startLoop();
       setWebglSupported(true);
 
       return () => {
-        cancelAnimationFrame(animationFrameId);
+        stopLoop();
+        observer.disconnect();
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
         if (resizeListener) {
           window.removeEventListener('resize', resizeListener);
         }

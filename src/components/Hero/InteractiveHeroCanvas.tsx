@@ -86,6 +86,37 @@ export default function InteractiveHeroCanvas({
 }: InteractiveHeroCanvasProps) {
   const [mounted, setMounted] = useState(false);
   const carPositionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0.08, 0));
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isInView, setIsInView] = useState(true);
+
+  useEffect(() => {
+    if (!mounted || !containerRef.current) return;
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsInView(false);
+      } else if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const visible = rect.bottom > -100 && rect.top < window.innerHeight + 100;
+        setIsInView(visible);
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting && !document.hidden);
+      },
+      { rootMargin: '120px 0px 120px 0px', threshold: 0 }
+    );
+
+    observer.observe(containerRef.current);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [mounted]);
 
   useEffect(() => {
     setMounted(true);
@@ -110,8 +141,9 @@ export default function InteractiveHeroCanvas({
   const showHotspots = scrollProgress >= 0.35;
 
   return (
-    <div className={`relative w-full h-full select-none overflow-hidden ${className}`}>
+    <div ref={containerRef} className={`relative w-full h-full select-none overflow-hidden ${className}`}>
       <Canvas
+        frameloop={isInView ? 'always' : 'never'}
         shadows
         camera={{
           position: [0, 13.5, 11],

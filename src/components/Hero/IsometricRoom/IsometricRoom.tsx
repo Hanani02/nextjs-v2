@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useEffect } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -57,11 +57,46 @@ export default function IsometricRoom({
   profileImage = '/image/profil.jpeg',
   activeModal = null,
 }: IsometricRoomProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [isInView, setIsInView] = useState(true);
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Performance optimization: Stop Three.js render loop when out of viewport or tab is hidden
+  useEffect(() => {
+    if (!mounted || !containerRef.current) return;
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsInView(false);
+      } else if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const visible = rect.bottom > -100 && rect.top < window.innerHeight + 100;
+        setIsInView(visible);
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting && !document.hidden);
+      },
+      {
+        rootMargin: '120px 0px 120px 0px',
+        threshold: 0,
+      }
+    );
+
+    observer.observe(containerRef.current);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [mounted]);
 
   if (!mounted) {
     return (
@@ -79,8 +114,12 @@ export default function IsometricRoom({
   const cameraPosition: [number, number, number] = [11.5, 9.5, 11.5];
 
   return (
-    <div className={`relative w-full h-full select-none overflow-visible ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative w-full h-full select-none overflow-visible ${className}`}
+    >
       <Canvas
+        frameloop={isInView ? 'always' : 'never'}
         shadows
         camera={{
           position: cameraPosition,
@@ -112,7 +151,7 @@ export default function IsometricRoom({
             maxAzimuthAngle={Math.PI / 2.1} // ~85 deg
             enableDamping
             dampingFactor={0.06}
-            autoRotate={!activeModal}
+            autoRotate={!activeModal && isInView}
             autoRotateSpeed={0.4}
           />
 

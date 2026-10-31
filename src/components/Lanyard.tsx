@@ -86,6 +86,37 @@ export default function Lanyard({
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [internalFlipped, setInternalFlipped] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isInView, setIsInView] = useState(true);
+
+  useEffect(() => {
+    if (!mounted || !containerRef.current) return;
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setIsInView(false);
+      } else if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const visible = rect.bottom > -100 && rect.top < window.innerHeight + 100;
+        setIsInView(visible);
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsInView(entry.isIntersecting && !document.hidden);
+      },
+      { rootMargin: '120px 0px 120px 0px', threshold: 0 }
+    );
+
+    observer.observe(containerRef.current);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [mounted]);
   const isFlipped = isFlippedProp !== undefined ? isFlippedProp : internalFlipped;
   const handleToggleFlip = () => {
     if (onFlipToggle) {
@@ -120,8 +151,9 @@ export default function Lanyard({
   }
 
   return (
-    <div className={`relative z-10 w-full flex justify-center items-center select-none ${className || 'h-[460px] md:h-[550px] lg:h-[600px]'}`}>
+    <div ref={containerRef} className={`relative z-10 w-full flex justify-center items-center select-none ${className || 'h-[460px] md:h-[550px] lg:h-[600px]'}`}>
       <Canvas
+        frameloop={isInView ? 'always' : 'never'}
         camera={{ position: isMobile ? [position[0], position[1] + 0.1, position[2] + 1.2] : position, fov }}
         dpr={[1, isMobile ? 1.5 : 2]}
         gl={{ alpha: transparent, antialias: true }}
