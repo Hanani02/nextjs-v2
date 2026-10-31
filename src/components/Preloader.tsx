@@ -12,7 +12,7 @@ export interface PreloaderProps {
 
 const SESSION_KEY = 'hasVisitedPreloader';
 
-// Native characters for each language (Hiragana for Japanese, Hanzi for Chinese, Cyrillic for Russian, etc.)
+// Native script characters for each language
 const DEFAULT_WORDS = [
   'Hello',         // English
   'Bonjour',       // French
@@ -24,13 +24,8 @@ const DEFAULT_WORDS = [
   'Halo',          // Indonesian
 ];
 
-// Accelerating intervals (ms): starts relaxed (~360ms) and accelerates
-// to ~100ms on the final few words, with a brief readable hold on the finale.
+// Accelerating intervals (ms)
 const INTERVALS = [360, 300, 250, 200, 160, 130, 100, 260];
-
-// Dennis Snellenberg curved wave exit paths (viewBox 0 0 1000 250)
-const initialCurve = 'M 0 0 L 1000 0 Q 500 250 0 0 Z';
-const flatCurve = 'M 0 0 L 1000 0 Q 500 0 0 0 Z';
 
 export default function Preloader({
   onFinish,
@@ -44,6 +39,12 @@ export default function Preloader({
   const [isTextVisible, setIsTextVisible] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
 
+  // Viewport dimensions for the Dennis Snellenberg SVG curve
+  const [dimension, setDimension] = useState({
+    width: typeof window !== 'undefined' ? window.innerWidth : 1000,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800,
+  });
+
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const onFinishRef = useRef(onFinish);
 
@@ -51,9 +52,19 @@ export default function Preloader({
     onFinishRef.current = onFinish;
   }, [onFinish]);
 
-  // Initial mount, session persistence check & scroll-lock
+  // Initial mount, resize listener & scroll lock
   useEffect(() => {
     setMounted(true);
+
+    const updateDimension = () => {
+      setDimension({
+        width: window.innerWidth,
+        height: window.innerHeight,
+      });
+    };
+
+    updateDimension();
+    window.addEventListener('resize', updateDimension);
 
     try {
       const forcePreloader =
@@ -82,19 +93,28 @@ export default function Preloader({
       document.body.style.overflow = 'hidden';
       document.body.style.touchAction = 'none';
     } catch {
-      // Safe fallback if sessionStorage is restricted
+      // Safe fallback
     }
 
+    // Safety timeout: unlock after 4.5s maximum under any circumstance
+    const safetyTimer = setTimeout(() => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+      setIsLoading(false);
+      if (onFinishRef.current) onFinishRef.current();
+    }, 4500);
+
     return () => {
-      // Safety unlock on unmount
-      document.body.style.overflow = 'auto';
+      window.removeEventListener('resize', updateDimension);
+      clearTimeout(safetyTimer);
+      document.body.style.overflow = '';
       document.body.style.touchAction = '';
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [sessionPersistence]);
 
-  // Handle complete exit animation
-  const handleAnimationComplete = useCallback(() => {
+  // Complete cleanup once Dennis Snellenberg curve exit completes
+  const handleComplete = useCallback(() => {
     try {
       if (sessionPersistence) {
         sessionStorage.setItem(SESSION_KEY, 'true');
@@ -104,7 +124,7 @@ export default function Preloader({
     }
 
     // Restore body scroll
-    document.body.style.overflow = 'auto';
+    document.body.style.overflow = '';
     document.body.style.touchAction = '';
 
     setIsLoading(false);
@@ -114,7 +134,7 @@ export default function Preloader({
     }
   }, [sessionPersistence]);
 
-  // Multilingual word cycling sequence with exponential acceleration
+  // Word cycling sequence with exponential acceleration
   useEffect(() => {
     if (!mounted || !isLoading || isExiting) return;
 
@@ -124,13 +144,13 @@ export default function Preloader({
       if (currentIndex < words.length - 1) {
         setCurrentIndex((prev) => prev + 1);
       } else {
-        // Last word finished: immediately fade out text
+        // Last word finished: fade out text first
         setIsTextVisible(false);
 
-        // Trigger Dennis Snellenberg curved slide-up exit
+        // Then trigger the Dennis Snellenberg SVG curve exit
         timerRef.current = setTimeout(() => {
           setIsExiting(true);
-        }, 150);
+        }, 160);
       }
     }, currentDuration);
 
@@ -139,50 +159,53 @@ export default function Preloader({
     };
   }, [mounted, currentIndex, isLoading, isExiting, words.length]);
 
-  // If not mounted yet (SSR) or lifecycle complete, unmount from DOM
   if (!mounted || !isLoading) {
     return null;
   }
 
+  // Curve height calculation (proportional sag)
+  const curveHeight = Math.min(Math.max(dimension.width * 0.28, 160), 300);
+
+  // Dennis Snellenberg SVG Paths:
+  // initialPath: sags downward by curveHeight
+  const initialPath = `M0 0 L${dimension.width} 0 L${dimension.width} ${dimension.height} Q${dimension.width / 2} ${dimension.height + curveHeight} 0 ${dimension.height} L0 0`;
+  // targetPath: straightens out flat along the bottom edge
+  const targetPath = `M0 0 L${dimension.width} 0 L${dimension.width} ${dimension.height} Q${dimension.width / 2} ${dimension.height} 0 ${dimension.height} L0 0`;
+
   const currentInterval = INTERVALS[currentIndex] || 150;
-  // Dynamic duration for snappy text swaps without costly filters
-  const wordAnimDuration = Math.max((currentInterval * 0.35) / 1000, 0.07);
+  const wordAnimDuration = Math.max((currentInterval * 0.35) / 1000, 0.08);
 
   return (
     <motion.div
-      aria-hidden={isExiting}
-      initial={{ y: '0%' }}
-      animate={{ y: isExiting ? '-100%' : '0%' }}
+      initial={{ top: 0 }}
+      animate={{ top: isExiting ? `-${dimension.height + curveHeight}px` : 0 }}
       transition={{
-        duration: 0.8,
-        ease: [0.76, 0, 0.24, 1], // Custom smooth cubic bezier
+        duration: 0.85,
+        ease: [0.76, 0, 0.24, 1],
       }}
       onAnimationComplete={() => {
         if (isExiting) {
-          handleAnimationComplete();
+          handleComplete();
         }
       }}
+      className="fixed inset-0 z-[999] select-none flex items-center justify-center bg-transparent pointer-events-auto"
       style={{
-        backgroundColor,
+        width: '100vw',
+        height: '100vh',
         willChange: 'transform',
       }}
-      className={`fixed inset-0 z-[999] select-none flex items-center justify-center ${
-        isExiting ? 'pointer-events-none' : 'pointer-events-auto'
-      }`}
     >
       {/* ─────────────────────────────────────────────────────────────
-          1. MINIMALIST CENTER GREETING TEXT
-          High-performance opacity + transform animation (no blur filters).
-          Includes bullet/dot and native script characters (Hiragana, Hanzi, Cyrillic).
+          1. CENTER MINIMALIST GREETING TEXT
       ───────────────────────────────────────────────────────────── */}
       <div className="relative z-20 flex items-center justify-center px-6 pointer-events-none">
         <AnimatePresence mode="wait">
           {isTextVisible && (
             <motion.div
               key={currentIndex}
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
+              exit={{ opacity: 0, y: -10 }}
               transition={{
                 duration: wordAnimDuration,
                 ease: [0.33, 1, 0.68, 1],
@@ -190,7 +213,7 @@ export default function Preloader({
               style={{ willChange: 'transform, opacity' }}
               className="flex items-center text-3xl sm:text-5xl md:text-6xl font-medium tracking-tight text-white font-sans select-none"
             >
-              {/* Bullet/dot indicator */}
+              {/* Dot bullet indicator */}
               <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white opacity-80 mr-3 sm:mr-4 shrink-0" />
 
               {/* Native Script Greeting */}
@@ -201,25 +224,29 @@ export default function Preloader({
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          2. SVG CURVE EXIT (DENNIS SNELLENBERG STYLE)
-          Hangs below the bottom edge. As the container slides up,
-          the curve flattens out, creating a smooth parabolic wave reveal
-          where the center bottom is the last to exit.
+          2. DENNIS SNELLENBERG FULLSCREEN CURVE SVG
+          The SVG covers the full screen + the curved bottom sag.
+          As the wrapper slides up, the curve flattens and sweeps upward,
+          creating the iconic smooth wave reveal where the center leaves last.
       ───────────────────────────────────────────────────────────── */}
       <svg
-        className="absolute top-full left-0 w-full h-[150px] sm:h-[220px] pointer-events-none overflow-visible"
-        viewBox="0 0 1000 250"
+        className="absolute top-0 left-0 w-full pointer-events-none"
+        style={{
+          width: '100vw',
+          height: `calc(100vh + ${curveHeight}px)`,
+        }}
+        viewBox={`0 0 ${dimension.width} ${dimension.height + curveHeight}`}
         preserveAspectRatio="none"
         aria-hidden="true"
-        style={{ fill: backgroundColor }}
       >
         <motion.path
-          initial={{ d: initialCurve }}
-          animate={{ d: isExiting ? flatCurve : initialCurve }}
+          initial={{ d: initialPath }}
+          animate={{ d: isExiting ? targetPath : initialPath }}
           transition={{
             duration: 0.8,
             ease: [0.76, 0, 0.24, 1],
           }}
+          fill={backgroundColor}
         />
       </svg>
     </motion.div>
