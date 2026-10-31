@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect, useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import RoomMeshes from './RoomMeshes';
 import Hotspots, { type HotspotType } from './Hotspots';
@@ -53,26 +54,33 @@ function ResponsiveCamera() {
 }
 
 /**
- * GentleIsometricSway provides a smooth, living pendulum sway (+-2.5 deg)
- * around the true 45 deg isometric diagonal, avoiding the Three.js OrbitControls
- * clamp freeze bug where autoRotate jams permanently against maxAzimuthAngle.
+ * PingPongControls manages OrbitControls autoRotate so it smoothly reverses
+ * direction upon reaching the azimuth limits, keeping the room centered
+ * while preserving full mouse and touch left/right steering!
  */
-function GentleIsometricSway({ enabled }: { enabled: boolean }) {
-  const { camera } = useThree();
-  const target = useRef(new THREE.Vector3(0, 0.9, 0));
+function PingPongControls({
+  controlsRef,
+  activeModal,
+  isInView,
+}: {
+  controlsRef: React.RefObject<OrbitControlsImpl | null>;
+  activeModal: HotspotType | null;
+  isInView: boolean;
+}) {
+  useFrame(() => {
+    const controls = controlsRef.current;
+    if (!controls || activeModal || !isInView) return;
 
-  useFrame(({ clock }) => {
-    if (!enabled) return;
-    const t = clock.getElapsedTime() * 0.45;
-    // Oscillate subtly by +-2.5 degrees (0.044 rad) around 45 deg isometric diagonal
-    const angleOffset = Math.sin(t) * 0.044;
-    const baseAngle = Math.PI / 4; // 45 deg
-    const currentAngle = baseAngle + angleOffset;
-    const radiusH = 16.26; // Math.hypot(11.5, 11.5)
+    const currentAngle = controls.getAzimuthalAngle();
+    const minAngle = controls.minAzimuthAngle;
+    const maxAngle = controls.maxAzimuthAngle;
 
-    camera.position.x = radiusH * Math.sin(currentAngle);
-    camera.position.z = radiusH * Math.cos(currentAngle);
-    camera.lookAt(target.current);
+    // Smoothly bounce/reverse auto-rotation near horizontal boundaries
+    if (currentAngle >= maxAngle - 0.04) {
+      controls.autoRotateSpeed = -Math.abs(controls.autoRotateSpeed || 0.35);
+    } else if (currentAngle <= minAngle + 0.04) {
+      controls.autoRotateSpeed = Math.abs(controls.autoRotateSpeed || 0.35);
+    }
   });
 
   return null;
@@ -85,16 +93,12 @@ export default function IsometricRoom({
   activeModal = null,
 }: IsometricRoomProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isInView, setIsInView] = useState(true);
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    setIsTouchDevice(
-      typeof window !== 'undefined' &&
-      ('ontouchstart' in window || navigator.maxTouchPoints > 0)
-    );
   }, []);
 
   // Performance optimization: Stop Three.js render loop when out of viewport or tab is hidden
@@ -142,7 +146,7 @@ export default function IsometricRoom({
     );
   }
 
-  // Camera positioned at true isometric angle looking toward center
+  // Camera positioned at true isometric diagonal angle looking toward center
   const cameraPosition: [number, number, number] = [11.5, 9.5, 11.5];
 
   return (
@@ -157,14 +161,14 @@ export default function IsometricRoom({
           position: cameraPosition,
           fov: 32,
           near: 0.1,
-          far: 100
+          far: 100,
         }}
         dpr={[1, typeof window !== 'undefined' ? Math.min(window.devicePixelRatio, 2) : 1.5]}
         gl={{
           antialias: true,
           alpha: true,
           toneMapping: THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.35
+          toneMappingExposure: 1.35,
         }}
         onCreated={({ gl }) => {
           gl.setClearColor(new THREE.Color(0x000000), 0);
@@ -172,20 +176,26 @@ export default function IsometricRoom({
       >
         <Suspense fallback={null}>
           <ResponsiveCamera />
-          <GentleIsometricSway enabled={!activeModal && isInView} />
+          <PingPongControls
+            controlsRef={controlsRef}
+            activeModal={activeModal}
+            isInView={isInView}
+          />
 
           <OrbitControls
+            ref={controlsRef}
             target={[0, 0.9, 0]}
             enableZoom={false}
             enablePan={false}
-            enableRotate={!isTouchDevice}
+            enableRotate={true}
             minPolarAngle={Math.PI / 4.5} // ~40 deg
             maxPolarAngle={Math.PI / 2.3} // ~78 deg
-            minAzimuthAngle={Math.PI / 8} // ~22.5 deg
-            maxAzimuthAngle={Math.PI / 2.5} // ~72 deg
+            minAzimuthAngle={Math.PI / 12} // ~15 deg (far left)
+            maxAzimuthAngle={Math.PI / 2.15} // ~83.7 deg (far right)
             enableDamping
             dampingFactor={0.06}
-            autoRotate={false}
+            autoRotate={!activeModal && isInView}
+            autoRotateSpeed={0.35}
           />
 
           <RoomMeshes profileImage={profileImage} onSelectHotspot={onSelectHotspot} />

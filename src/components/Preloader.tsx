@@ -31,9 +31,8 @@ export default function Preloader({
   onFinish,
   words = DEFAULT_WORDS,
   backgroundColor = '#141516',
-  sessionPersistence = false,
+  sessionPersistence = true,
 }: PreloaderProps) {
-  const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTextVisible, setIsTextVisible] = useState(true);
@@ -52,10 +51,8 @@ export default function Preloader({
     onFinishRef.current = onFinish;
   }, [onFinish]);
 
-  // Initial mount, resize listener & scroll lock
+  // Initial mount: check session persistence immediately
   useEffect(() => {
-    setMounted(true);
-
     const updateDimension = () => {
       setDimension({
         width: window.innerWidth,
@@ -136,7 +133,7 @@ export default function Preloader({
 
   // Word cycling sequence with exponential acceleration
   useEffect(() => {
-    if (!mounted || !isLoading || isExiting) return;
+    if (!isLoading || isExiting) return;
 
     const currentDuration = INTERVALS[currentIndex] || 150;
 
@@ -157,9 +154,9 @@ export default function Preloader({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [mounted, currentIndex, isLoading, isExiting, words.length]);
+  }, [currentIndex, isLoading, isExiting, words.length]);
 
-  if (!mounted || !isLoading) {
+  if (!isLoading) {
     return null;
   }
 
@@ -177,6 +174,7 @@ export default function Preloader({
 
   return (
     <motion.div
+      id="global-preloader-root"
       initial={{ top: 0 }}
       animate={{ top: isExiting ? `-${dimension.height + curveHeight}px` : 0 }}
       transition={{
@@ -188,10 +186,11 @@ export default function Preloader({
           handleComplete();
         }
       }}
-      className="fixed inset-0 z-[999] select-none flex items-center justify-center bg-transparent pointer-events-auto"
+      className="fixed inset-0 z-[999] select-none flex items-center justify-center pointer-events-auto"
       style={{
         width: '100vw',
         height: '100vh',
+        backgroundColor: isExiting ? 'transparent' : backgroundColor,
         willChange: 'transform',
       }}
     >

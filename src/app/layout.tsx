@@ -96,6 +96,20 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${poppins.className} ${poppins.variable} h-full antialiased dark`}
     >
+      <head>
+        {/* Instant Session Check before first paint: Prevents preloader flash on refresh */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                if (sessionStorage.getItem('hasVisitedPreloader') === 'true') {
+                  document.documentElement.classList.add('splash-already-shown');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body className="min-h-screen bg-background text-text transition-colors duration-300">
         <LanguageProvider>
           <ThemeProvider>

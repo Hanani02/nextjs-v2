@@ -193,3 +193,7 @@ body:has(.not-found-page) [data-mobile-navbar] {
 *::-webkit-scrollbar-corner {
   background: var(--theme-scrollbar-track);
 }
+/* Instant suppression of preloader on refreshed tab */
+html.splash-already-shown #global-preloader-root {
+  display: none !important;
+}
