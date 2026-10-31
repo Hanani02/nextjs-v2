@@ -12,28 +12,25 @@ export interface PreloaderProps {
 
 const SESSION_KEY = 'hasVisitedPreloader';
 
+// Native characters for each language (Hiragana for Japanese, Hanzi for Chinese, Cyrillic for Russian, etc.)
 const DEFAULT_WORDS = [
-  'Hello',       // English
-  'Bonjour',     // French
-  'Ciao',        // Italian
-  'Olá',         // Portuguese
-  'Nǐ Hǎo',      // Mandarin
-  'Konnichiwa',  // Japanese
-  'Guten Tag',   // German
-  'Halo',        // Indonesian
+  'Hello',         // English
+  'Bonjour',       // French
+  'こんにちは',     // Japanese (Hiragana)
+  '你好',          // Chinese (Hanzi)
+  'Привет',        // Russian (Cyrillic)
+  'Ciao',          // Italian
+  'Guten Tag',     // German
+  'Halo',          // Indonesian
 ];
 
-// Accelerating intervals (ms): starts relaxed (~380ms) and accelerates
+// Accelerating intervals (ms): starts relaxed (~360ms) and accelerates
 // to ~100ms on the final few words, with a brief readable hold on the finale.
-const INTERVALS = [380, 320, 260, 210, 160, 120, 100, 260];
+const INTERVALS = [360, 300, 250, 200, 160, 130, 100, 260];
 
-// SVG Curve Path States for ViewBox 0 0 1000 1000:
-// 1. Initial: Full flat rectangle covering the screen
-const initialPath = 'M 0 0 L 1000 0 L 1000 1000 Q 500 1000 0 1000 Z';
-// 2. Mid: Outer sides lift to the top (0) while center dips down (700) in a parabolic wave
-const midPath = 'M 0 0 L 1000 0 L 1000 0 Q 500 700 0 0 Z';
-// 3. Target: Center pulls all the way above top edge (-20), fully revealing page underneath
-const targetPath = 'M 0 0 L 1000 0 L 1000 0 Q 500 -20 0 0 Z';
+// Dennis Snellenberg curved wave exit paths (viewBox 0 0 1000 250)
+const initialCurve = 'M 0 0 L 1000 0 Q 500 250 0 0 Z';
+const flatCurve = 'M 0 0 L 1000 0 Q 500 0 0 0 Z';
 
 export default function Preloader({
   onFinish,
@@ -106,7 +103,7 @@ export default function Preloader({
       // ignore
     }
 
-    // Unlock body scroll
+    // Restore body scroll
     document.body.style.overflow = 'auto';
     document.body.style.touchAction = '';
 
@@ -130,10 +127,10 @@ export default function Preloader({
         // Last word finished: immediately fade out text
         setIsTextVisible(false);
 
-        // Start curved SVG wave exit reveal
+        // Trigger Dennis Snellenberg curved slide-up exit
         timerRef.current = setTimeout(() => {
           setIsExiting(true);
-        }, 180);
+        }, 150);
       }
     }, currentDuration);
 
@@ -148,73 +145,83 @@ export default function Preloader({
   }
 
   const currentInterval = INTERVALS[currentIndex] || 150;
-  const wordAnimDuration = Math.max((currentInterval * 0.4) / 1000, 0.08);
+  // Dynamic duration for snappy text swaps without costly filters
+  const wordAnimDuration = Math.max((currentInterval * 0.35) / 1000, 0.07);
 
   return (
-    <div
+    <motion.div
       aria-hidden={isExiting}
-      className={`fixed inset-0 z-[999] select-none overflow-hidden ${
+      initial={{ y: '0%' }}
+      animate={{ y: isExiting ? '-100%' : '0%' }}
+      transition={{
+        duration: 0.8,
+        ease: [0.76, 0, 0.24, 1], // Custom smooth cubic bezier
+      }}
+      onAnimationComplete={() => {
+        if (isExiting) {
+          handleAnimationComplete();
+        }
+      }}
+      style={{
+        backgroundColor,
+        willChange: 'transform',
+      }}
+      className={`fixed inset-0 z-[999] select-none flex items-center justify-center ${
         isExiting ? 'pointer-events-none' : 'pointer-events-auto'
       }`}
     >
       {/* ─────────────────────────────────────────────────────────────
-          1. FULLSCREEN SVG CURVE MORPHING (DENNIS SNELLENBERG STYLE)
-          Curved wave exit where outer sides lift up first and
-          bottom center curve is the last to exit.
+          1. MINIMALIST CENTER GREETING TEXT
+          High-performance opacity + transform animation (no blur filters).
+          Includes bullet/dot and native script characters (Hiragana, Hanzi, Cyrillic).
       ───────────────────────────────────────────────────────────── */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        viewBox="0 0 1000 1000"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-      >
-        <motion.path
-          initial={{ d: initialPath }}
-          animate={{
-            d: isExiting ? [initialPath, midPath, targetPath] : initialPath,
-          }}
-          transition={{
-            duration: 0.85,
-            times: [0, 0.48, 1],
-            ease: [0.76, 0, 0.24, 1], // Smooth custom cubic bezier
-          }}
-          onAnimationComplete={() => {
-            if (isExiting) {
-              handleAnimationComplete();
-            }
-          }}
-          fill={backgroundColor}
-        />
-      </svg>
-
-      {/* ─────────────────────────────────────────────────────────────
-          2. MINIMALIST CENTER GREETING TEXT
-          Clean white font with bullet/dot and blur-fade swap.
-      ───────────────────────────────────────────────────────────── */}
-      <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none px-6">
+      <div className="relative z-20 flex items-center justify-center px-6 pointer-events-none">
         <AnimatePresence mode="wait">
           {isTextVisible && (
             <motion.div
               key={currentIndex}
-              initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -14, filter: 'blur(6px)' }}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
               transition={{
                 duration: wordAnimDuration,
-                ease: [0.22, 1, 0.36, 1],
+                ease: [0.33, 1, 0.68, 1],
               }}
+              style={{ willChange: 'transform, opacity' }}
               className="flex items-center text-3xl sm:text-5xl md:text-6xl font-medium tracking-tight text-white font-sans select-none"
             >
               {/* Bullet/dot indicator */}
-              <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white opacity-80 mr-3.5 sm:mr-4 shrink-0" />
+              <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-white opacity-80 mr-3 sm:mr-4 shrink-0" />
 
-              {/* Greeting word */}
+              {/* Native Script Greeting */}
               <span>{words[currentIndex]}</span>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-    </div>
+
+      {/* ─────────────────────────────────────────────────────────────
+          2. SVG CURVE EXIT (DENNIS SNELLENBERG STYLE)
+          Hangs below the bottom edge. As the container slides up,
+          the curve flattens out, creating a smooth parabolic wave reveal
+          where the center bottom is the last to exit.
+      ───────────────────────────────────────────────────────────── */}
+      <svg
+        className="absolute top-full left-0 w-full h-[150px] sm:h-[220px] pointer-events-none overflow-visible"
+        viewBox="0 0 1000 250"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        style={{ fill: backgroundColor }}
+      >
+        <motion.path
+          initial={{ d: initialCurve }}
+          animate={{ d: isExiting ? flatCurve : initialCurve }}
+          transition={{
+            duration: 0.8,
+            ease: [0.76, 0, 0.24, 1],
+          }}
+        />
+      </svg>
+    </motion.div>
   );
 }
-
