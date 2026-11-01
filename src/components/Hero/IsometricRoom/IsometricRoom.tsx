@@ -7,7 +7,6 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import RoomMeshes from './RoomMeshes';
 import Hotspots, { type HotspotType } from './Hotspots';
-import ParkedHeroCar from './ParkedHeroCar';
 
 interface IsometricRoomProps {
   onSelectHotspot: (type: HotspotType) => void;
@@ -200,7 +199,6 @@ export default function IsometricRoom({
 
           <RoomMeshes profileImage={profileImage} onSelectHotspot={onSelectHotspot} />
           <Hotspots onSelect={onSelectHotspot} isModalOpen={!!activeModal} />
-          <ParkedHeroCar position={[2.0, -0.73, 0.9]} rotationY={-0.75} isModalOpen={!!activeModal} />
         </Suspense>
       </Canvas>
     </div>
